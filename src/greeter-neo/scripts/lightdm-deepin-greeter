@@ -1,4 +1,0 @@
-#!/bin/bash
-# 只有在未有其它配置光标的配置时才使用 GXDE 默认光标
-[[ $(xrdb -query) == *'Xcursor.theme:'* ]] || xrdb -merge <<< 'Xcursor.theme: gxde'
-/usr/bin/lightdm-deepin-greeter
