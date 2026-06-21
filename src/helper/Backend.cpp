@@ -97,7 +97,7 @@ namespace SDDM {
             env.insert(QProcessEnvironment::systemEnvironment());
             // for sddm itself, we don't want to set LANG from capabilities.
             // instead, honour sddm_lang variable from rc script
-            if (qobject_cast<HelperApp*>(parent())->user() == QStringLiteral("sddm"))
+            if (qobject_cast<HelperApp*>(parent())->user() == QStringLiteral("gxdm"))
                 env.insert(QStringLiteral("LANG"), savedLang);
             // finally, restore original helper environment
             QProcessEnvironment::systemEnvironment().clear();

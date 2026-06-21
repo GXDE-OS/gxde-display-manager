@@ -305,10 +305,10 @@ namespace SDDM {
     }
 
     void XorgDisplayServer::changeOwner(const QString &fileName) {
-        // change the owner and group of the auth file to the sddm user
-        struct passwd *pw = getpwnam("sddm");
+        // change the owner and group of the auth file to the gxdm user
+        struct passwd *pw = getpwnam("gxdm");
         if (!pw)
-            qWarning() << "Failed to find the sddm user. Owner of the auth file will not be changed.";
+            qWarning() << "Failed to find the gxdm user. Owner of the auth file will not be changed.";
         else {
             if (chown(qPrintable(fileName), pw->pw_uid, pw->pw_gid) == -1)
                 qWarning() << "Failed to change owner of the auth file.";

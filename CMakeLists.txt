@@ -164,28 +164,28 @@ if (NOT ELOGIND_FOUND AND NOT SYSTEMD_FOUND)
 endif()
 
 if (SYSTEMD_FOUND)
-    set(RUNTIME_DIR_DEFAULT "/run/sddm")
+    set(RUNTIME_DIR_DEFAULT "/run/gxdm")
 else()
-    set(RUNTIME_DIR_DEFAULT "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/run/sddm")
+    set(RUNTIME_DIR_DEFAULT "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/run/gxdm")
 endif()
 
 
 # Set constants
-set(DATA_INSTALL_DIR            "${CMAKE_INSTALL_FULL_DATADIR}/sddm"                CACHE PATH      "System application data install directory")
+set(DATA_INSTALL_DIR            "${CMAKE_INSTALL_FULL_DATADIR}/gxdm"                CACHE PATH      "System application data install directory")
 set(DBUS_CONFIG_DIR             "${CMAKE_INSTALL_FULL_DATADIR}/dbus-1/system.d"       CACHE PATH      "DBus config files directory")
-set(STATE_DIR                   "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/lib/sddm"      CACHE PATH      "State directory")
+set(STATE_DIR                   "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/lib/gxdm"      CACHE PATH      "State directory")
 set(RUNTIME_DIR                 "${RUNTIME_DIR_DEFAULT}"                            CACHE PATH      "Runtime data storage directory")
 set(QML_INSTALL_DIR             "${QT_IMPORTS_DIR}"                                 CACHE PATH      "QML component installation directory")
 
 set(SESSION_COMMAND             "${DATA_INSTALL_DIR}/scripts/Xsession"              CACHE PATH      "Script to execute when starting the X11 desktop session")
 set(WAYLAND_SESSION_COMMAND     "${DATA_INSTALL_DIR}/scripts/wayland-session"       CACHE PATH      "Script to execute when starting the Wayland desktop session")
 
-set(CONFIG_FILE                 "${CMAKE_INSTALL_FULL_SYSCONFDIR}/sddm.conf"        CACHE PATH      "Path of the sddm config file")
-set(CONFIG_DIR                  "${CMAKE_INSTALL_FULL_SYSCONFDIR}/sddm.conf.d"      CACHE PATH      "Path of the sddm config directory")
+set(CONFIG_FILE                 "${CMAKE_INSTALL_FULL_SYSCONFDIR}/gxdm.conf"        CACHE PATH      "Path of the gxdm config file")
+set(CONFIG_DIR                  "${CMAKE_INSTALL_FULL_SYSCONFDIR}/gxdm.conf.d"      CACHE PATH      "Path of the gxdm config directory")
 set(ACCOUNTSSERVICE_DATA_DIR    "/var/lib/AccountsService"                          CACHE PATH      "Path of the accountsservice data directory")
-set(SYSTEM_CONFIG_DIR           "${CMAKE_INSTALL_PREFIX}/lib/sddm/sddm.conf.d"      CACHE PATH      "Path of the system sddm config directory")
-set(LOG_FILE                    "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/log/sddm.log"  CACHE PATH      "Path of the sddm log file")
-set(DBUS_CONFIG_FILENAME        "org.freedesktop.DisplayManager.conf"               CACHE STRING    "Name of the sddm config file")
+set(SYSTEM_CONFIG_DIR           "${CMAKE_INSTALL_PREFIX}/lib/gxdm/gxdm.conf.d"      CACHE PATH      "Path of the system gxdm config directory")
+set(LOG_FILE                    "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/log/gxdm.log"  CACHE PATH      "Path of the gxdm log file")
+set(DBUS_CONFIG_FILENAME        "org.freedesktop.DisplayManager-gxdm.conf"          CACHE STRING    "Name of the gxdm dbus config file")
 set(COMPONENTS_TRANSLATION_DIR  "${DATA_INSTALL_DIR}/translations-qt${QT_MAJOR_VERSION}" CACHE PATH      "Components translations directory")
 set(SDDM_INITIAL_VT             "1"                                                 CACHE STRING    "Initial tty to use")
 

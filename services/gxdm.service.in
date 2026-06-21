@@ -1,6 +1,6 @@
 [Unit]
-Description=Simple Desktop Display Manager
-Documentation=man:sddm(1) man:sddm.conf(5)
+Description=GXDE Display Manager
+Documentation=man:gxdm(1) man:gxdm.conf(5)
 Conflicts=getty@tty${SDDM_INITIAL_VT}.service
 After=systemd-user-sessions.service getty@tty${SDDM_INITIAL_VT}.service plymouth-quit.service systemd-logind.service
 PartOf=graphical.target
@@ -8,7 +8,7 @@ StartLimitIntervalSec=30
 StartLimitBurst=2
 
 [Service]
-ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/sddm
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/gxdm
 Restart=always
 
 [Install]

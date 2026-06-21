@@ -29,8 +29,8 @@ set(HELPER_SOURCES
     backend/PamBackend.cpp
 )
 
-add_executable(sddm-helper ${HELPER_SOURCES})
-target_link_libraries(sddm-helper
+add_executable(gxdm-helper ${HELPER_SOURCES})
+target_link_libraries(gxdm-helper
                       Qt${QT_MAJOR_VERSION}::Network
                       Qt${QT_MAJOR_VERSION}::DBus
                       Qt${QT_MAJOR_VERSION}::Qml
@@ -43,34 +43,34 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "FreeBSD")
         check_library_exists(${_have_libutil} setusercontext "" _have_setusercontext)
     endif()
     if(_have_libutil AND _have_setusercontext)
-        target_link_libraries(sddm-helper ${_have_libutil})
+        target_link_libraries(gxdm-helper ${_have_libutil})
     endif()
 endif()
 
 if(PAM_FOUND)
-    target_link_libraries(sddm-helper ${PAM_LIBRARIES})
+    target_link_libraries(gxdm-helper ${PAM_LIBRARIES})
 else()
-    target_link_libraries(sddm-helper crypt)
+    target_link_libraries(gxdm-helper crypt)
 endif()
 
-install(TARGETS sddm-helper RUNTIME DESTINATION "${CMAKE_INSTALL_LIBEXECDIR}")
+install(TARGETS gxdm-helper RUNTIME DESTINATION "${CMAKE_INSTALL_LIBEXECDIR}")
 
-add_executable(sddm-helper-start-wayland HelperStartWayland.cpp waylandsocketwatcher.cpp waylandhelper.cpp ${CMAKE_SOURCE_DIR}/src/common/SignalHandler.cpp)
-target_link_libraries(sddm-helper-start-wayland Qt${QT_MAJOR_VERSION}::Core)
-install(TARGETS sddm-helper-start-wayland RUNTIME DESTINATION "${CMAKE_INSTALL_LIBEXECDIR}")
+add_executable(gxdm-helper-start-wayland HelperStartWayland.cpp waylandsocketwatcher.cpp waylandhelper.cpp ${CMAKE_SOURCE_DIR}/src/common/SignalHandler.cpp)
+target_link_libraries(gxdm-helper-start-wayland Qt${QT_MAJOR_VERSION}::Core)
+install(TARGETS gxdm-helper-start-wayland RUNTIME DESTINATION "${CMAKE_INSTALL_LIBEXECDIR}")
 
-add_executable(sddm-helper-start-x11user HelperStartX11User.cpp xorguserhelper.cpp
+add_executable(gxdm-helper-start-x11user HelperStartX11User.cpp xorguserhelper.cpp
                                                 ${CMAKE_SOURCE_DIR}/src/common/ConfigReader.cpp
                                                 ${CMAKE_SOURCE_DIR}/src/common/Configuration.cpp
                                                 ${CMAKE_SOURCE_DIR}/src/common/XAuth.cpp
                                                 ${CMAKE_SOURCE_DIR}/src/common/SignalHandler.cpp
                                                 )
-target_link_libraries(sddm-helper-start-x11user Qt${QT_MAJOR_VERSION}::Core
+target_link_libraries(gxdm-helper-start-x11user Qt${QT_MAJOR_VERSION}::Core
                                                 ${LIBXAU_LINK_LIBRARIES})
-install(TARGETS sddm-helper-start-x11user RUNTIME DESTINATION "${CMAKE_INSTALL_LIBEXECDIR}")
+install(TARGETS gxdm-helper-start-x11user RUNTIME DESTINATION "${CMAKE_INSTALL_LIBEXECDIR}")
 
 if(JOURNALD_FOUND)
-    target_link_libraries(sddm-helper ${JOURNALD_LIBRARIES})
-    target_link_libraries(sddm-helper-start-x11user ${JOURNALD_LIBRARIES})
-    target_link_libraries(sddm-helper-start-wayland ${JOURNALD_LIBRARIES})
+    target_link_libraries(gxdm-helper ${JOURNALD_LIBRARIES})
+    target_link_libraries(gxdm-helper-start-x11user ${JOURNALD_LIBRARIES})
+    target_link_libraries(gxdm-helper-start-wayland ${JOURNALD_LIBRARIES})
 endif()

@@ -233,7 +233,7 @@ namespace SDDM {
 
         if (!daemonApp->testing()) {
             // change the owner and group of the socket to avoid permission denied errors
-            struct passwd *pw = getpwnam("sddm");
+            struct passwd *pw = getpwnam("gxdm");
             if (pw) {
                 if (chown(qPrintable(m_socketServer->socketAddress()), pw->pw_uid, pw->pw_gid) == -1) {
                     qWarning() << "Failed to change owner of the socket";
@@ -320,9 +320,9 @@ namespace SDDM {
                         const Session &session) {
         m_socket = socket;
 
-        //the SDDM user has special privileges that skip password checking so that we can load the greeter
-        //block ever trying to log in as the SDDM user
-        if (user == QLatin1String("sddm")) {
+        //the gxdm user has special privileges that skip password checking so that we can load the greeter
+        //block ever trying to log in as the gxdm user
+        if (user == QLatin1String("gxdm")) {
             emit loginFailed(m_socket);
             return;
         }
@@ -406,7 +406,7 @@ namespace SDDM {
             for(const SessionInfo &s : reply.value()) {
                 if (s.userName == user) {
                     OrgFreedesktopLogin1SessionInterface session(Logind::serviceName(), s.sessionPath.path(), QDBusConnection::systemBus());
-                    if (session.service() == QLatin1String("sddm") && session.state() == QLatin1String("online")) {
+                    if (session.service() == QLatin1String("gxdm") && session.state() == QLatin1String("online")) {
                         m_reuseSessionId = s.sessionId;
                         break;
                     }

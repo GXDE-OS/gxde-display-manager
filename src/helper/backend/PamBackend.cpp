@@ -217,12 +217,12 @@ namespace SDDM {
     bool PamBackend::start(const QString &user) {
         bool result;
 
-        QString service = QStringLiteral("sddm");
+        QString service = QStringLiteral("gxdm");
 
-        if (user == QStringLiteral("sddm") && m_greeter)
-            service = QStringLiteral("sddm-greeter");
+        if (user == QStringLiteral("gxdm") && m_greeter)
+            service = QStringLiteral("gxdm-greeter");
         else if (m_autologin)
-            service = QStringLiteral("sddm-autologin");
+            service = QStringLiteral("gxdm-autologin");
         result = m_pam->start(service, user);
 
         if (!result)

@@ -143,9 +143,9 @@ namespace SDDM {
     void ConfigBase::load()
     {
         //order of priority from least influence to most influence, is
-        // * m_sysConfigDir (system settings /usr/lib/sddm/sddm.conf.d/) in alphabetical order
-        // * m_configDir (user settings in /etc/sddm.conf.d/) in alphabetical order
-        // * m_path (classic fallback /etc/sddm.conf)
+        // * m_sysConfigDir (system settings /usr/lib/gxdm/gxdm.conf.d/) in alphabetical order
+        // * m_configDir (user settings in /etc/gxdm.conf.d/) in alphabetical order
+        // * m_path (classic fallback /etc/gxdm.conf)
 
         QStringList files;
         QDateTime latestModificationTime = QFileInfo(m_path).lastModified();

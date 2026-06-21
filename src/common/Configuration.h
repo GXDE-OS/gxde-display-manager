@@ -71,7 +71,7 @@ namespace SDDM {
             Entry(SessionDir,          QStringList, {_S("/usr/local/share/xsessions"),
                                                      _S("/usr/share/xsessions")},               _S("Comma-separated list of directories containing available X sessions"));
             Entry(SessionCommand,      QString,     _S(SESSION_COMMAND),                        _S("Path to a script to execute when starting the desktop session"));
-            Entry(SessionLogFile,      QString,     _S(".local/share/sddm/xorg-session.log"),   _S("Path to the user session log file"));
+            Entry(SessionLogFile,      QString,     _S(".local/share/gxdm/xorg-session.log"),   _S("Path to the user session log file"));
             Entry(DisplayCommand,      QString,     _S(DATA_INSTALL_DIR "/scripts/Xsetup"),     _S("Path to a script to execute when starting the display server"));
             Entry(DisplayStopCommand,  QString,     _S(DATA_INSTALL_DIR "/scripts/Xstop"),      _S("Path to a script to execute when stopping the display server"));
             Entry(EnableHiDPI,         bool,        true,                                      _S("Enable Qt's automatic high-DPI scaling"));
@@ -82,7 +82,7 @@ namespace SDDM {
             Entry(SessionDir,          QStringList, {_S("/usr/local/share/wayland-sessions"),
                                                      _S("/usr/share/wayland-sessions")},        _S("Comma-separated list of directories containing available Wayland sessions"));
             Entry(SessionCommand,      QString,     _S(WAYLAND_SESSION_COMMAND),                _S("Path to a script to execute when starting the desktop session"));
-            Entry(SessionLogFile,      QString,     _S(".local/share/sddm/wayland-session.log"),_S("Path to the user session log file"));
+            Entry(SessionLogFile,      QString,     _S(".local/share/gxdm/wayland-session.log"),_S("Path to the user session log file"));
             Entry(EnableHiDPI,         bool,        true,                                       _S("Enable Qt's automatic high-DPI scaling"));
         );
 
@@ -102,11 +102,11 @@ namespace SDDM {
         Section(Autologin,
             Entry(User,                QString,     QString(),                                  _S("Username for autologin session"));
             Entry(Session,             QString,     QString(),                                  _S("Name of session file for autologin session (if empty try last logged in)"));
-            Entry(Relogin,             bool,        false,                                      _S("Whether sddm should automatically log back into sessions when they exit"));
+            Entry(Relogin,             bool,        false,                                      _S("Whether gxdm should automatically log back into sessions when they exit"));
         );
     );
 
-    Config(StateConfig, []()->QString{auto tmp = getpwnam("sddm"); return tmp ? QString::fromLocal8Bit(tmp->pw_dir) : QStringLiteral(STATE_DIR);}().append(QStringLiteral("/state.conf")), QString(), QString(),
+    Config(StateConfig, []()->QString{auto tmp = getpwnam("gxdm"); return tmp ? QString::fromLocal8Bit(tmp->pw_dir) : QStringLiteral(STATE_DIR);}().append(QStringLiteral("/state.conf")), QString(), QString(),
         Section(Last,
             Entry(Session,         QString,     QString(),                                      _S("Name of the session for the last logged-in user.\n"
                                                                                                    "This session will be preselected when the login screen appears."));

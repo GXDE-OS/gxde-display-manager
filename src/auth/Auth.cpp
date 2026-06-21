@@ -102,7 +102,7 @@ namespace SDDM {
         static std::unique_ptr<Auth::SocketServer> self;
         if (!self) {
             self.reset(new SocketServer());
-            self->listen(QStringLiteral("sddm-auth-%1").arg(QUuid::createUuid().toString(QUuid::WithoutBraces)));
+            self->listen(QStringLiteral("gxdm-auth-%1").arg(QUuid::createUuid().toString(QUuid::WithoutBraces)));
         }
         return self.get();
     }
@@ -381,7 +381,7 @@ namespace SDDM {
             args << QStringLiteral("--display-server") << d->displayServerCmd;
         if (d->greeter)
             args << QStringLiteral("--greeter");
-        d->child->start(QStringLiteral("%1/sddm-helper").arg(QStringLiteral(LIBEXEC_INSTALL_DIR)), args);
+        d->child->start(QStringLiteral("%1/gxdm-helper").arg(QStringLiteral(LIBEXEC_INSTALL_DIR)), args);
     }
 
     void Auth::stop() {

@@ -78,11 +78,11 @@ namespace SDDM {
                 file.open(QFile::Truncate | QFile::WriteOnly);
 
             // If we can't open the file, create it in a writable location
-            // It will look spmething like ~/.local/share/$appname/sddm.log
-            // or for the sddm user /var/lib/sddm/.local/share/$appname/sddm.log
+            // It will look spmething like ~/.local/share/$appname/gxdm.log
+            // or for the gxdm user /var/lib/gxdm/.local/share/$appname/gxdm.log
             if (!file.isOpen()) {
                 QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
-                file.setFileName(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QLatin1String("/sddm.log"));
+                file.setFileName(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QLatin1String("/gxdm.log"));
                 if (!file.open(QFile::Append | QFile::WriteOnly))
                     file.open(QFile::Truncate | QFile::WriteOnly);
             }
@@ -124,7 +124,7 @@ namespace SDDM {
 #ifdef HAVE_JOURNALD
         // don't log to journald if running interactively, this is likely
         // the case when running sddm in test mode
-        static bool isInteractive = isatty(STDERR_FILENO) && qgetenv("USER") != "sddm";
+        static bool isInteractive = isatty(STDERR_FILENO) && qgetenv("USER") != "gxdm";
         if (!isInteractive) {
             // log to journald
             journaldLogger(type, context, msg);

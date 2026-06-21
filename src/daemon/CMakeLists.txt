@@ -59,21 +59,21 @@ qt_add_dbus_interface(DAEMON_SOURCES "${CMAKE_SOURCE_DIR}/data/interfaces/org.fr
 qt_add_dbus_interface(DAEMON_SOURCES "${CMAKE_SOURCE_DIR}/data/interfaces/org.freedesktop.login1.Seat.xml"  "Login1Seat")
 qt_add_dbus_interface(DAEMON_SOURCES "${CMAKE_SOURCE_DIR}/data/interfaces/org.freedesktop.login1.Session.xml"  "Login1Session")
 
-add_executable(sddm ${DAEMON_SOURCES})
-target_link_libraries(sddm
+add_executable(gxdm ${DAEMON_SOURCES})
+target_link_libraries(gxdm
                       Qt${QT_MAJOR_VERSION}::DBus
                       Qt${QT_MAJOR_VERSION}::Network
                       Qt${QT_MAJOR_VERSION}::Qml
                       ${LIBXAU_LINK_LIBRARIES}
                       ${LIBXCB_LIBRARIES})
 if(PAM_FOUND)
-    target_link_libraries(sddm ${PAM_LIBRARIES})
+    target_link_libraries(gxdm ${PAM_LIBRARIES})
 else()
-    target_link_libraries(sddm crypt)
+    target_link_libraries(gxdm crypt)
 endif()
 
 if(JOURNALD_FOUND)
-    target_link_libraries(sddm ${JOURNALD_LIBRARIES})
+    target_link_libraries(gxdm ${JOURNALD_LIBRARIES})
 endif()
 
-install(TARGETS sddm DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(TARGETS gxdm DESTINATION "${CMAKE_INSTALL_BINDIR}")

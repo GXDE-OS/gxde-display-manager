@@ -11,7 +11,7 @@
 
 
 import QtQuick 2.0
-import SddmComponents 2.0
+import GxdmComponents 2.0
 
 import "./components"
 

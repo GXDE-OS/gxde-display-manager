@@ -43,7 +43,7 @@ namespace SDDM {
         if (m_server)
             return false;
 
-        QString socketName = QStringLiteral("sddm-%1-%2").arg(displayName).arg(generateName(6));
+        QString socketName = QStringLiteral("gxdm-%1-%2").arg(displayName).arg(generateName(6));
 
         // log message
         qDebug() << "Socket server starting...";

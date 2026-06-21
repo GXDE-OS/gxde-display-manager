@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
         arguments << QString::fromLocal8Bit(argv[i]);
 
     if (arguments.contains(QStringLiteral("--help")) || arguments.contains(QStringLiteral("-h"))) {
-        std::cout << "Usage: sddm [options]\n"
+        std::cout << "Usage: gxdm [options]\n"
                   << "Options: \n"
                   << "  --test-mode         Start daemon in test mode" << std::endl
                   << "  --example-config    Print the complete current configuration to stdout" << std::endl;

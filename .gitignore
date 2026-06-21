@@ -208,7 +208,8 @@ $RECYCLE.BIN/
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
+
 
 # Thumbnails
 ._*
@@ -809,6 +810,7 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
+build/*
 
 # ---> Bazel
 # gitignore template for Bazel build system
@@ -825,3 +827,9 @@ CMakeUserPresets.json
 /.aswb/
 /.clwb/
 
+# ---> Agents
+# CLI
+.qwen/*
+.claude/*
+.codex/*
+.gemini/*
