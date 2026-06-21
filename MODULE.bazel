@@ -1,0 +1,24 @@
+"""Bazel build file for GXDE Display Manager
+
+Please note that builds MUST run with --spawn_strategy=local so that /usr is
+visible.
+"""
+
+module(
+    name = "gxdm",
+    version = "0.21.0",
+)
+
+bazel_dep(name = "rules_cc", version = "0.2.17")
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+bazel_dep(name = "platforms", version = "1.0.0")
+
+# Using host Qt6 and exposing it as a local repository @qt6_system
+system_qt_repo = use_repo_rule("//bazel/qt:system_qt.bzl", "system_qt_repo")
+
+system_qt_repo(
+    name = "qt6_system",
+    include_dir = "/usr/include/x86_64-linux-gnu/qt6",
+    mkspecs_dir = "/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++",
+    lib_dir = "/usr/lib/x86_64-linux-gnu",
+)

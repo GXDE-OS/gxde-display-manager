@@ -1,0 +1,36 @@
+load("//bazel/qt:qt.bzl", "qt_cc_library", "qt_moc_cpp")
+
+package(default_visibility = ["//visibility:public"])
+
+# Auth.cpp and AuthRequest.cpp define Q_OBJECT classes and #include "X.moc".
+_cpp_moc_lib = qt_moc_cpp(
+    name = "auth_cppmoc",
+    srcs = [
+        "Auth.cpp",
+        "AuthRequest.cpp",
+    ],
+)
+
+qt_cc_library(
+    name = "auth",
+    srcs = [
+        "Auth.cpp",
+        "AuthPrompt.cpp",
+        "AuthRequest.cpp",
+    ],
+    hdrs = [
+        "Auth.h",
+        "AuthMessages.h",
+        "AuthPrompt.h",
+        "AuthRequest.h",
+    ],
+    moc_hdrs = [
+        "Auth.h",
+        "AuthPrompt.h",
+        "AuthRequest.h",
+    ],
+    deps = [
+        _cpp_moc_lib,
+        "//src/common:common",
+    ],
+)

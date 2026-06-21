@@ -1,0 +1,55 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel/qt:qt.bzl", "gxdm_configure_file", "qt_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# Generated Constants.h
+gxdm_configure_file(
+    name = "constants_h",
+    src = "Constants.h.in",
+    out = "Constants.h",
+)
+
+cc_library(
+    name = "constants",
+    hdrs = ["Constants.h"],
+    includes = ["."],
+)
+
+# Shared sources pulled
+qt_cc_library(
+    name = "common",
+    srcs = [
+        "Configuration.cpp",
+        "ConfigReader.cpp",
+        "SafeDataStream.cpp",
+        "Session.cpp",
+        "SocketWriter.cpp",
+        "ThemeConfig.cpp",
+        "ThemeMetadata.cpp",
+        "XAuth.cpp",
+        "SignalHandler.cpp",
+        "VirtualTerminal.cpp",
+    ],
+    hdrs = [
+        "Configuration.h",
+        "ConfigReader.h",
+        "MessageHandler.h",
+        "Messages.h",
+        "SafeDataStream.h",
+        "Session.h",
+        "SocketWriter.h",
+        "ThemeConfig.h",
+        "ThemeMetadata.h",
+        "SignalHandler.h",
+        "VirtualTerminal.h",
+        "XAuth.h",
+    ],
+    moc_hdrs = [
+        "ThemeConfig.h",
+        "ThemeMetadata.h",
+        "SignalHandler.h",
+    ],
+    linkopts = ["-lXau"],
+    deps = [":constants"],
+)

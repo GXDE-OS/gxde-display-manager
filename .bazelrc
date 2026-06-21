@@ -1,0 +1,10 @@
+# GXDE-Display-Manager Bazel config.
+
+build --spawn_strategy=local
+build --cxxopt=-std=c++17
+build --host_cxxopt=-std=c++17
+build --copt=-fPIC
+
+# Qt6 config is provided through local repository bazel/qt/system_qt.bzl.
+build --show_timestamps
+common --color=yes
