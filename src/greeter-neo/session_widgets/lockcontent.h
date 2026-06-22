@@ -2,14 +2,13 @@
 #define LOCKCONTENT_H
 
 #include <QWidget>
+#include <QTranslator>
 #include <memory>
 
-#include <com_deepin_daemon_imageblur.h>
 
 #include "sessionbasewindow.h"
 #include "sessionbasemodel.h"
 
-using ImageBlur = com::deepin::daemon::ImageBlur;
 
 class ControlWidget;
 class UserInputWidget;
@@ -59,7 +58,6 @@ private:
     UserFrame *m_userFrame;
     SessionWidget *m_sessionFrame;
     ShutdownWidget *m_shutdownFrame;
-    ImageBlur *m_imageBlurInter;
     QWidget *m_virtualKB;
     std::shared_ptr<User> m_user;
     QList<QMetaObject::Connection> m_currentUserConnects;

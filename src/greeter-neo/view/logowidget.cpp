@@ -25,7 +25,6 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QFile>
-#include <QTextCodec>
 #include <QPalette>
 #include <QDebug>
 #include <QSettings>
@@ -71,7 +70,7 @@ void LogoWidget::initUI() {
     this->setObjectName("LogoWidget");
 
     m_logoLayout = new QHBoxLayout;
-    m_logoLayout->setMargin(0);
+    m_logoLayout->setContentsMargins(0, 0, 0, 0);
     m_logoLayout->setSpacing(0);
     m_logoLayout->addSpacing(48);
     m_logoLayout->addWidget(m_logoLabel);
@@ -88,7 +87,6 @@ void LogoWidget::initUI() {
 
 QString LogoWidget::getVersion() {
     QSettings settings("/etc/deepin-version", QSettings::IniFormat);
-    settings.setIniCodec(QTextCodec::codecForName("utf8"));
     QString item = "Release";
     ///////////system version
     QString version = settings.value(item + "/Version").toString();

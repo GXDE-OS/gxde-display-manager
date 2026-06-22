@@ -30,7 +30,7 @@
 #include "errortooltip.h"
 
 ErrorTooltip::ErrorTooltip(QString errorMessage, QWidget *parent) :
-    DArrowRectangle(DArrowRectangle::ArrowTop, parent),
+    NeoArrowRectangle(NeoArrowRectangle::ArrowTop, parent),
     m_label(new QLabel(errorMessage))
 {
     m_label->setStyleSheet("padding: 5px 10px; color: #f9704f");

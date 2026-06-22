@@ -1,5 +1,10 @@
 #include "userinfo.h"
 
+#include <QFile>
+#include <QUrl>
+#include <QStringList>
+#include <QTimer>
+
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
@@ -153,74 +158,77 @@ void User::onLockTimeOut()
     emit lockChanged(m_tryNum == 0);
 }
 
-NativeUser::NativeUser(const QString &path, QObject *parent)
+NativeUser::NativeUser(const QString &userName, QObject *parent)
     : User(parent)
-
-    , m_userInter(new UserInter(ACCOUNT_DBUS_SERVICE, path, QDBusConnection::systemBus(), this))
 {
-    connect(m_userInter, &UserInter::IconFileChanged, this, &NativeUser::avatarChanged);
-    connect(m_userInter, &UserInter::FullNameChanged, this, [=] (const QString &fullname) {
-        emit displayNameChanged(fullname.isEmpty() ? m_userName : fullname);
-    });
+    // Source identity from the system password database (no dde-daemon).
+    struct passwd *pw = getpwnam(userName.toUtf8().constData());
+    if (pw) {
+        m_userName = QString::fromLocal8Bit(pw->pw_name);
+        m_uid = pw->pw_uid;
+        const QString gecos = QString::fromLocal8Bit(pw->pw_gecos ? pw->pw_gecos : "");
+        m_fullName = gecos.section(QLatin1Char(','), 0, 0);
+    } else {
+        m_userName = userName;
+        m_uid = 0;
+    }
 
-    connect(m_userInter, &UserInter::DesktopBackgroundsChanged, this, [=] {
-        emit desktopBackgroundPathChanged(desktopBackgroundPath());
-    });
-
-    connect(m_userInter, &UserInter::GreeterBackgroundChanged, this, [=] (const QString &path) {
-        emit greeterBackgroundPathChanged(toLocalFile(path));
-    });
-
-    connect(m_userInter, &UserInter::LocaleChanged, this, &NativeUser::setLocale);
-    connect(m_userInter, &UserInter::HistoryLayoutChanged, this, &NativeUser::kbLayoutListChanged);
-    connect(m_userInter, &UserInter::LayoutChanged, this, &NativeUser::currentKBLayoutChanged);
-
-    m_userName = m_userInter->userName();
-    m_uid = m_userInter->uid().toInt();
-    m_locale = m_userInter->locale();
-
-    setPath(path);
+    setPath(m_userName);
 }
 
 void NativeUser::setCurrentLayout(const QString &layout)
 {
-    m_userInter->SetLayout(layout);
+    if (m_currentLayout == layout)
+        return;
+    m_currentLayout = layout;
+    emit currentKBLayoutChanged(layout);
 }
 
 QString NativeUser::displayName() const
 {
-    const QString &fullname = m_userInter->fullName();
-    return fullname.isEmpty() ? name() : fullname;
+    return m_fullName.isEmpty() ? name() : m_fullName;
 }
 
 QString NativeUser::avatarPath() const
 {
-    return m_userInter->iconFile();
+    // Prefer the AccountsService icon, then ~/.face, then a bundled default.
+    const QString svc = QStringLiteral("/var/lib/AccountsService/icons/%1").arg(m_userName);
+    if (QFile::exists(svc))
+        return svc;
+
+    struct passwd *pw = getpwnam(m_userName.toUtf8().constData());
+    if (pw && pw->pw_dir) {
+        const QString face = QString::fromLocal8Bit(pw->pw_dir) + QStringLiteral("/.face");
+        if (QFile::exists(face))
+            return face;
+    }
+
+    return QStringLiteral(":/img/default_avatar.png");
 }
 
 QString NativeUser::greeterBackgroundPath() const
 {
-    return toLocalFile(m_userInter->greeterBackground());
+    return QStringLiteral("/usr/share/backgrounds/default_background.jpg");
 }
 
 QString NativeUser::desktopBackgroundPath() const
 {
-    return toLocalFile(m_userInter->desktopBackgrounds().first());
+    return greeterBackgroundPath();
 }
 
 QStringList NativeUser::kbLayoutList()
 {
-    return m_userInter->historyLayout();
+    return QStringList();
 }
 
 QString NativeUser::currentKBLayout()
 {
-    return m_userInter->layout();
+    return m_currentLayout;
 }
 
 bool NativeUser::isNoPasswdGrp() const
 {
-    return (m_userInter->passwordStatus() == "NP" || checkUserIsNoPWGrp(this));
+    return checkUserIsNoPWGrp(this);
 }
 
 ADDomainUser::ADDomainUser(uint uid, QObject *parent)

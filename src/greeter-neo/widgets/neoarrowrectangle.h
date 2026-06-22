@@ -26,7 +26,6 @@
 #ifndef DARROWRECTANGLE_H
 #define DARROWRECTANGLE_H
 
-#include <QDesktopWidget>
 #include <QWidget>
 #include <QLabel>
 #include <QTextLine>
@@ -34,13 +33,12 @@
 #include <QVBoxLayout>
 #include <QPainter>
 #include <QTimer>
-#include <QtX11Extras/QX11Info>
 #include <QDebug>
 
 #include "dthememanager.h"
 #include "dgraphicsgloweffect.h"
 
-class DArrowRectangle : public QWidget
+class NeoArrowRectangle : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QColor backgroundColor READ backgroundColor WRITE setBackgroundColor)
@@ -55,8 +53,8 @@ public:
         ArrowBottom
     };
 
-    explicit DArrowRectangle(ArrowDirection direction, QWidget * parent = 0);
-    ~DArrowRectangle();
+    explicit NeoArrowRectangle(ArrowDirection direction, QWidget * parent = 0);
+    ~NeoArrowRectangle();
 
     int radius() const;
     int arrowHeight() const;

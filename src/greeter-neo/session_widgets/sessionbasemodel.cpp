@@ -2,14 +2,8 @@
 
 #include <QDebug>
 
-#define SessionManagerService "com.deepin.SessionManager"
-#define SessionManagerPath "/com/deepin/SessionManager"
-
-using namespace com::deepin;
-
 SessionBaseModel::SessionBaseModel(AuthType type, QObject *parent)
     : QObject(parent)
-    , m_sessionManagerInter(nullptr)
     , m_hasSwap(false)
     , m_isShow(false)
     , m_canSleep(false)
@@ -17,9 +11,6 @@ SessionBaseModel::SessionBaseModel(AuthType type, QObject *parent)
     , m_currentUser(nullptr)
     , m_powerAction(PowerAction::RequireNormal)
 {
-    if (m_currentType == LockType) {
-        m_sessionManagerInter = new SessionManager(SessionManagerService, SessionManagerPath, QDBusConnection::sessionBus(), this);
-    }
 }
 
 std::shared_ptr<User> SessionBaseModel::findUserByUid(const uint uid) const
@@ -163,12 +154,6 @@ void SessionBaseModel::setIsShow(bool isShow)
     if (m_isShow == isShow) return;
 
     m_isShow = isShow;
-
-#ifndef QT_DEBUG
-    if (m_sessionManagerInter && m_currentType == LockType) {
-        m_sessionManagerInter->SetLocked(m_isShow);
-    }
-#endif
 
     emit visibleChanged(isShow);
 }

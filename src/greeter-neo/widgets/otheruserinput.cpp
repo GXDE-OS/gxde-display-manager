@@ -101,7 +101,7 @@ void OtherUserInput::initUI()
     m_passwdEdit->setFocusPolicy(Qt::StrongFocus);
 
     QHBoxLayout *accountLayout = new QHBoxLayout;
-    accountLayout->setMargin(5);
+    accountLayout->setContentsMargins(5, 5, 5, 5);
     accountLayout->setSpacing(0);
     accountLayout->addWidget(m_accountEdit);
     QWidget *accountWidget = new QWidget;
@@ -115,7 +115,7 @@ void OtherUserInput::initUI()
     m_capslockWarning->setPixmap(loadPixmap(":/img/capslock.svg"));
 
     QHBoxLayout *passwdLayout = new QHBoxLayout;
-    passwdLayout->setMargin(5);
+    passwdLayout->setContentsMargins(5, 5, 5, 5);
     passwdLayout->setSpacing(0);
     passwdLayout->addWidget(m_passwdEdit);
     passwdLayout->addSpacing(1);
@@ -128,7 +128,7 @@ void OtherUserInput::initUI()
     passwdWidget->setObjectName("passwdWidget");
 
     QVBoxLayout *layout = new QVBoxLayout;
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(1);
 
     layout->addWidget(accountWidget);

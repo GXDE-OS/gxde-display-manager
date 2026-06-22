@@ -59,7 +59,7 @@ void DBreathingLabel::setAlpha(int opa) {
     alpha_ = opa;
     QColor color =m_palette.color(QPalette::WindowText);
     color = QColor(color.red(), color.green(), color.blue(), opa);
-    m_palette.setColor(QPalette::Foreground, color);
+    m_palette.setColor(QPalette::WindowText, color);
     setPalette(m_palette);
 }
 

@@ -30,7 +30,6 @@
 #include <QList>
 #include <QSettings>
 
-#include <QLightDM/SessionsModel>
 
 #include "rounditembutton.h"
 #include "framedatabind.h"
@@ -80,7 +79,7 @@ private:
     SessionBaseModel *m_model;
     FrameDataBind *m_frameDataBind;
 
-    QLightDM::SessionsModel *m_sessionModel;
+    QStringList m_sessionKeys;
     QList<RoundItemButton *> m_sessionBtns;
 };
 

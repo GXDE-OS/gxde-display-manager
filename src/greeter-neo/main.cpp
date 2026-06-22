@@ -25,7 +25,7 @@
 
 #include "loginwindow.h"
 #include "constants.h"
-#include "greeterworkek.h"
+#include "greeterworker.h"
 #include "sessionbasemodel.h"
 #include "propertygroup.h"
 #include "multiscreenmanager.h"
@@ -39,7 +39,6 @@
 #include <QWindow>
 #include <QScreen>
 #include <DLog>
-#include <QDesktopWidget>
 
 #include <cstdlib>
 
@@ -197,8 +196,16 @@ int main(int argc, char* argv[])
 
     DLogManager::registerConsoleAppender();
 
+    QString greeterSocket;
+    {
+        const QStringList args = a.arguments();
+        const int idx = args.indexOf(QStringLiteral("--socket"));
+        if (idx >= 0 && idx + 1 < args.size())
+            greeterSocket = args.at(idx + 1);
+    }
+
     SessionBaseModel *model = new SessionBaseModel(SessionBaseModel::AuthType::LightdmType);
-    GreeterWorkek *worker = new GreeterWorkek(model); //
+    GreeterWorker *worker = new GreeterWorker(model, greeterSocket);
 
     QObject::connect(model, &SessionBaseModel::authFinished, model, [=] {
         set_rootwindow_cursor();
@@ -212,10 +219,10 @@ int main(int argc, char* argv[])
         LoginWindow *loginFrame = new LoginWindow(model);
         loginFrame->setScreen(screen);
         property_group->addObject(loginFrame);
-        QObject::connect(loginFrame, &LoginWindow::requestSwitchToUser, worker, &GreeterWorkek::switchToUser);
-        QObject::connect(loginFrame, &LoginWindow::requestAuthUser, worker, &GreeterWorkek::authUser);
-        QObject::connect(loginFrame, &LoginWindow::requestSetLayout, worker, &GreeterWorkek::setLayout);
-        QObject::connect(worker, &GreeterWorkek::requestUpdateBackground, loginFrame, static_cast<void (LoginWindow::*)(const QString &)>(&LoginWindow::updateBackground));
+        QObject::connect(loginFrame, &LoginWindow::requestSwitchToUser, worker, &GreeterWorker::switchToUser);
+        QObject::connect(loginFrame, &LoginWindow::requestAuthUser, worker, &GreeterWorker::authUser);
+        QObject::connect(loginFrame, &LoginWindow::requestSetLayout, worker, &GreeterWorker::setLayout);
+        QObject::connect(worker, &GreeterWorker::requestUpdateBackground, loginFrame, static_cast<void (LoginWindow::*)(const QString &)>(&LoginWindow::updateBackground));
         QObject::connect(loginFrame, &LoginWindow::destroyed, property_group, &PropertyGroup::removeObject);
         loginFrame->show();
         return loginFrame;

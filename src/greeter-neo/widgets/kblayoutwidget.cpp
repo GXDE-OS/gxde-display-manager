@@ -59,7 +59,7 @@ LayoutButton::LayoutButton(QString text, QWidget *parent)
 
     updateStyle(":/skin/layoutbutton.qss", this);
 }
-void LayoutButton::enterEvent(QEvent *event) {
+void LayoutButton::enterEvent(QEnterEvent *event) {
     emit mouseEnter(m_text);
     Q_UNUSED(event);
 //    qDebug() << "enterEvent;";

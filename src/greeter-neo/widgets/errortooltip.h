@@ -30,11 +30,11 @@
 #ifndef DDE_POLKIT_AGENT_ERRORTOOLTIP_H
 #define DDE_POLKIT_AGENT_ERRORTOOLTIP_H
 
-#include <darrowrectangle.h>
+#include "neoarrowrectangle.h"
 
 DWIDGET_USE_NAMESPACE
 
-class ErrorTooltip : public DArrowRectangle
+class ErrorTooltip : public NeoArrowRectangle
 {
     Q_OBJECT
 public:

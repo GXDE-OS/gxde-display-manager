@@ -8,4 +8,10 @@ alias(
     actual = "@qt6_system//:qt6",
 )
 
+# Host DTK (Qt6 port). Headers-only; depend on it together with :qt6.
+alias(
+    name = "dtk",
+    actual = "@dtk_system//:dtk",
+)
+
 exports_files(["qt.bzl", "constants.bzl"])

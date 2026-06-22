@@ -25,7 +25,7 @@
 
 #include "keyboardmonitor.h"
 
-#include <QX11Info>
+#include <QGuiApplication>
 #include <QDebug>
 
 #include <X11/X.h>
@@ -38,6 +38,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+// Qt6 dropped QX11Info, now obtaining X11 display via platform native interface
+// Qt6去除了QX11Info，现在使用原生方案获取X11屏幕
+static Display *gxdmX11Display()
+{
+    if (auto *x11 = qApp->nativeInterface<QNativeInterface::QX11Application>())
+        return x11->display();
+    return nullptr;
+}
 
 static int xi2_opcode;
 
@@ -174,7 +183,7 @@ bool KeyboardMonitor::isCapslockOn()
 {
     bool result;
     unsigned int n = 0;
-    static Display* d = QX11Info::display();
+    static Display* d = gxdmX11Display();
 
     XkbGetIndicatorState(d, XkbUseCoreKbd, &n);
     result = (n & 0x01) != 0;
@@ -186,7 +195,7 @@ bool KeyboardMonitor::isNumlockOn()
 {
     bool result;
     unsigned int n = 0;
-    static Display* d = QX11Info::display();
+    static Display* d = gxdmX11Display();
 
     XkbGetIndicatorState(d, XkbUseCoreKbd, &n);
     result = (n & 0x02) != 0;
@@ -196,7 +205,7 @@ bool KeyboardMonitor::isNumlockOn()
 
 bool KeyboardMonitor::setNumlockStatus(const bool &on)
 {
-    Display* d = QX11Info::display();
+    Display* d = gxdmX11Display();
 
     XKeyboardState x;
     XGetKeyboardControl(d, &x);

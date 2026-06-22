@@ -6,7 +6,7 @@
 #include <DPasswdEditAnimated>
 #include <QPushButton>
 #include <functional>
-#include <darrowrectangle.h>
+#include "neoarrowrectangle.h"
 
 #include "useravatar.h"
 #include "framedatabind.h"
@@ -78,7 +78,7 @@ private:
     DPasswdEditAnimated *m_passwordEdit;
     OtherUserInput *m_otherUserInput;
     LoginButton *m_loginBtn;
-    DArrowRectangle *m_kbLayoutBorder;
+    NeoArrowRectangle *m_kbLayoutBorder;
     KbLayoutWidget *m_kbLayoutWidget;
     LockPasswordWidget *m_lockPasswordWidget;
     std::shared_ptr<User> m_user;

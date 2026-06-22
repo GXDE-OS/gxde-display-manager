@@ -2,14 +2,13 @@
 #define USERINFO_H
 
 #include <QObject>
-#include <com_deepin_daemon_accounts_user.h>
+#include <QTimer>
 
 #include <memory>
 
-#define ACCOUNT_DBUS_SERVICE "com.deepin.daemon.Accounts"
-#define ACCOUNT_DBUS_PATH "/com/deepin/daemon/Accounts"
-
-using UserInter = com::deepin::daemon::accounts::User;
+// The original GXDE greeter depends on DDE-Daemon, now sourcing from system
+// password databases, removing dde-daemon requirements...
+// 原版GXDE greeter依赖dde-daemon获取账户信息，现在我们自己读本地账户
 
 class User : public QObject
 {
@@ -88,7 +87,7 @@ class NativeUser : public User
     Q_OBJECT
 
 public:
-    NativeUser(const QString &path, QObject *parent = nullptr);
+    explicit NativeUser(const QString &userName, QObject *parent = nullptr);
 
     void setCurrentLayout(const QString &currentKBLayout) override;
 
@@ -102,7 +101,8 @@ public:
     bool isNoPasswdGrp() const override;
 
 private:
-    UserInter *m_userInter;
+    QString m_fullName;       // GECOS display name, could be empty
+    QString m_currentLayout;
 };
 
 class ADDomainUser : public User

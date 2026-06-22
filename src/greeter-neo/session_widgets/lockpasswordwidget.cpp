@@ -12,7 +12,7 @@ LockPasswordWidget::LockPasswordWidget(QWidget *parent) : QWidget(parent)
     setAttribute(Qt::WA_TranslucentBackground);
 
     QHBoxLayout *layout = new QHBoxLayout;
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
     QLabel *lockLbl = new QLabel(this);
     lockLbl->setPixmap(DHiDPIHelper::loadNxPixmap(":/img/action_icons/unlock_normal.svg"));
@@ -34,7 +34,7 @@ void LockPasswordWidget::paintEvent(QPaintEvent *event)
     QWidget::paintEvent(event);
 
     QPainter painter(this);
-    painter.setRenderHint(QPainter::HighQualityAntialiasing);
+    painter.setRenderHint(QPainter::Antialiasing);
 
     painter.setBrush(Qt::white);
     painter.setPen(Qt::NoPen);

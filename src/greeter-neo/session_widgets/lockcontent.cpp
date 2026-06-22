@@ -13,7 +13,6 @@
 LockContent::LockContent(SessionBaseModel * const model, QWidget *parent)
     : SessionBaseWindow(parent)
     , m_model(model)
-    , m_imageBlurInter(new ImageBlur("com.deepin.daemon.Accounts", "/com/deepin/daemon/ImageBlur", QDBusConnection::systemBus(), this))
     , m_virtualKB(nullptr)
     , m_translator(new QTranslator)
 {
@@ -116,7 +115,6 @@ LockContent::LockContent(SessionBaseModel * const model, QWidget *parent)
 
     connect(model, &SessionBaseModel::hasVirtualKBChanged, this, initVirtualKB);
     connect(model, &SessionBaseModel::onUserListChanged, this, &LockContent::onUserListChanged);
-    connect(m_imageBlurInter, &ImageBlur::BlurDone, this, &LockContent::onBlurDone);
 
     onCurrentUserChanged(model->currentUser());
     initVirtualKB(model->hasVirtualKB());
@@ -268,9 +266,9 @@ void LockContent::restoreMode()
 
 void LockContent::updateBackground(const QString &path)
 {
-    const QString &wallpaper = m_imageBlurInter->Get(path);
-
-    emit requestBackground(wallpaper.isEmpty() ? path : wallpaper);
+    // No dde-daemon ImageBlur; use the wallpaper as-is.
+    // 没有dde-daemon提供的ImageBlur；按原样显示壁纸
+    emit requestBackground(path);
 }
 
 void LockContent::onBlurDone(const QString &source, const QString &blur, bool status)

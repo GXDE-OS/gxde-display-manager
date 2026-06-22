@@ -22,3 +22,14 @@ system_qt_repo(
     mkspecs_dir = "/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++",
     lib_dir = "/usr/lib/x86_64-linux-gnu",
 )
+
+# Using DTK2Widget-Qt6
+system_dtk_repo = use_repo_rule("//bazel/qt:system_dtk.bzl", "system_dtk_repo")
+
+system_dtk_repo(
+    name = "dtk_system",
+    dwidget_dir = "/usr/include/dtk2/DWidget",
+    dcore_dir = "/usr/include/dtk6/DCore",
+    dlog_dir = "/usr/include/dtk6/DLog",
+    lib_dir = "/usr/lib/x86_64-linux-gnu",
+)

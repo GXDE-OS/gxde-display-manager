@@ -20,7 +20,7 @@ UserInputWidget::UserInputWidget(QWidget *parent)
     , m_passwordEdit(new DPasswdEditAnimated(this))
     , m_otherUserInput(new OtherUserInput(this))
     , m_loginBtn(new LoginButton(this))
-    , m_kbLayoutBorder(new DArrowRectangle(DArrowRectangle::ArrowTop))
+    , m_kbLayoutBorder(new NeoArrowRectangle(NeoArrowRectangle::ArrowTop))
     , m_kbLayoutWidget(new KbLayoutWidget(QStringList()))
     , m_lockPasswordWidget(new LockPasswordWidget)
 {
@@ -86,7 +86,7 @@ UserInputWidget::UserInputWidget(QWidget *parent)
 
     QVBoxLayout *layout = new QVBoxLayout;
 
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
     layout->addStretch();
@@ -111,7 +111,7 @@ UserInputWidget::UserInputWidget(QWidget *parent)
     m_kbLayoutBorder->setBackgroundColor(QColor(255, 255, 255, 255 * 0.2));
     m_kbLayoutBorder->setBorderColor(QColor(0, 0, 0, 0));
     m_kbLayoutBorder->setBorderWidth(0);
-    m_kbLayoutBorder->setMargin(0);
+    m_kbLayoutBorder->setContentsMargins(0, 0, 0, 0);
 
     m_kbLayoutBorder->setContent(m_kbLayoutWidget);
     m_kbLayoutBorder->setFixedWidth(DDESESSIONCC::PASSWDLINEEIDT_WIDTH);
@@ -145,7 +145,7 @@ UserInputWidget::UserInputWidget(QWidget *parent)
     });
 
     connect(m_kbLayoutWidget, &KbLayoutWidget::setButtonClicked, this, &UserInputWidget::requestUserKBLayoutChanged);
-    connect(m_kbLayoutWidget, &KbLayoutWidget::focusOuted, m_kbLayoutBorder, &DArrowRectangle::hide);
+    connect(m_kbLayoutWidget, &KbLayoutWidget::focusOuted, m_kbLayoutBorder, &NeoArrowRectangle::hide);
 
     refreshLanguage();
     refreshAvatarPosition();

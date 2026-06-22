@@ -4,15 +4,13 @@
 #include "public_func.h"
 #include "constants.h"
 
-#include <com_deepin_daemon_accounts.h>
-#include <com_deepin_daemon_logined.h>
-
 #include <QJsonArray>
 #include <QObject>
 #include <memory>
 
-using AccountsInter = com::deepin::daemon::Accounts;
-using LoginedInter = com::deepin::daemon::Logined;
+// dde-daemon removed, the user lists relys on it, so we modified the
+// way of getting users list that comes from vendored backend, not daemon
+// dde-daemon依赖删掉了，原来从daemon获取的用户列表改为自行获取
 
 class User;
 class SessionBaseModel;
@@ -55,8 +53,6 @@ protected:
 
 protected:
     SessionBaseModel* m_model;
-    AccountsInter *   m_accountsInter;
-    LoginedInter*     m_loginedInter;
     uint              m_lastLogoutUid;
     uint              m_currentUserUid;
     std::list<uint>   m_loginUserList;

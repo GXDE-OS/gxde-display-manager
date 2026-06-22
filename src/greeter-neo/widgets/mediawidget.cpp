@@ -51,7 +51,7 @@ void MediaWidget::initUI()
     m_volumeNums->hide();
 
     QVBoxLayout *volumeLayout = new QVBoxLayout;
-    volumeLayout->setMargin(0);
+    volumeLayout->setContentsMargins(0, 0, 0, 0);
     volumeLayout->setSpacing(0);
     volumeLayout->addStretch();
     volumeLayout->addWidget(m_volumeNums, 0 , Qt::AlignHCenter);
@@ -59,7 +59,7 @@ void MediaWidget::initUI()
     volumeLayout->addWidget(m_volumeBtn);
 
     QHBoxLayout *mainlayout = new QHBoxLayout;
-    mainlayout->setMargin(0);
+    mainlayout->setContentsMargins(0, 0, 0, 0);
     mainlayout->setSpacing(0);
 
     mainlayout->addStretch();
@@ -179,7 +179,7 @@ bool MediaWidget::eventFilter(QObject *watched, QEvent *event)
         if (!e)
             break;
 
-        const int delta = e->delta() / 60;
+        const int delta = e->angleDelta().y() / 60;
 
         m_lastVolumeNums += double(delta) / 100;
 

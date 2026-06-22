@@ -82,8 +82,10 @@ namespace SDDM {
 
     QString Greeter::greeterPathForQt(int qtVersion)
     {
-        const QString suffix = qtVersion == 5 ? QString() : QStringLiteral("-qt%1").arg(qtVersion);
-        return QStringLiteral(BIN_INSTALL_DIR "/gxdm-greeter%1").arg(suffix);
+        Q_UNUSED(qtVersion)
+        // Use neo greeter frontend
+        // 使用崭新的greeter前端
+        return QStringLiteral(BIN_INSTALL_DIR "/gxdm-greeter-neo");
     }
 
     bool Greeter::start() {

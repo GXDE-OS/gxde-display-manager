@@ -53,7 +53,7 @@ signals:
 public slots:
     void OnlyMeChecked(bool checked);
 protected:
-    void enterEvent(QEvent* event);
+    void enterEvent(QEnterEvent* event);
     void leaveEvent(QEvent* event);
 
 private:

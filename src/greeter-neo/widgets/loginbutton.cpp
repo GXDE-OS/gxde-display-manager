@@ -18,7 +18,7 @@ LoginButton::LoginButton(QWidget *parent)
     setObjectName("LoginButton");
 
     QHBoxLayout *layout = new QHBoxLayout;
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
     layout->addStretch();
@@ -47,7 +47,7 @@ void LoginButton::setIcon(const QString &icon)
     emit iconChanged(icon);
 }
 
-void LoginButton::enterEvent(QEvent *event)
+void LoginButton::enterEvent(QEnterEvent *event)
 {
     setIcon(":/img/nopassword_login_hover.svg");
     return QWidget::enterEvent(event);

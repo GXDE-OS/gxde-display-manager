@@ -2,6 +2,14 @@
 #include "sessionbasemodel.h"
 #include "userinfo.h"
 
+#include "src/backend/users/users.h"
+
+#include <QFile>
+#include <QProcess>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QTextStream>
+
 #include <grp.h>
 #include <libintl.h>
 #include <pwd.h>
@@ -42,10 +50,8 @@ static qint64 get_power_image_size()
 AuthInterface::AuthInterface(SessionBaseModel *const model, QObject *parent)
     : QObject(parent)
     , m_model(model)
-    , m_accountsInter(new AccountsInter(ACCOUNT_DBUS_SERVICE, ACCOUNT_DBUS_PATH, QDBusConnection::systemBus(), this))
-    , m_loginedInter(new LoginedInter(ACCOUNT_DBUS_SERVICE, "/com/deepin/daemon/Logined", QDBusConnection::systemBus(), this))
     , m_lastLogoutUid(0)
-    , m_loginUserList(0)
+    , m_currentUserUid(0)
 {
 
 }
@@ -79,6 +85,14 @@ void AuthInterface::onUserAdded(const QString &user)
 {
     std::shared_ptr<User> user_ptr(new NativeUser(user));
     user_ptr->setisLogind(isLogined(user_ptr->uid()));
+
+    // Select the first enumerated use
+    // Legacy way is to get the info. from daemon LockService
+    // Todo: update the logic
+    // 选第一个用户，本来是走daemon LockService的，后期再说
+    if (m_model->currentUser().get() == nullptr)
+        m_model->setCurrentUser(user_ptr);
+
     m_model->userAdd(user_ptr);
 }
 
@@ -96,24 +110,19 @@ void AuthInterface::onUserRemove(const QString &user)
 
 void AuthInterface::initData()
 {
-    onUserListChanged(m_accountsInter->userList());
-    onLoginUserListChanged(m_loginedInter->userList());
-    onLastLogoutUserChanged(m_loginedInter->lastLogoutUser());
+    gxdm::backend::Users users;
+    for (const auto &entry : users.GetUserList()) {
+        onUserAdded(QString::fromStdString(entry.first));
+    }
+
     checkPowerInfo();
     checkVirtualKB();
 }
 
 void AuthInterface::initDBus()
 {
-    m_accountsInter->setSync(true);
-    m_loginedInter->setSync(true);
-
-    connect(m_accountsInter, &AccountsInter::UserListChanged, this, &AuthInterface::onUserListChanged, Qt::QueuedConnection);
-    connect(m_accountsInter, &AccountsInter::UserAdded, this, &AuthInterface::onUserAdded, Qt::QueuedConnection);
-    connect(m_accountsInter, &AccountsInter::UserDeleted, this, &AuthInterface::onUserRemove, Qt::QueuedConnection);
-
-    connect(m_loginedInter, &LoginedInter::LastLogoutUserChanged, this, &AuthInterface::onLastLogoutUserChanged);
-    connect(m_loginedInter, &LoginedInter::UserListChanged, this, &AuthInterface::onLoginUserListChanged);
+    // No dde-daemon needed here
+    // 这个，不需要了
 }
 
 void AuthInterface::onLastLogoutUserChanged(uint uid)
@@ -240,7 +249,7 @@ void AuthInterface::checkSwap()
         while (!stream.atEnd()) {
             const std::pair<bool, qint64> result =
                 checkIsPartitionType(stream.readLine().simplified().split(
-                    " ", QString::SplitBehavior::SkipEmptyParts));
+                    " ", Qt::SkipEmptyParts));
             qint64 image_size{ get_power_image_size() };
 
             if (result.first) {

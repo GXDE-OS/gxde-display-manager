@@ -66,7 +66,7 @@ void ControlWidget::initUI()
     m_powerBtn->setHoverPic(":/img/bottom_actions/shutdown_hover.svg");
     m_powerBtn->setPressPic(":/img/bottom_actions/shutdown_press.svg");
 
-    m_mainLayout->setMargin(0);
+    m_mainLayout->setContentsMargins(0, 0, 0, 0);
     m_mainLayout->setSpacing(26);
     m_mainLayout->addStretch();
     m_mainLayout->addWidget(m_virtualKBBtn, 0, Qt::AlignBottom);

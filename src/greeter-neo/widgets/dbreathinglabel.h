@@ -37,9 +37,9 @@ class DBreathingLabel: public QLabel
     Q_OBJECT
     Q_PROPERTY(int alpha READ alpha WRITE setAlpha)
 public:
-    DBreathingLabel(QWidget *parent=0, Qt::WindowFlags f = 0);
+    DBreathingLabel(QWidget *parent=0, Qt::WindowFlags f = Qt::WindowFlags());
     DBreathingLabel(const QString & text, QWidget * parent = 0,
-                    Qt::WindowFlags f = 0);
+                    Qt::WindowFlags f = Qt::WindowFlags());
     ~DBreathingLabel();
     void setColor(QColor color);
 

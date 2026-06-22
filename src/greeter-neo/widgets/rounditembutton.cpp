@@ -101,7 +101,7 @@ void RoundItemButton::initUI() {
     m_itemText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     QVBoxLayout *mainLayout = new QVBoxLayout;
-    mainLayout->setMargin(0);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addSpacing(10);
     mainLayout->addWidget(m_itemIcon);
     mainLayout->setAlignment(m_itemIcon, Qt::AlignHCenter);
@@ -120,7 +120,7 @@ void RoundItemButton::initUI() {
 //    m_itemText->setGraphicsEffect(nameShadow);
 }
 
-void RoundItemButton::enterEvent(QEvent* event)
+void RoundItemButton::enterEvent(QEnterEvent* event)
 {
     Q_UNUSED(event)
 

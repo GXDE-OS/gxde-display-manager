@@ -55,13 +55,13 @@ void SessionBaseWindow::initUI()
     m_leftBottomLayout = new QHBoxLayout;
     m_rightBottomLayout = new QHBoxLayout;
 
-    m_centerLayout->setMargin(0);
+    m_centerLayout->setContentsMargins(0, 0, 0, 0);
     m_centerLayout->setSpacing(0);
 
-    m_leftBottomLayout->setMargin(0);
+    m_leftBottomLayout->setContentsMargins(0, 0, 0, 0);
     m_leftBottomLayout->setSpacing(0);
 
-    m_rightBottomLayout->setMargin(0);
+    m_rightBottomLayout->setContentsMargins(0, 0, 0, 0);
     m_rightBottomLayout->setSpacing(0);
 
     QFrame *bottomWidget = new QFrame;
@@ -79,7 +79,7 @@ void SessionBaseWindow::initUI()
     m_scrollArea->setWidget(centerWidget);
 
     QHBoxLayout *bottomLayout = new QHBoxLayout;
-    bottomLayout->setMargin(0);
+    bottomLayout->setContentsMargins(0, 0, 0, 0);
     bottomLayout->setSpacing(0);
 
     bottomLayout->addLayout(m_leftBottomLayout);

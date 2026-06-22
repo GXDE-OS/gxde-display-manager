@@ -6,7 +6,8 @@
 #include <QObject>
 #include <memory>
 
-#include <com_deepin_sessionmanager.h>
+// dde-daemon com.deepin.SessionManager coupling removed (login greeter has no
+// lock-screen coordination).
 
 class SessionBaseModel : public QObject
 {
@@ -95,8 +96,6 @@ signals:
     void allowShowUserSwitchButtonChanged(bool allowShowUserSwitchButton);
 
 private:
-    com::deepin::SessionManager *m_sessionManagerInter;
-
     bool m_hasVirtualKB;
     bool m_hasSwap;
     bool m_isShow;

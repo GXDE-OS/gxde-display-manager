@@ -27,8 +27,9 @@
 #include "constants.h"
 #include "sessionbasemodel.h"
 
+#include "src/backend/sessions/sessions.h"
+
 #include <QApplication>
-#include <QDesktopWidget>
 #include <QDebug>
 #include <QLabel>
 #include <QFile>
@@ -62,11 +63,14 @@ SessionWidget::SessionWidget(QWidget *parent)
     : QFrame(parent)
     , m_currentSessionIndex(0)
     , m_frameDataBind(FrameDataBind::Instance())
-    , m_sessionModel(new QLightDM::SessionsModel(this))
 {
-//    setStyleSheet("QFrame {"
-//                  "background-color: red;"
-//                  "}");
+    // Replacing DDE-Daemon: Discover installed sessions
+    // 代替DDE-Daemon: 发现安装的session
+    gxdm::backend::Sessions sessions;
+    for (const std::string &key : sessions.GetSessionNameList()) {
+        m_sessionKeys << QString::fromStdString(key);
+    }
+
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     loadSessionList();
 
@@ -94,12 +98,12 @@ SessionWidget::~SessionWidget()
 
 const QString SessionWidget::currentSessionName() const
 {
-    return m_sessionModel->data(m_sessionModel->index(m_currentSessionIndex), QLightDM::SessionsModel::KeyRole).toString();
+    return m_sessionKeys.value(m_currentSessionIndex);
 }
 
 const QString SessionWidget::currentSessionKey() const
 {
-    return m_sessionModel->data(m_sessionModel->index(m_currentSessionIndex), QLightDM::SessionsModel::KeyRole).toString();
+    return m_sessionKeys.value(m_currentSessionIndex);
 }
 
 void SessionWidget::show()
@@ -141,7 +145,7 @@ void SessionWidget::show()
 
 int SessionWidget::sessionCount() const
 {
-    return m_sessionModel->rowCount(QModelIndex());
+    return m_sessionKeys.size();
 }
 
 const QString SessionWidget::lastSessionName() const
@@ -150,7 +154,7 @@ const QString SessionWidget::lastSessionName() const
     setting.beginGroup("User");
     const QString &session = setting.value("XSession").toString();
 
-    return session.isEmpty() ? m_sessionModel->data(m_sessionModel->index(0), QLightDM::SessionsModel::KeyRole).toString() : session;
+    return session.isEmpty() ? m_sessionKeys.value(0) : session;
 }
 
 void SessionWidget::switchToUser(const QString &userName)
@@ -222,10 +226,10 @@ void SessionWidget::onSessionButtonClicked()
 
 int SessionWidget::sessionIndex(const QString &sessionName)
 {
-    const int count = m_sessionModel->rowCount(QModelIndex());
+    const int count = m_sessionKeys.size();
     Q_ASSERT(count);
     for (int i(0); i != count; ++i)
-        if (!sessionName.compare(m_sessionModel->data(m_sessionModel->index(i), QLightDM::SessionsModel::KeyRole).toString(), Qt::CaseInsensitive))
+        if (!sessionName.compare(m_sessionKeys.value(i), Qt::CaseInsensitive))
             return i;
 
     // NOTE: The current session does not exist
@@ -282,10 +286,10 @@ void SessionWidget::chooseSession()
 void SessionWidget::loadSessionList()
 {
     // add sessions button
-    const int count = m_sessionModel->rowCount(QModelIndex());
+    const int count = m_sessionKeys.size();
     for (int i(0); i != count; ++i)
     {
-        const QString &session_name = m_sessionModel->data(m_sessionModel->index(i), QLightDM::SessionsModel::KeyRole).toString();
+        const QString &session_name = m_sessionKeys.value(i);
         const QString &session_icon = session_standard_icon_name(session_name);
         const QString normalIcon = QString(":/img/sessions_icon/%1_normal.svg").arg(session_icon);
         const QString hoverIcon = QString(":/img/sessions_icon/%1_hover.svg").arg(session_icon);
