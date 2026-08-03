@@ -150,7 +150,10 @@ namespace SDDM {
             return;
         }
 
-        Q_ASSERT(getuid() == 0);
+        // Opening a session requires root; pure authentication (no session set,
+        // e.g. the in-session screen locker verifying its own user) may run
+        // unprivileged -- pam_unix delegates to the setuid unix_chkpwd helper.
+        Q_ASSERT(m_session->path().isEmpty() || getuid() == 0);
         if (!m_backend->authenticate()) {
             authenticated(QString());
 
