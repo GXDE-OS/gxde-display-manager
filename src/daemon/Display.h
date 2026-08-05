@@ -91,6 +91,7 @@ namespace SDDM {
 
         void startSocketServerAndGreeter();
         void handleAutologinFailure();
+        void removeDisplayManagerSession();
 
         DisplayServerType m_displayServerType = X11DisplayServerType;
 
@@ -102,6 +103,7 @@ namespace SDDM {
 
         QString m_passPhrase;
         QString m_sessionName;
+        QString m_displayManagerSessionName;
         QString m_reuseSessionId;
 
         Auth *m_auth { nullptr };

@@ -295,6 +295,8 @@ namespace SDDM {
         if (!m_started)
             return;
 
+        removeDisplayManagerSession();
+
         // stop the greeter
         m_greeter->stop();
 
@@ -431,8 +433,9 @@ namespace SDDM {
         env.insert(session.additionalEnv());
 
         env.insert(QStringLiteral("PATH"), mainConfig.Users.DefaultPath.get());
+        m_displayManagerSessionName = QStringLiteral("Session%1").arg(daemonApp->newSessionId());
         env.insert(QStringLiteral("XDG_SEAT_PATH"), daemonApp->displayManager()->seatPath(seat()->name()));
-        env.insert(QStringLiteral("XDG_SESSION_PATH"), daemonApp->displayManager()->sessionPath(QStringLiteral("Session%1").arg(daemonApp->newSessionId())));
+        env.insert(QStringLiteral("XDG_SESSION_PATH"), daemonApp->displayManager()->sessionPath(m_displayManagerSessionName));
         env.insert(QStringLiteral("DESKTOP_SESSION"), session.desktopSession());
         if (!session.desktopNames().isEmpty())
             env.insert(QStringLiteral("XDG_CURRENT_DESKTOP"), session.desktopNames());
@@ -479,6 +482,10 @@ namespace SDDM {
             } else {
                 if (qobject_cast<XorgDisplayServer *>(m_displayServer))
                     m_auth->setCookie(qobject_cast<XorgDisplayServer *>(m_displayServer)->cookie());
+
+                if (!m_displayManagerSessionName.isEmpty()) {
+                    daemonApp->displayManager()->AddSession(m_displayManagerSessionName, seat()->name(), m_auth->user());
+                }
             }
 
             // save last user and last session
@@ -522,6 +529,8 @@ namespace SDDM {
     }
 
     void Display::slotHelperFinished(Auth::HelperExitStatus status) {
+        removeDisplayManagerSession();
+
         // Don't restart greeter and display server unless sddm-helper exited
         // with an internal error or the user session finished successfully,
         // we want to avoid greeter from restarting when an authentication
@@ -546,6 +555,17 @@ namespace SDDM {
         qDebug() << "Session started" << success;
         if (success) {
             m_greeter->stop();
+        } else {
+            removeDisplayManagerSession();
         }
+    }
+
+    void Display::removeDisplayManagerSession() {
+        if (m_displayManagerSessionName.isEmpty()) {
+            return;
+        }
+
+        daemonApp->displayManager()->RemoveSession(m_displayManagerSessionName);
+        m_displayManagerSessionName.clear();
     }
 }
