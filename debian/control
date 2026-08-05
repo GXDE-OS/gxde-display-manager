@@ -1,0 +1,45 @@
+Source: gxde-display-manager-se
+Section: x11
+Priority: optional
+Maintainer: CharOfString <root@charofstring.cc>
+Build-Depends: debhelper-compat (= 13),
+               bazel-bootstrap | bazelisk | bazel,
+               qt6-base-dev,
+               qt6-base-dev-tools,
+               qt6-declarative-dev,
+               qt6-svg-dev,
+               qt6-l10n-tools,
+               libdtk2widget6-dev,
+               libdtk6core-dev,
+               libdtk6log-dev,
+               libpam0g-dev,
+               libx11-dev,
+               libxau-dev,
+               libxcb1-dev,
+               libxcursor-dev,
+               libxext-dev,
+               libxfixes-dev,
+               libxi-dev,
+               libxkbcommon-dev,
+               libxrandr-dev,
+               libxtst-dev,
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+Homepage: https://github.com/GXDE-OS/gxde-display-manager
+
+Package: gxdm
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         adduser,
+         dbus,
+         debconf (>= 0.5) | debconf-2.0,
+         x11-common,
+         xauth,
+         xkb-data,
+         xserver-xorg | xserver,
+Recommends: libpam-systemd
+Provides: x-display-manager
+Description: GXDE Display Manager
+ GXDE Display Manager (GXDM) is a fork of SDDM that is specially designed for
+ GXDE OS, aiming to provide an out-of-box login manager + greeter experience.

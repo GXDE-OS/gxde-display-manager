@@ -833,3 +833,13 @@ build/*
 .claude/*
 .codex/*
 .gemini/*
+
+# ---> Debian packaging build artifacts
+/debian/.debhelper/
+/debian/.bazel-root/
+/debian/gxdm/
+/debian/gxdm-dbgsym/
+/debian/files
+/debian/*.debhelper
+/debian/*.substvars
+/debian/*.log

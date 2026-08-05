@@ -1,0 +1,5 @@
+gxde-display-manager-se (1.0.0-gxde1) unstable; urgency=medium
+
+  * Initial Debian packaging.
+
+ -- CharOfString <root@charofstring.cc>  Thu, 06 Aug 2026 02:15:02 +0800
