@@ -811,6 +811,7 @@ CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
 build/*
+!./build-deb
 
 # ---> Bazel
 # gitignore template for Bazel build system
