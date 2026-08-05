@@ -6,6 +6,7 @@ export DH_VERBOSE = 1
 BAZEL ?= bazel
 BAZEL_ROOT := $(CURDIR)/debian/.bazel-root
 BAZEL_STARTUP := --output_user_root=$(BAZEL_ROOT)
+BAZEL_OPTS := --repo_contents_cache=
 
 %:
 	dh $@
@@ -13,17 +14,17 @@ BAZEL_STARTUP := --output_user_root=$(BAZEL_ROOT)
 override_dh_auto_configure:
 
 override_dh_auto_build:
-	$(BAZEL) $(BAZEL_STARTUP) build //:gxdm-dist
+	$(BAZEL) $(BAZEL_STARTUP) build $(BAZEL_OPTS) //:gxdm-dist
 
 override_dh_auto_test:
 
 override_dh_auto_install:
 	mkdir -p debian/gxdm
-	tar -xf "$$($(BAZEL) $(BAZEL_STARTUP) info bazel-bin)/gxdm-dist.tar" \
+	tar -xf "$$($(BAZEL) $(BAZEL_STARTUP) info $(BAZEL_OPTS) bazel-bin)/gxdm-dist.tar" \
 	    -C debian/gxdm
 
 override_dh_auto_clean:
-	-$(BAZEL) $(BAZEL_STARTUP) clean --expunge
+	-$(BAZEL) $(BAZEL_STARTUP) clean $(BAZEL_OPTS) --expunge
 	rm -rf $(BAZEL_ROOT)
 	rm -rf debian/gxdm
 
