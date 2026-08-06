@@ -97,6 +97,7 @@ namespace SDDM {
 
         bool m_relogin { true };
         bool m_started { false };
+        bool m_stopping { false };
 
         int m_terminalId = 0;
         int m_sessionTerminalId = 0;
@@ -105,6 +106,7 @@ namespace SDDM {
         QString m_sessionName;
         QString m_displayManagerSessionName;
         QString m_reuseSessionId;
+        QString m_logindSessionId;
 
         Auth *m_auth { nullptr };
         DisplayServer *m_displayServer { nullptr };

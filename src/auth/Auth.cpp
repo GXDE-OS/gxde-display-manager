@@ -218,19 +218,23 @@ namespace SDDM {
     }
 
     void Auth::Private::childExited(int exitCode, QProcess::ExitStatus exitStatus) {
+        HelperExitStatus helperStatus = HELPER_OTHER_ERROR;
+
         if (exitStatus != QProcess::NormalExit) {
             qWarning("Auth: sddm-helper (%s) crashed (exit code %d)",
                      qPrintable(child->arguments().join(QLatin1Char(' '))),
-                     HelperExitStatus(exitStatus));
+                     exitCode);
             Q_EMIT qobject_cast<Auth*>(parent())->error(child->errorString(), ERROR_INTERNAL);
+        } else if (exitCode >= HELPER_SUCCESS && exitCode <= HELPER_TTY_ERROR) {
+            helperStatus = static_cast<HelperExitStatus>(exitCode);
         }
 
-        if (exitCode == HELPER_SUCCESS)
+        if (helperStatus == HELPER_SUCCESS)
             qDebug() << "Auth: sddm-helper exited successfully";
         else
-            qWarning("Auth: sddm-helper exited with %d", exitCode);
+            qWarning("Auth: sddm-helper exited with %d (mapped to %d)", exitCode, helperStatus);
 
-        Q_EMIT qobject_cast<Auth*>(parent())->finished((Auth::HelperExitStatus)exitCode);
+        Q_EMIT qobject_cast<Auth*>(parent())->finished(helperStatus);
     }
 
     void Auth::Private::childError(QProcess::ProcessError error) {
@@ -303,6 +307,10 @@ namespace SDDM {
 
     bool Auth::isActive() const {
         return d->child->state() != QProcess::NotRunning;
+    }
+
+    qint64 Auth::helperProcessId() const {
+        return d->child->processId();
     }
 
     void Auth::insertEnvironment(const QProcessEnvironment &env) {

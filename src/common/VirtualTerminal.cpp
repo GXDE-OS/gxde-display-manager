@@ -196,6 +196,31 @@ out:
             return vt;
         }
 
+        void resetVt(int vt) {
+            if (vt <= 0)
+                return;
+
+            const QString ttyString = path(vt);
+            const int fd = open(qPrintable(ttyString), O_RDWR | O_NOCTTY);
+            if (fd < 0) {
+                qWarning("Failed to open %s for reset: %s", qPrintable(ttyString), strerror(errno));
+                return;
+            }
+            auto closeFd = qScopeGuard([fd] {
+                close(fd);
+            });
+
+            vt_mode mode { };
+            mode.mode = VT_AUTO;
+            if (ioctl(fd, VT_SETMODE, &mode) < 0)
+                qWarning("Failed to reset VT %d to automatic mode: %s", vt, strerror(errno));
+
+            if (currentVt() == vt && ioctl(fd, KDSETMODE, KD_TEXT) < 0)
+                qWarning("Failed to reset VT %d to text mode: %s", vt, strerror(errno));
+            else
+                qDebug() << "Reset VT" << vt;
+        }
+
         void jumpToVt(int vt, bool vt_auto) {
             qDebug() << "Jumping to VT" << vt;
 

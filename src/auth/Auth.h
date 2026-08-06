@@ -103,6 +103,7 @@ namespace SDDM {
          * True if an authentication or session is in progress
          */
         bool isActive() const;
+        qint64 helperProcessId() const;
 
         /**
         * If starting a session, you will probably want to provide some basic env variables for the session.

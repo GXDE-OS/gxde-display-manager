@@ -34,10 +34,12 @@
 #include <QDebug>
 #include <QFile>
 #include <QStandardPaths>
+#include <QThread>
 #include <QTimer>
 #include <QLocalSocket>
 
 #include <pwd.h>
+#include <signal.h>
 #include <unistd.h>
 #include <sys/time.h>
 
@@ -58,6 +60,57 @@ static int s_ttyFailures = 0;
 #define STRINGIFY(x) #x
 
 namespace SDDM {
+    static QString logindSessionForHelper(qint64 helperPid) {
+        if (helperPid <= 0 || !Logind::isAvailable()) {
+            return QString();
+        }
+
+        // When using logind, first record session ID, so that it is possible to terminate later
+        OrgFreedesktopLogin1ManagerInterface manager(Logind::serviceName(), Logind::managerPath(), QDBusConnection::systemBus());
+        auto sessionPathReply = manager.GetSessionByPID(static_cast<uint>(helperPid));
+        sessionPathReply.waitForFinished();
+
+        if (sessionPathReply.isError()) {
+            qDebug() << "No logind session found for helper" << helperPid << sessionPathReply.error().message();
+            return QString();
+        }
+
+        OrgFreedesktopLogin1SessionInterface session(Logind::serviceName(), sessionPathReply.value().path(), QDBusConnection::systemBus());
+        return session.id();
+    }
+
+    static bool logindSessionExists(OrgFreedesktopLogin1ManagerInterface &manager, const QString &sessionId) {
+        auto reply = manager.GetSession(sessionId);
+        reply.waitForFinished();
+        return !reply.isError();
+    }
+
+    static void terminateLogindSession(const QString &sessionId) {
+        if (sessionId.isEmpty() || !Logind::isAvailable())
+            return;
+
+        OrgFreedesktopLogin1ManagerInterface manager(Logind::serviceName(), Logind::managerPath(), QDBusConnection::systemBus());
+        qInfo() << "Terminating logind session" << sessionId;
+        auto terminateReply = manager.TerminateSession(sessionId);
+        terminateReply.waitForFinished();
+        if (terminateReply.isError()) {
+            qWarning() << "Failed to terminate logind session" << sessionId << terminateReply.error().message();
+            return;
+        }
+
+        for (int attempt = 0; attempt < 20; ++attempt) {
+            if (!logindSessionExists(manager, sessionId))
+                return;
+            QThread::msleep(100);
+        }
+
+        qWarning() << "Logind session" << sessionId << "still exists; killing remaining processes";
+        auto killReply = manager.KillSession(sessionId, QStringLiteral("all"), SIGKILL);
+        killReply.waitForFinished();
+        if (killReply.isError())
+            qWarning() << "Failed to kill remaining processes in logind session" << sessionId << killReply.error().message();
+    }
+
     bool isTtyInUse(const QString &desiredTty) {
         if (Logind::isAvailable()) {
             OrgFreedesktopLogin1ManagerInterface manager(Logind::serviceName(), Logind::managerPath(), QDBusConnection::systemBus());
@@ -308,15 +361,23 @@ namespace SDDM {
 
     void Display::stop() {
         // check flag
-        if (!m_started)
+        if (!m_started || m_stopping)
             return;
 
+        m_stopping = true;
+
+        if (m_logindSessionId.isEmpty())
+            m_logindSessionId = logindSessionForHelper(m_auth->helperProcessId());
+        terminateLogindSession(m_logindSessionId);
+        m_logindSessionId.clear();
         removeDisplayManagerSession();
 
         // stop the greeter
         m_greeter->stop();
 
         m_auth->stop();
+
+        VirtualTerminal::resetVt(m_sessionTerminalId);
 
         // stop socket server
         m_socketServer->stop();
@@ -328,6 +389,7 @@ namespace SDDM {
 
         // reset flag
         m_started = false;
+        m_stopping = false;
 
         // emit signal
         emit stopped();
@@ -414,6 +476,7 @@ namespace SDDM {
         }
 
         m_reuseSessionId = QString();
+        m_logindSessionId.clear();
 
         if (Logind::isAvailable() && mainConfig.Users.ReuseSession.get()) {
             OrgFreedesktopLogin1ManagerInterface manager(Logind::serviceName(), Logind::managerPath(), QDBusConnection::systemBus());
@@ -570,6 +633,11 @@ namespace SDDM {
     void Display::slotSessionStarted(bool success) {
         qDebug() << "Session started" << success;
         if (success) {
+            m_logindSessionId = logindSessionForHelper(m_auth->helperProcessId());
+            if (m_logindSessionId.isEmpty())
+                qWarning() << "Could not determine logind session for helper" << m_auth->helperProcessId();
+            else
+                qInfo() << "User session is managed by logind session" << m_logindSessionId;
             m_greeter->stop();
         } else {
             removeDisplayManagerSession();

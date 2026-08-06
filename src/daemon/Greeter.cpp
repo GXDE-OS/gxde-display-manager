@@ -93,6 +93,8 @@ namespace SDDM {
         if (m_started)
             return false;
 
+        m_stopping = false;
+
         // If no theme is given, use the default theme of the default greeter version
         const int themeQtVersion = m_themePath.isEmpty() ? (QT_VERSION >> 16) : m_metadata->qtVersion();
         QString greeterPath = greeterPathForQt(themeQtVersion);
@@ -249,9 +251,11 @@ namespace SDDM {
     }
 
     void Greeter::stop() {
-        // check flag
-        if (!m_started)
+        // Also abort when still running.
+        if (!m_started && !isRunning())
             return;
+
+        m_stopping = true;
 
         // log message
         qDebug() << "Greeter stopping...";
@@ -315,8 +319,11 @@ namespace SDDM {
     }
 
     void Greeter::onHelperFinished(Auth::HelperExitStatus status) {
+        const bool expectedStop = m_stopping;
+
         // reset flag
         m_started = false;
+        m_stopping = false;
 
         // log message
         qDebug() << "Greeter stopped." << status;
@@ -325,11 +332,14 @@ namespace SDDM {
         m_auth->deleteLater();
         m_auth = nullptr;
 
+        if (expectedStop)
+            return;
+
         if (status == Auth::HELPER_DISPLAYSERVER_ERROR) {
             Q_EMIT displayServerFailed();
         } else if (status == Auth::HELPER_TTY_ERROR) {
             Q_EMIT ttyFailed();
-        } else if (status == Auth::HELPER_SESSION_ERROR) {
+        } else {
             Q_EMIT failed();
         }
     }

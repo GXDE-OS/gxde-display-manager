@@ -67,6 +67,7 @@ namespace SDDM {
 
     private:
         bool m_started { false };
+        bool m_stopping { false };
 
         Display * const m_display { nullptr };
         QString m_socket;

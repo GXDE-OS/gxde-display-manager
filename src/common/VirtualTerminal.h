@@ -27,6 +27,7 @@ namespace SDDM {
         QString path(int vt);
         int currentVt();
         int setUpNewVt();
+        void resetVt(int vt);
         void jumpToVt(int vt, bool vt_auto);
     }
 }
