@@ -300,8 +300,9 @@ void LockContent::toggleVirtualKB()
 
 void LockContent::updateVirtualKBPosition()
 {
-    const QPoint point = mapToParent(QPoint((width() - m_virtualKB->width()) / 2, height() - m_virtualKB->height() - 50));
-    m_virtualKB->move(point);
+    const int x = qMax(0, (width() - m_virtualKB->width()) / 2);
+    const int y = qMax(0, height() - m_virtualKB->height() - 50);
+    m_virtualKB->move(x, y);
 }
 
 void LockContent::onUserListChanged(QList<std::shared_ptr<User> > list)

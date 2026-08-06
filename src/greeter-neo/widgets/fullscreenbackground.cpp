@@ -35,11 +35,25 @@
 #include <QCryptographicHash>
 #include <QWindow>
 
+namespace {
+
+bool isX11Platform()
+{
+    return QGuiApplication::platformName().contains(QLatin1String("xcb"));
+}
+
+}
+
 FullscreenBackground::FullscreenBackground(QWidget *parent)
     : QWidget(parent)
     , m_fadeOutAni(new QVariantAnimation(this))
 {
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint);
+    Qt::WindowFlags flags = Qt::WindowStaysOnTopHint;
+    if (isX11Platform())
+        flags |= Qt::X11BypassWindowManagerHint;
+    else
+        flags |= Qt::FramelessWindowHint;
+    setWindowFlags(flags);
 
     m_fadeOutAni->setEasingCurve(QEasingCurve::InOutCubic);
     m_fadeOutAni->setDuration(1000);
@@ -93,6 +107,14 @@ void FullscreenBackground::updateBackground(const QString &file)
 void FullscreenBackground::setScreen(QScreen *screen)
 {
     updateScreen(screen);
+
+    // Wayland compositors place fullscreen surfaces by their associated output,
+    // not by the X11-style global position of the widget.
+    if (screen && !isX11Platform()) {
+        winId();
+        if (QWindow *window = windowHandle())
+            window->setScreen(screen);
+    }
 }
 
 void FullscreenBackground::setContentVisible(bool contentVisible)
@@ -129,24 +151,16 @@ void FullscreenBackground::paintEvent(QPaintEvent *e)
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     const float current_ani_value = m_fadeOutAni->currentValue().toFloat();
 
-    const QRect trueRect(QPoint(0, 0), QSize(size() * devicePixelRatioF()));
-
     // 绘制纯黑背景，避免出现壁纸设置错误导致控件与白色背景融为一体的问题
-    painter.fillRect(trueRect, QColor(0, 0, 0));
+    painter.fillRect(rect(), QColor(0, 0, 0));
 
-    if (!m_background.isNull()) {
-        // tr is need redraw rect, sourceRect need correct upper left corner
-        painter.drawPixmap(trueRect,
-                           m_backgroundCache,
-                           QRect(trueRect.topLeft(), trueRect.size() * m_backgroundCache.devicePixelRatioF()));
-    }
+    if (!m_background.isNull())
+        painter.drawPixmap(rect(), m_backgroundCache);
 
     if (!m_fakeBackground.isNull()) {
         // draw background
         painter.setOpacity(current_ani_value);
-        painter.drawPixmap(trueRect,
-                           m_fakeBackgroundCache,
-                           QRect(trueRect.topLeft(), trueRect.size() * m_fakeBackgroundCache.devicePixelRatioF()));
+        painter.drawPixmap(rect(), m_fakeBackgroundCache);
         painter.setOpacity(1);
     }
 }
@@ -201,7 +215,7 @@ void FullscreenBackground::showEvent(QShowEvent *event)
             updateScreen(w->screen());
         }
 
-        connect(w, &QWindow::screenChanged, this, &FullscreenBackground::updateScreen);
+        connect(w, &QWindow::screenChanged, this, &FullscreenBackground::updateScreen, Qt::UniqueConnection);
     }
 
     return QWidget::showEvent(event);
@@ -232,10 +246,12 @@ void FullscreenBackground::updateScreen(QScreen *screen)
 
     if (m_screen) {
         disconnect(m_screen, &QScreen::geometryChanged, this, &FullscreenBackground::updateGeometry);
+        disconnect(m_screen, &QScreen::logicalDotsPerInchChanged, this, &FullscreenBackground::updateGeometry);
     }
 
     if (screen) {
         connect(screen, &QScreen::geometryChanged, this, &FullscreenBackground::updateGeometry);
+        connect(screen, &QScreen::logicalDotsPerInchChanged, this, &FullscreenBackground::updateGeometry);
     }
 
     m_screen = screen;
@@ -246,5 +262,15 @@ void FullscreenBackground::updateScreen(QScreen *screen)
 
 void FullscreenBackground::updateGeometry()
 {
-    setGeometry(m_screen->geometry());
+    if (!m_screen)
+        return;
+
+    if (isX11Platform())
+        setGeometry(m_screen->geometry());
+    else
+        resize(m_screen->geometry().size());
+
+    m_backgroundCache = pixmapHandle(m_background);
+    m_fakeBackgroundCache = pixmapHandle(m_fakeBackground);
+    update();
 }

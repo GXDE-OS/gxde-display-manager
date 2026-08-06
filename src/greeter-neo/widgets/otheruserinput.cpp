@@ -4,13 +4,16 @@
 #include "keyboardmonitor.h"
 #include "public_func.h"
 
+#include <QGuiApplication>
 #include <QVBoxLayout>
 
 OtherUserInput::OtherUserInput(QWidget *parent)
     : QFrame(parent)
     , m_capslockMonitor(KeyboardMonitor::instance())
 {
-    m_capslockMonitor->start(QThread::LowestPriority);
+    if (QGuiApplication::platformName().contains(QLatin1String("xcb"))
+            && !m_capslockMonitor->isRunning())
+        m_capslockMonitor->start(QThread::LowestPriority);
 
     initUI();
     initConnect();

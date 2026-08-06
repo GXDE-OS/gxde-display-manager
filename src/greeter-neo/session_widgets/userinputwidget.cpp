@@ -17,7 +17,7 @@ UserInputWidget::UserInputWidget(QWidget *parent)
     : QWidget(parent)
     , m_userAvatar(new UserAvatar(this))
     , m_nameLbl(new QLabel(this))
-    , m_passwordEdit(new DPasswdEditAnimated(this))
+    , m_passwordEdit(new GXDE::DPasswdEditAnimatedSE(this))
     , m_otherUserInput(new OtherUserInput(this))
     , m_loginBtn(new LoginButton(this))
     , m_kbLayoutBorder(new NeoArrowRectangle(NeoArrowRectangle::ArrowTop))
@@ -66,7 +66,7 @@ UserInputWidget::UserInputWidget(QWidget *parent)
     m_passwordEdit->setFocusPolicy(Qt::StrongFocus);
     // FIXME: do not work in qss
     m_passwordEdit->invalidMessage()->setStyleSheet("#InvalidMessage{color: #f9704f;}");
-    updateStyle(":/skin/dpasswdeditanimated.qss", m_passwordEdit);
+    updateStyle(":/skin/dpasswdeditanimatedse.qss", m_passwordEdit);
 
     m_passwordEdit->lineEdit()->installEventFilter(this);
     m_otherUserInput->installEventFilter(this);
@@ -121,11 +121,11 @@ UserInputWidget::UserInputWidget(QWidget *parent)
     m_otherUserInput->setFixedWidth(DDESESSIONCC::PASSWDLINEEIDT_WIDTH);
     m_otherUserInput->setFixedHeight(DDESESSIONCC::PASSWDLINEEDIT_HEIGHT * 2);
 
-    connect(m_passwordEdit, &DPasswdEditAnimated::keyboardButtonClicked, this, &UserInputWidget::toggleKBLayoutWidget);
+    connect(m_passwordEdit, &GXDE::DPasswdEditAnimatedSE::keyboardButtonClicked, this, &UserInputWidget::toggleKBLayoutWidget);
     connect(m_passwordEdit->lineEdit(), &QLineEdit::textChanged, this, [=] (const QString &value) {
         FrameDataBind::Instance()->updateValue("Password", value);
     });
-    connect(m_passwordEdit, &DPasswdEditAnimated::submit, this, [=] (const QString &passwd) {
+    connect(m_passwordEdit, &GXDE::DPasswdEditAnimatedSE::submit, this, [=] (const QString &passwd) {
         if (passwd.isEmpty()) return;
 
         emit requestAuthUser(passwd);

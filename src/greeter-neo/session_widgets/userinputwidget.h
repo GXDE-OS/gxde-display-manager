@@ -3,9 +3,9 @@
 
 #include <QWidget>
 #include <QLabel>
-#include <DPasswdEditAnimated>
 #include <QPushButton>
 #include <functional>
+#include "dpasswdeditanimatedse.h"
 #include "neoarrowrectangle.h"
 
 #include "useravatar.h"
@@ -75,7 +75,7 @@ private:
 private:
     UserAvatar *m_userAvatar;
     QLabel *m_nameLbl;
-    DPasswdEditAnimated *m_passwordEdit;
+    GXDE::DPasswdEditAnimatedSE *m_passwordEdit;
     OtherUserInput *m_otherUserInput;
     LoginButton *m_loginBtn;
     NeoArrowRectangle *m_kbLayoutBorder;

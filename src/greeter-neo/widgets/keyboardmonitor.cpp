@@ -181,31 +181,31 @@ KeyboardMonitor *KeyboardMonitor::instance()
 
 bool KeyboardMonitor::isCapslockOn()
 {
-    bool result;
     unsigned int n = 0;
     static Display* d = gxdmX11Display();
+    if (!d)
+        return false;
 
     XkbGetIndicatorState(d, XkbUseCoreKbd, &n);
-    result = (n & 0x01) != 0;
-
-    return result;
+    return (n & 0x01) != 0;
 }
 
 bool KeyboardMonitor::isNumlockOn()
 {
-    bool result;
     unsigned int n = 0;
     static Display* d = gxdmX11Display();
+    if (!d)
+        return false;
 
     XkbGetIndicatorState(d, XkbUseCoreKbd, &n);
-    result = (n & 0x02) != 0;
-
-    return result;
+    return (n & 0x02) != 0;
 }
 
 bool KeyboardMonitor::setNumlockStatus(const bool &on)
 {
     Display* d = gxdmX11Display();
+    if (!d)
+        return false;
 
     XKeyboardState x;
     XGetKeyboardControl(d, &x);
@@ -232,6 +232,9 @@ bool KeyboardMonitor::setNumlockStatus(const bool &on)
 void KeyboardMonitor::run()
 {
     Display* display = XOpenDisplay(NULL);
+    if (!display)
+        return;
+
     int event, error;
 
     if (!XQueryExtension(display, "XInputExtension", &xi2_opcode, &event, &error)) {

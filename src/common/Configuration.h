@@ -37,8 +37,7 @@ namespace SDDM {
         enum NumState { NUM_NONE, NUM_SET_ON, NUM_SET_OFF };
 
         //  Name                   Type         Default value                                   Description
-        // TODO: Change default to x11-user in a future release
-        Entry(DisplayServer,       QString,     _S("x11"),                                      _S("Which display server should be used.\n"
+        Entry(DisplayServer,       QString,     _S("wayland"),                                  _S("Which display server should be used.\n"
                                                                                                    "Valid values are: x11, x11-user, wayland. Wayland support is experimental"));
         Entry(HaltCommand,         QString,     _S(HALT_COMMAND),                               _S("Halt command"));
         Entry(RebootCommand,       QString,     _S(REBOOT_COMMAND),                             _S("Reboot command"));
@@ -47,7 +46,7 @@ namespace SDDM {
                                                                                                    "NOTE: Currently ignored if autologin is enabled."));
         Entry(InputMethod,         QString,     QStringLiteral("qtvirtualkeyboard"),                   _S("Input method module"));
         Entry(Namespaces,          QStringList, QStringList(),                                  _S("Comma-separated list of Linux namespaces for user session to enter"));
-        Entry(GreeterEnvironment,  QStringList, QStringList(),                                  _S("Comma-separated list of environment variables to be set"));
+        Entry(GreeterEnvironment,  QStringList, {_S("LIBSEAT_BACKEND=logind")},                 _S("Comma-separated list of environment variables to be set"));
         //  Name   Entries (but it's a regular class again)
         Section(Theme,
             Entry(ThemeDir,            QString,     _S(DATA_INSTALL_DIR "/themes"),             _S("Theme directory path"));
@@ -78,7 +77,7 @@ namespace SDDM {
         );
 
         Section(Wayland,
-            Entry(CompositorCommand,   QString,     _S("weston --shell=kiosk"),                 _S("Path of the Wayland compositor to execute when starting the greeter"));
+            Entry(CompositorCommand,   QString,     QString(),                                  _S("Wayland compositor command used to start the greeter. Empty selects automatically"));
             Entry(SessionDir,          QStringList, {_S("/usr/local/share/wayland-sessions"),
                                                      _S("/usr/share/wayland-sessions")},        _S("Comma-separated list of directories containing available Wayland sessions"));
             Entry(SessionCommand,      QString,     _S(WAYLAND_SESSION_COMMAND),                _S("Path to a script to execute when starting the desktop session"));

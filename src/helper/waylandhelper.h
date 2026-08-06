@@ -43,6 +43,7 @@ private:
     QProcess *m_serverProcess = nullptr;
     QProcess *m_greeterProcess = nullptr;
     WaylandSocketWatcher * const m_watcher;
+    bool m_stopping = false;
 
     bool startProcess(const QString &cmd, QProcess **p = nullptr);
 };

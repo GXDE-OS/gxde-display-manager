@@ -44,7 +44,7 @@ OPTIONS
 	* `x11-user`: X server running as unprivileged user.
 	* `wayland`: Wayland compositor as unprivileged user. (Experimental)
 
-	Default value is "x11".
+	Default value is "wayland".
 	For `x11-user` you might need to configure Xorg.wrap(1).
 
 `HaltCommand=`
@@ -169,8 +169,11 @@ The `UserAuthFile=` option was removed, the file is always created as
 [Wayland] section:
 
 `CompositorCommand=`
-        Path of the compositor to execute when starting the greeter.
-        Default value is "weston --shell=kiosk".
+        Command used to start the compositor for the greeter.
+        An explicitly configured command is always used. When empty, GXDM uses
+        gxde-wlcom if it is available in PATH; otherwise it uses
+        /usr/bin/weston --shell=kiosk-shell.so.
+        Default value is empty.
 
 `SessionDir=`
 	Comma-separated list of directories containing session files.

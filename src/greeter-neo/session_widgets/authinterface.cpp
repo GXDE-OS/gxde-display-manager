@@ -5,6 +5,7 @@
 #include "src/backend/users/users.h"
 
 #include <QFile>
+#include <QGuiApplication>
 #include <QProcess>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -236,6 +237,11 @@ void AuthInterface::checkPowerInfo()
 
 void AuthInterface::checkVirtualKB()
 {
+    if (!QGuiApplication::platformName().contains(QLatin1String("xcb"))) {
+        m_model->setHasVirtualKB(false);
+        return;
+    }
+
     m_model->setHasVirtualKB(QProcess::execute("which", QStringList() << "onboard") == 0);
 }
 

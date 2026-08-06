@@ -61,6 +61,7 @@ void stopProcess(QProcess *process)
 
 void WaylandHelper::stop()
 {
+    m_stopping = true;
     m_watcher->stop();
     stopProcess(m_greeterProcess);
     stopProcess(m_serverProcess);
@@ -79,10 +80,10 @@ bool WaylandHelper::startProcess(const QString &cmd, QProcess **p)
     });
     qDebug() << "Starting Wayland process" << cmd << m_environment.value(QStringLiteral("USER"));
     connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            process, [](int exitCode, QProcess::ExitStatus exitStatus) {
+            process, [this](int exitCode, QProcess::ExitStatus exitStatus) {
         qDebug() << "wayland compositor finished" << exitCode << exitStatus;
-        if (exitCode != 0 || exitStatus != QProcess::NormalExit)
-            QCoreApplication::instance()->quit();
+        if (!m_stopping)
+            Q_EMIT failed();
     });
 
     auto args = QProcess::splitCommand(cmd);
@@ -116,9 +117,15 @@ void WaylandHelper::startGreeter(const QString &cmd)
         qInfo() << m_greeterProcess->readAllStandardOutput();
     });
     connect(m_greeterProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            m_greeterProcess, [](int exitCode, QProcess::ExitStatus exitStatus) {
+            m_greeterProcess, [this](int exitCode, QProcess::ExitStatus exitStatus) {
         qDebug() << "wayland greeter finished" << exitCode << exitStatus;
-        QCoreApplication::instance()->quit();
+        if (m_stopping)
+            return;
+
+        if (exitCode != 0 || exitStatus != QProcess::NormalExit)
+            Q_EMIT failed();
+        else
+            QCoreApplication::instance()->quit();
     });
     if (m_watcher->status() == WaylandSocketWatcher::Started) {
         m_environment.insert(QStringLiteral("WAYLAND_DISPLAY"), m_watcher->socketName());

@@ -30,6 +30,7 @@ _COMMON_MOC_HDRS = [
     "session_widgets/userinputwidget.h",
     "widgets/controlwidget.h",
     "widgets/dbreathinglabel.h",
+    "widgets/dpasswdeditanimatedse.h",
     "widgets/errortooltip.h",
     "widgets/fullscreenbackground.h",
     "widgets/kblayoutwidget.h",

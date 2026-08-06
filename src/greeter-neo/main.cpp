@@ -33,6 +33,7 @@
 #include <DApplication>
 #include <QtCore/QTranslator>
 #include <QLabel>
+#include <QApplication>
 #include <QProcess>
 #include <QThread>
 #include <QSettings>
@@ -41,7 +42,7 @@
 #include <DLog>
 
 #include <cstdlib>
-
+#include <memory>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/Xlib-xcb.h>
@@ -179,16 +180,31 @@ static void set_auto_QT_SCALE_FACTOR() {
 
 int main(int argc, char* argv[])
 {
+    QByteArray requestedPlatform = qgetenv("QT_QPA_PLATFORM");
+    for (int i = 1; requestedPlatform.isEmpty() && i + 1 < argc; ++i) {
+        if (QByteArray(argv[i]) == "-platform")
+            requestedPlatform = argv[i + 1];
+    }
+    const bool useX11 = requestedPlatform.startsWith("xcb")
+        || requestedPlatform.startsWith("dxcb")
+        || (requestedPlatform.isEmpty() && !qEnvironmentVariableIsSet("WAYLAND_DISPLAY"));
+
     // load dpi settings
-    if (!QFile::exists("/etc/lightdm/deepin/qt-theme.ini")) {
+    if (useX11 && !QFile::exists("/etc/lightdm/deepin/qt-theme.ini")) {
         set_auto_QT_SCALE_FACTOR();
     }
-    else {
+    else if (useX11) {
         DApplication::customQtThemeConfigPath("/etc/lightdm/");
     }
 
-    DApplication::loadDXcbPlugin();
-    DApplication a(argc, argv);
+    std::unique_ptr<QApplication> application;
+    if (useX11) {
+        DApplication::loadDXcbPlugin();
+        application = std::make_unique<DApplication>(argc, argv);
+    } else {
+        application = std::make_unique<QApplication>(argc, argv);
+    }
+    QApplication &a = *application;
     qApp->setOrganizationName("deepin");
     qApp->setApplicationName("lightdm-deepin-greeter");
     qApp->setApplicationVersion("2015.1.0");
@@ -207,9 +223,11 @@ int main(int argc, char* argv[])
     SessionBaseModel *model = new SessionBaseModel(SessionBaseModel::AuthType::LightdmType);
     GreeterWorker *worker = new GreeterWorker(model, greeterSocket);
 
-    QObject::connect(model, &SessionBaseModel::authFinished, model, [=] {
-        set_rootwindow_cursor();
-    });
+    if (useX11) {
+        QObject::connect(model, &SessionBaseModel::authFinished, model, [=] {
+            set_rootwindow_cursor();
+        });
+    }
 
     PropertyGroup *property_group = new PropertyGroup(worker);
 
@@ -224,7 +242,10 @@ int main(int argc, char* argv[])
         QObject::connect(loginFrame, &LoginWindow::requestSetLayout, worker, &GreeterWorker::setLayout);
         QObject::connect(worker, &GreeterWorker::requestUpdateBackground, loginFrame, static_cast<void (LoginWindow::*)(const QString &)>(&LoginWindow::updateBackground));
         QObject::connect(loginFrame, &LoginWindow::destroyed, property_group, &PropertyGroup::removeObject);
-        loginFrame->show();
+        if (useX11)
+            loginFrame->show();
+        else
+            loginFrame->showFullScreen();
         return loginFrame;
     };
 

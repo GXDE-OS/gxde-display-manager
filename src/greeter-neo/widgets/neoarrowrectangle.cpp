@@ -31,6 +31,24 @@
 
 DWIDGET_USE_NAMESPACE
 
+namespace {
+
+QRect movementBounds(const QWidget *widget, const QPoint &anchor)
+{
+    if (widget->parentWidget())
+        return widget->parentWidget()->rect();
+
+    QScreen *targetScreen = QGuiApplication::screenAt(anchor);
+    if (!targetScreen)
+        targetScreen = widget->screen();
+    if (!targetScreen)
+        targetScreen = QGuiApplication::primaryScreen();
+
+    return targetScreen ? targetScreen->geometry() : QRect();
+}
+
+}
+
 NeoArrowRectangle::NeoArrowRectangle(ArrowDirection direction, QWidget * parent) :
     QWidget(parent),m_arrowDirection(direction)
 {
@@ -453,7 +471,7 @@ QPainterPath NeoArrowRectangle::getBottomCornerPath()
 
 void NeoArrowRectangle::verticalMove(int x, int y)
 {
-    QRect dRect = qApp->primaryScreen()->geometry();
+    const QRect dRect = movementBounds(this, QPoint(x, y));
     qreal delta = shadowBlurRadius() - shadowDistance();
 
     int lRelativeY = y - dRect.y() - (height() - delta) / 2;
@@ -479,7 +497,7 @@ void NeoArrowRectangle::verticalMove(int x, int y)
     case ArrowLeft:
         QWidget::move(x, absoluteY);
         break;
-    case ArrowBottom:
+    case ArrowRight:
         QWidget::move(x - width(), absoluteY);
         break;
     default:
@@ -489,7 +507,7 @@ void NeoArrowRectangle::verticalMove(int x, int y)
 
 void NeoArrowRectangle::horizontalMove(int x, int y)
 {
-    QRect dRect = qApp->primaryScreen()->geometry();
+    const QRect dRect = movementBounds(this, QPoint(x, y));
     qreal delta = shadowBlurRadius() - shadowDistance();
 
     int lRelativeX = x - dRect.x() - (width() - delta) / 2;
@@ -537,5 +555,4 @@ NeoArrowRectangle::~NeoArrowRectangle()
 {
 
 }
-
 

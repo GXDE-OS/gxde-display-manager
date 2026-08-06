@@ -33,6 +33,7 @@
 
 #include <QDebug>
 #include <QFile>
+#include <QStandardPaths>
 #include <QTimer>
 #include <QLocalSocket>
 
@@ -127,7 +128,22 @@ namespace SDDM {
         case WaylandDisplayServerType:
             m_terminalId = fetchAvailableVt();
             m_displayServer = new WaylandDisplayServer(this);
-            m_greeter->setDisplayServerCommand(mainConfig.Wayland.CompositorCommand.get());
+            {
+                QString compositorCommand = mainConfig.Wayland.CompositorCommand.get();
+                if (compositorCommand.trimmed().isEmpty()) {
+                    const QString gxdeWlcom = QStandardPaths::findExecutable(QStringLiteral("gxde-wlcom"));
+                    if (!gxdeWlcom.isEmpty()) {
+                        compositorCommand = gxdeWlcom;
+                    } else {
+                        QString weston = QStandardPaths::findExecutable(QStringLiteral("weston"));
+                        if (weston.isEmpty())
+                            weston = QStringLiteral("/usr/bin/weston");
+                        compositorCommand = weston + QStringLiteral(" --shell=kiosk-shell.so");
+                    }
+                    qInfo() << "Automatically selected Wayland greeter compositor:" << compositorCommand;
+                }
+                m_greeter->setDisplayServerCommand(compositorCommand);
+            }
             break;
         }
 
