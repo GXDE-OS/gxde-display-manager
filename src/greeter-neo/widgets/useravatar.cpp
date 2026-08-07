@@ -26,7 +26,7 @@
 #include "useravatar.h"
 #include "dthememanager.h"
 #include <QUrl>
-#include <QFile>
+#include <QImageReader>
 
 UserAvatar::UserAvatar(QWidget *parent, bool deleteable) :
     QPushButton(parent), m_deleteable(deleteable)
@@ -61,6 +61,18 @@ void UserAvatar::setIcon(const QString &iconPath, const QSize &size)
     else
         m_iconPath = iconPath;
 
+    QImageReader reader(m_iconPath);
+    reader.setAutoTransform(true);
+    m_iconImage = reader.read();
+
+    if (m_iconImage.isNull() &&
+            m_iconPath != QStringLiteral(":/img/default_avatar.png")) {
+        qWarning() << "(Frontend) Avatar: Failed to load avatar"
+        << m_iconPath << reader.errorString();
+        m_iconPath = QStringLiteral(":/img/default_avatar.png");
+        m_iconImage.load(m_iconPath);
+    }
+
     if (size.isEmpty())
         m_iconLabel->setFixedSize(NORMAL_ICON_SIZE, NORMAL_ICON_SIZE);
     else
@@ -92,16 +104,7 @@ void UserAvatar::paintEvent(QPaintEvent *)
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.setClipPath(path);
 
-    const auto ratio = devicePixelRatioF();
-    QString imgPath = m_iconPath;
-    if (ratio > 1.0)
-        imgPath.replace("icons/", "icons/bigger/");
-    if (!QFile(imgPath).exists())
-        imgPath = m_iconPath;
-
-    QImage tmpImg(imgPath);
-
-    painter.drawImage(ellipseRec, this->isEnabled() ? tmpImg : imageToGray(tmpImg));
+    painter.drawImage(ellipseRec, this->isEnabled() ? m_iconImage : imageToGray(m_iconImage));
 
     QColor penColor = m_selected ? m_borderSelectedColor : m_borderColor;
 
@@ -248,4 +251,3 @@ void UserAvatar::setColor(QColor color) {
     m_palette.setColor(QPalette::WindowText, color);
     this->setPalette(m_palette);
 }
-

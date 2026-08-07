@@ -27,6 +27,7 @@
 #define USERAVATAR_H
 
 #include <QWidget>
+#include <QImage>
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -99,6 +100,7 @@ private:
 //    AvatarDeleteButton *m_deleteButton = NULL;
     QLabel *m_iconLabel = NULL;
     QString m_iconPath = "";
+    QImage m_iconImage;
     QColor m_borderColor;
     QColor m_borderSelectedColor;
     AvatarSize m_avatarSize = AvatarNormalSize;

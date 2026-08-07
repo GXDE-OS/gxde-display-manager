@@ -1,6 +1,11 @@
 #include "userinfo.h"
 
-#include <QFile>
+#include <QDBusConnection>
+#include <QDBusInterface>
+#include <QDBusObjectPath>
+#include <QDBusReply>
+#include <QFileInfo>
+#include <QImageReader>
 #include <QUrl>
 #include <QStringList>
 #include <QTimer>
@@ -57,6 +62,68 @@ static const QString toLocalFile(const QString &path) {
     }
 
     return url.url();
+}
+
+static QString readableAvatarPath(const QString& path) {
+    const QString localPath = toLocalFile(path);
+    const QFileInfo file(localPath);
+    if (!file.isFile() || !file.isReadable()) {
+        return QString();
+    }
+
+    QImageReader reader(localPath);
+    return reader.canRead() ? localPath : QString();
+}
+
+static QString deepinAccountsAvatar(const QString& userName) {
+    QDBusInterface accounts(QStringLiteral("com.deepin.daemon.Accounts"),
+        QStringLiteral("/com/deepin/daemon/Accounts"),
+        QStringLiteral("com.deepin.daemon.Accounts"),
+        QDBusConnection::systemBus());
+
+    if (!accounts.isValid()) {
+        return QString();
+    }
+
+    const QDBusReply<QString> userPath = accounts.call(
+        QStringLiteral("FindUserByName"), userName);
+    if (!userPath.isValid() || userPath.value().isEmpty()) {
+        return QString();
+    }
+
+    QDBusInterface user(QStringLiteral("com.deepin.daemon.Accounts"),
+        userPath.value(),
+        QStringLiteral("com.deepin.daemon.Accounts.User"),
+        QDBusConnection::systemBus());
+
+    return user.isValid() ? readableAvatarPath(
+        user.property("IconFile").toString()) : QString();
+}
+
+static QString accountsServiceAvatar(const QString& userName) {
+    QDBusInterface accounts(QStringLiteral("org.freedesktop.Accounts"),
+        QStringLiteral("/org/freedesktop/Accounts"),
+        QStringLiteral("org.freedesktop.Accounts"),
+        QDBusConnection::systemBus());
+
+    if (!accounts.isValid()) {
+        return QString();
+    }
+
+    const QDBusReply<QDBusObjectPath> userPath = accounts.call(
+        QStringLiteral("FindUserByName"), userName);
+
+    if (!userPath.isValid() || userPath.value().path().isEmpty()) {
+        return QString();
+    }
+
+    QDBusInterface user(QStringLiteral("org.freedesktop.Accounts"),
+        userPath.value().path(),
+        QStringLiteral("org.freedesktop.Accounts.User"),
+        QDBusConnection::systemBus());
+
+    return user.isValid() ? readableAvatarPath(
+        user.property("IconFile").toString()) : QString();
 }
 
 User::User(QObject *parent)
@@ -189,20 +256,44 @@ QString NativeUser::displayName() const
     return m_fullName.isEmpty() ? name() : m_fullName;
 }
 
-QString NativeUser::avatarPath() const
-{
-    // Prefer the AccountsService icon, then ~/.face, then a bundled default.
-    const QString svc = QStringLiteral("/var/lib/AccountsService/icons/%1").arg(m_userName);
-    if (QFile::exists(svc))
-        return svc;
-
-    struct passwd *pw = getpwnam(m_userName.toUtf8().constData());
-    if (pw && pw->pw_dir) {
-        const QString face = QString::fromLocal8Bit(pw->pw_dir) + QStringLiteral("/.face");
-        if (QFile::exists(face))
-            return face;
+QString NativeUser::avatarPath() const {
+    const QString deepinAvatar = deepinAccountsAvatar(m_userName);
+    if (!deepinAvatar.isEmpty()) {
+        qInfo() << "(Frontend) Avatar: Using Deepin Accounts avatar for"
+            << m_userName << deepinAvatar;
+        return deepinAvatar;
     }
 
+    const QString accountsAvatar = accountsServiceAvatar(m_userName);
+    if (!accountsAvatar.isEmpty()) {
+        qInfo() << "(Frontend) Avatar: Using AccountsService avatar for"
+            << m_userName << accountsAvatar;
+        return accountsAvatar;
+    }
+
+    const QString systemFace = readableAvatarPath(
+        QStringLiteral("/var/lib/AccountsService/icons/%1").arg(m_userName));
+    if (!systemFace.isEmpty()) {
+        return systemFace;
+    }
+
+    struct passwd* pw = getpwnam(m_userName.toUtf8().constData());
+    if (pw && pw->pw_dir) {
+        const QString home = QString::fromLocal8Bit(pw->pw_dir);
+        const QString faceIcon = readableAvatarPath(
+            home + QStringLiteral("/.face.icon"));
+        if (!faceIcon.isEmpty())
+            return faceIcon;
+
+        const QString face = readableAvatarPath(
+            home + QStringLiteral("/.face"));
+        if (!face.isEmpty()) {
+            return face;
+        }
+    }
+
+    qWarning() << "(Frontend) Avatar: No readable avatar found for"
+        << m_userName << "; using the default";
     return QStringLiteral(":/img/default_avatar.png");
 }
 
