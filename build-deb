@@ -141,14 +141,21 @@ auto_install_deps() {
         return
     fi
     echo "准备按 debian/control 安装构建依赖，请稍候..."
-    sudo apt-get update
+    if ! sudo apt-get update; then
+        echo ""
+        echo ">>> 警告：apt-get update 失败。"
+        echo ""
+    fi
 
     echo ""
     echo ">>> 注意：以下 apt 操作未加 -y，请仔细核对「将要安装 / 将要卸载」，"
     echo ">>>       确认不会有任何 GXDE 系统包被冲突卸载！！"
     echo ""
     # apt-get build-dep 直接解析本目录 debian/control 的 Build-Depends
-    sudo apt-get build-dep "$PROJ_ROOT"
+    if ! sudo apt-get build-dep "$PROJ_ROOT"; then
+        echo "错误：无法安装构建依赖。"
+        return 1
+    fi
     echo "构建依赖安装完成。"
 }
 
