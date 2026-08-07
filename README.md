@@ -135,6 +135,59 @@ $ systemctl status gxdm.service --no-pager
 $ sudo journalctl -u gxdm.service -b --no-pager
 ```
 
+### D-Bus API
+GXDM exposes lock-shortcut and global greeter appearance controls on the session bus. Applications should use this public endpoint:
+
+| Item | Value |
+| --- | --- |
+| Bus | Session bus |
+| Service | `top.gxde.DisplayManager` |
+| Object path | `/top/gxde/DisplayManager` |
+| Interface | `top.gxde.DisplayManager` |
+
+| Method | Description |
+| --- | --- |
+| `TryEnrollLkScr(bool enabled) -> bool` | Registers or withdraws the Meta+L GXDM lock shortcut. An existing Meta+L binding is never stolen. |
+| `LkScrStat() -> bool` | Returns whether GXDM successfully owns the Meta+L shortcut. |
+| `Show()` | Shows the GXDM lock screen. |
+| `SetCursor(string theme) -> bool` | Sets the global greeter cursor theme. The theme must already be installed. |
+| `SetWallpaperGXDEDefault() -> bool` | Restores the current GXDE default as the global greeter wallpaper. |
+| `SetWallpaperDDELockDefault() -> bool` | Uses the bundled DDE lock default background as the global greeter wallpaper. |
+| `SetWallpaper(string path) -> bool` | Sets a custom global greeter wallpaper from a local path or `file://` URL. |
+
+**Note:** the `SetWallpaper*` methods configure the login greeter, not the lock-screen wallpaper. The setting applies to every user and display and is loaded the next time the greeter starts. A custom wallpaper must be a recognized image no larger than 128 MiB. GXDM transfers it through a Unix file descriptor and copies it under `~gxdm`, so the greeter does not depend on the original user file.
+
+Examples:
+
+```bash
+# Register Meta+L
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  TryEnrollLkScr b true
+
+# Query the Meta+L state
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  LkScrStat
+
+# Set the greeter cursor theme
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  SetCursor s gxde
+
+# Set a custom greeter wallpaper
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  SetWallpaper s /absolute/path/to/wallpaper.jpg
+
+# Restore the GXDE default greeter wallpaper
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  SetWallpaperGXDEDefault
+```
+
+The GXDM daemon also owns the same service name on the system bus and exposes the internal `top.gxde.DisplayManager.System` interface. It persists global values in `~gxdm/state.conf`; custom wallpapers are accepted as Unix file descriptors rather than caller-supplied paths. This is an implementation detail of the session API and should not be called directly by regular applications.
+
 
 <!-- ROADMAP -->
 ## Roadmap

@@ -135,6 +135,59 @@ $ systemctl status gxdm.service --no-pager
 $ sudo journalctl -u gxdm.service -b --no-pager
 ```
 
+### D-Bus接口
+GXDM通过会话总线提供锁屏快捷键和全局Greeter外观设置。应用程序应使用以下公开接口：
+
+| 项目 | 值 |
+| --- | --- |
+| 总线 | Session bus |
+| 服务 | `top.gxde.DisplayManager` |
+| 对象路径 | `/top/gxde/DisplayManager` |
+| 接口 | `top.gxde.DisplayManager` |
+
+| 方法 | 说明 |
+| --- | --- |
+| `TryEnrollLkScr(bool enabled) -> bool` | 尝试注册或注销Meta+L GXDM锁屏快捷键。已有程序占用Meta+L时不会抢占。 |
+| `LkScrStat() -> bool` | 返回Meta+L是否已由GXDM成功注册。 |
+| `Show()` | 显示GXDM锁屏界面。 |
+| `SetCursor(string theme) -> bool` | 设置全局Greeter光标主题。主题必须已经安装。 |
+| `SetWallpaperGXDEDefault() -> bool` | 将全局Greeter壁纸恢复为当前GXDE默认壁纸。 |
+| `SetWallpaperDDELockDefault() -> bool` | 将全局Greeter壁纸设置为程序内置的DDE锁屏默认背景。 |
+| `SetWallpaper(string path) -> bool` | 使用本地路径或`file://` URL设置全局Greeter自定义壁纸。 |
+
+**注意：**`SetWallpaper*`设置的是登录Greeter的全局壁纸，不是锁屏壁纸。设置对所有用户和显示器生效，并在Greeter下次启动时读取。自定义图片必须是可识别的图像且不大于128 MiB；GXDM会通过Unix文件描述符将其安全复制到`~gxdm`，不保留对原始用户文件的依赖。
+
+常用调用示例：
+
+```bash
+# 注册Meta+L
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  TryEnrollLkScr b true
+
+# 查询Meta+L状态
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  LkScrStat
+
+# 设置Greeter光标主题
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  SetCursor s gxde
+
+# 设置自定义Greeter壁纸
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  SetWallpaper s /绝对路径/壁纸.jpg
+
+# 恢复GXDE默认Greeter壁纸
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  SetWallpaperGXDEDefault
+```
+
+GXDM守护进程还在system bus上拥有同名服务，其内部接口为`top.gxde.DisplayManager.System`。该接口负责把全局设置写入`~gxdm/state.conf`，其中自定义壁纸使用Unix FD而不是用户提供的路径。它是会话接口的实现细节，普通应用不应直接调用。
+
 
 <!-- ROADMAP -->
 ## 里程碑
