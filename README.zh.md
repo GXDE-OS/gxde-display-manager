@@ -168,6 +168,8 @@ $ sudo journalctl -u gxdm.service -b --no-pager
 
 本项目含有[CharOfString/samoyed-greeter](https://gitee.com/CharOfString/samoyed-greeter)的部分源码，以[GNU GENERAL PUBLIC LICENSE Version 3](https://gitee.com/CharOfString/samoyed-greeter/blob/main/LICENSE)获得许可，除非在文件头部另行说明。
 
+本项目使用[Maven Pro](https://github.com/googlefonts/mavenproFont)作为锁屏字体，其以[SIL Open Font License 1.1](https://github.com/googlefonts/mavenproFont/blob/main/OFL.txt)获得许可。
+
 
 <!-- ACKNOWLEDGMENTS -->
 ## 鸣谢

@@ -168,6 +168,8 @@ This project contains source code from GXDE `session-ui`, which could be located
 
 This project contains source code from [CharOfString/samoyed-greeter](https://gitee.com/CharOfString/samoyed-greeter). They are licensed under [GNU GENERAL PUBLIC LICENSE Version 3](https://gitee.com/CharOfString/samoyed-greeter/blob/main/LICENSE) unless specified in file header.
 
+This project uses [Maven Pro](https://github.com/googlefonts/mavenproFont) as lockscreen font, which is licensed under [SIL Open Font License 1.1](https://github.com/googlefonts/mavenproFont/blob/main/OFL.txt).
+
 
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgements
