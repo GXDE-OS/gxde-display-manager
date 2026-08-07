@@ -166,9 +166,11 @@ namespace SDDM {
         if (total == 0 || !target.commit())
             return false;
 
-        QFile::setPermissions(targetPath,
-            QFileDevice::ReadOwner | QFileDevice::WriteOwner
-                | QFileDevice::ReadGroup | QFileDevice::ReadOther);
+        if (!QFile::setPermissions(targetPath,
+                QFileDevice::ReadOwner | QFileDevice::WriteOwner
+                    | QFileDevice::ReadGroup | QFileDevice::ReadOther)) {
+            return false;
+        }
         return saveWallpaperPath(targetPath);
     }
 
