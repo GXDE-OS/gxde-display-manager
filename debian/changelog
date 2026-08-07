@@ -1,5 +1,14 @@
+gxde-display-manager-se (1.1.0-gxde1) unstable; urgency=medium
+
+  * 默认前端Greeter切换至Wayland
+  * 修复了Greeter上会话名称格式错误的问题
+  * 修复了Greeter上鼠标风格错误的问题
+  * 修复了无法配合dde-shutdown使用的问题
+
+ -- CharOfString <root@charofstring.cc>  Fri, 07 Aug 2026 15:28:11 +0800
+
 gxde-display-manager-se (1.0.0-gxde1) unstable; urgency=medium
 
-  * Initial Debian packaging.
+  * 新增Debian打包
 
  -- CharOfString <root@charofstring.cc>  Thu, 06 Aug 2026 02:15:02 +0800
