@@ -20,6 +20,7 @@ find_package(Qt6 COMPONENTS Core Gui Widgets DBus Network Xml Svg Qml REQUIRED)
 find_package(LayerShellQt REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(DTK2WIDGET REQUIRED IMPORTED_TARGET dtk2widget)
+pkg_check_modules(GSETTINGS_QT6 REQUIRED IMPORTED_TARGET gsettings-qt6)
 
 # Repo root: the lock reuses GXDM's own authenticator (src/auth + src/common).
 get_filename_component(GXDM_REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
@@ -72,6 +73,7 @@ set(NEO_INCLUDE_DIRS
 set(NEO_COMMON_LIBS
     Qt6::Core Qt6::Gui Qt6::Widgets Qt6::DBus Qt6::Network Qt6::Xml Qt6::Svg
     PkgConfig::DTK2WIDGET
+    PkgConfig::GSETTINGS_QT6
     X11 Xi Xtst Xcursor Xfixes Xrandr Xext
 )
 

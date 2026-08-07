@@ -101,7 +101,7 @@ qt_cc_library(
     ],
     copts = ["-std=c++20"],
     includes = _INCLUDES,
-    linkopts = _X11_LINKOPTS,
+    linkopts = _X11_LINKOPTS + ["-lgsettings-qt6"],
     moc_hdrs = _COMMON_MOC_HDRS,
     deps = ["//bazel/qt:dtk"],
 )

@@ -154,7 +154,11 @@ void LockContent::onCurrentUserChanged(std::shared_ptr<User> user)
 
     //TODO: refresh blur image
     QTimer::singleShot(0, this, [=] {
-        updateBackground(user->greeterBackgroundPath());
+        const QString background =
+            m_model->currentType() == SessionBaseModel::AuthType::LockType
+            ? user->greeterBackgroundPath()
+            : user->desktopBackgroundPath();
+        updateBackground(background);
     });
 }
 
@@ -221,6 +225,11 @@ void LockContent::mouseReleaseEvent(QMouseEvent *event)
 
 void LockContent::showEvent(QShowEvent *event)
 {
+    if (m_user
+        && m_model->currentType() == SessionBaseModel::AuthType::LockType) {
+        updateBackground(m_user->greeterBackgroundPath());
+    }
+
     onStatusChanged(m_model->currentModeState());
 
     return QFrame::showEvent(event);

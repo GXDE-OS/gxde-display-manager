@@ -11,6 +11,7 @@
 #include <QUrl>
 #include <QStringList>
 #include <QTimer>
+#include <QGSettings/QGSettings>
 
 #include <unistd.h>
 #include <pwd.h>
@@ -66,7 +67,7 @@ static const QString toLocalFile(const QString &path) {
     return url.url();
 }
 
-static QString readableAvatarPath(const QString& path) {
+static QString readableImagePath(const QString& path) {
     const QString localPath = toLocalFile(path);
     const QFileInfo file(localPath);
     if (!file.isFile() || !file.isReadable()) {
@@ -77,7 +78,7 @@ static QString readableAvatarPath(const QString& path) {
     return reader.canRead() ? localPath : QString();
 }
 
-static QString deepinAccountsAvatar(const QString& userName) {
+static QString deepinAccountsUserPath(const QString& userName) {
     QDBusInterface accounts(QStringLiteral("com.deepin.daemon.Accounts"),
         QStringLiteral("/com/deepin/daemon/Accounts"),
         QStringLiteral("com.deepin.daemon.Accounts"),
@@ -89,17 +90,95 @@ static QString deepinAccountsAvatar(const QString& userName) {
 
     const QDBusReply<QString> userPath = accounts.call(
         QStringLiteral("FindUserByName"), userName);
-    if (!userPath.isValid() || userPath.value().isEmpty()) {
+    return userPath.isValid() ? userPath.value() : QString();
+}
+
+static QString deepinAccountsAvatar(const QString& userName) {
+    const QString userPath = deepinAccountsUserPath(userName);
+    if (userPath.isEmpty()) {
         return QString();
     }
 
     QDBusInterface user(QStringLiteral("com.deepin.daemon.Accounts"),
-        userPath.value(),
+        userPath,
         QStringLiteral("com.deepin.daemon.Accounts.User"),
         QDBusConnection::systemBus());
 
-    return user.isValid() ? readableAvatarPath(
+    return user.isValid() ? readableImagePath(
         user.property("IconFile").toString()) : QString();
+}
+
+static QString deepinAccountsLockBackground(const QString& userName) {
+    const QString userPath = deepinAccountsUserPath(userName);
+    if (userPath.isEmpty()) {
+        return QString();
+    }
+
+    QDBusInterface user(QStringLiteral("com.deepin.daemon.Accounts"),
+        userPath,
+        QStringLiteral("com.deepin.daemon.Accounts.User"),
+        QDBusConnection::systemBus());
+    if (!user.isValid()) {
+        return QString();
+    }
+
+    QString background = readableImagePath(
+        user.property("GreeterBackground").toString());
+    if (background.isEmpty()) {
+        background = readableImagePath(
+            user.property("BackgroundFile").toString());
+    }
+    return background;
+}
+
+static QString gsettingsLockBackground() {
+    const QByteArray schema("com.deepin.dde.appearance");
+    if (!QGSettings::isSchemaInstalled(schema)) {
+        return QString();
+    }
+
+    QGSettings settings(schema);
+    const QStringList keys = settings.keys();
+    QString key;
+    if (keys.contains(QStringLiteral("backgroundUris"))) {
+        key = QStringLiteral("backgroundUris");
+    } else if (keys.contains(QStringLiteral("background-uris"))) {
+        key = QStringLiteral("background-uris");
+    } else {
+        return QString();
+    }
+
+    const QStringList backgrounds = settings.get(key).toStringList();
+    for (const QString& background : backgrounds) {
+        const QString path = readableImagePath(background);
+        if (!path.isEmpty()) {
+            return path;
+        }
+    }
+    return QString();
+}
+
+static QString lockBackgroundForUser(const QString& userName, uid_t uid) {
+    const QString accountsBackground =
+        deepinAccountsLockBackground(userName);
+    if (!accountsBackground.isEmpty()) {
+        qInfo() << "(Frontend) Lock background: Using Deepin Accounts for"
+            << userName << accountsBackground;
+        return accountsBackground;
+    }
+
+    if (uid == getuid()) {
+        const QString gsettingsBackground = gsettingsLockBackground();
+        if (!gsettingsBackground.isEmpty()) {
+            qInfo() << "(Frontend) Lock background: Using GSettings for"
+                << userName << gsettingsBackground;
+            return gsettingsBackground;
+        }
+    }
+
+    qWarning() << "(Frontend) Lock background: No usable user wallpaper for"
+        << userName << "; using the default";
+    return GxdmGreeterAppearance::ddeLockDefaultWallpaper();
 }
 
 static QString accountsServiceAvatar(const QString& userName) {
@@ -124,7 +203,7 @@ static QString accountsServiceAvatar(const QString& userName) {
         QStringLiteral("org.freedesktop.Accounts.User"),
         QDBusConnection::systemBus());
 
-    return user.isValid() ? readableAvatarPath(
+    return user.isValid() ? readableImagePath(
         user.property("IconFile").toString()) : QString();
 }
 
@@ -273,7 +352,7 @@ QString NativeUser::avatarPath() const {
         return accountsAvatar;
     }
 
-    const QString systemFace = readableAvatarPath(
+    const QString systemFace = readableImagePath(
         QStringLiteral("/var/lib/AccountsService/icons/%1").arg(m_userName));
     if (!systemFace.isEmpty()) {
         return systemFace;
@@ -282,12 +361,12 @@ QString NativeUser::avatarPath() const {
     struct passwd* pw = getpwnam(m_userName.toUtf8().constData());
     if (pw && pw->pw_dir) {
         const QString home = QString::fromLocal8Bit(pw->pw_dir);
-        const QString faceIcon = readableAvatarPath(
+        const QString faceIcon = readableImagePath(
             home + QStringLiteral("/.face.icon"));
         if (!faceIcon.isEmpty())
             return faceIcon;
 
-        const QString face = readableAvatarPath(
+        const QString face = readableImagePath(
             home + QStringLiteral("/.face"));
         if (!face.isEmpty()) {
             return face;
@@ -301,12 +380,12 @@ QString NativeUser::avatarPath() const {
 
 QString NativeUser::greeterBackgroundPath() const
 {
-    return GxdmGreeterAppearance::wallpaper();
+    return lockBackgroundForUser(m_userName, m_uid);
 }
 
 QString NativeUser::desktopBackgroundPath() const
 {
-    return greeterBackgroundPath();
+    return GxdmGreeterAppearance::wallpaper();
 }
 
 QStringList NativeUser::kbLayoutList()
@@ -362,10 +441,10 @@ QString ADDomainUser::avatarPath() const
 
 QString ADDomainUser::greeterBackgroundPath() const
 {
-    return GxdmGreeterAppearance::wallpaper();
+    return lockBackgroundForUser(m_userName, m_uid);
 }
 
 QString ADDomainUser::desktopBackgroundPath() const
 {
-    return greeterBackgroundPath();
+    return GxdmGreeterAppearance::wallpaper();
 }
