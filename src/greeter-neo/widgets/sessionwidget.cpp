@@ -304,18 +304,24 @@ void SessionWidget::loadSessionList()
         const QString &session_key = m_sessionKeys.value(i);
         const QString &session_name = m_sessionNames.value(i);
         const QString &session_icon = session_standard_icon_name(session_name);
-        const QString normalIcon = QString(":/img/sessions_icon/%1_normal.svg").arg(session_icon);
-        const QString hoverIcon = QString(":/img/sessions_icon/%1_hover.svg").arg(session_icon);
-        const QString checkedIcon = QString(":/img/sessions_icon/%1_press.svg").arg(session_icon);
+        const QString iconSuffix = session_icon == QStringLiteral("gxde-wlcom")
+            ? QStringLiteral("png")
+            : QStringLiteral("svg");
+        const QString normalIcon = QStringLiteral(":/img/sessions_icon/%1_normal.%2")
+            .arg(session_icon, iconSuffix);
+        const QString hoverIcon = QStringLiteral(":/img/sessions_icon/%1_hover.%2")
+            .arg(session_icon, iconSuffix);
+        const QString checkedIcon = QStringLiteral(":/img/sessions_icon/%1_press.%2")
+            .arg(session_icon, iconSuffix);
 
         qDebug() << "(Frontend) SessionWidget: found session:"
             << session_key << "displayed as" << session_name << session_icon;
         RoundItemButton *sbtn = new RoundItemButton(session_name, this);
         sbtn->setFixedSize(SessionButtonWidth, SessionButtonHeight);
         sbtn->setAutoExclusive(true);
-        sbtn->setProperty("normalIcon", normalIcon);
-        sbtn->setProperty("hoverIcon", hoverIcon);
-        sbtn->setProperty("checkedIcon", checkedIcon);
+        sbtn->setNormalPic(normalIcon);
+        sbtn->setHoverPic(hoverIcon);
+        sbtn->setPressPic(checkedIcon);
         sbtn->hide();
 
         connect(sbtn, &RoundItemButton::clicked, this, &SessionWidget::onSessionButtonClicked);

@@ -55,6 +55,15 @@ QString displayNameForSession(const QString &sessionKey)
     return sessionKey;
 }
 
+QString indicatorIconPath(const QString &iconName, const QString &state)
+{
+    const QString suffix = iconName == QStringLiteral("gxde-wlcom")
+        ? QStringLiteral("png")
+        : QStringLiteral("svg");
+    return QStringLiteral(":/img/sessions/%1_indicator_%2.%3")
+        .arg(iconName, state, suffix);
+}
+
 } // namespace
 
 SessionIndicator::SessionIndicator(QWidget *parent)
@@ -143,20 +152,14 @@ void SessionIndicator::hideTips()
 void SessionIndicator::setButtonImages(const QString &iconName)
 {
     QString resolvedIcon = iconName;
-    const QString normal = QStringLiteral(":/img/sessions/%1_indicator_normal.svg")
-        .arg(resolvedIcon);
-    const QString hover = QStringLiteral(":/img/sessions/%1_indicator_hover.svg")
-        .arg(resolvedIcon);
-    const QString pressed = QStringLiteral(":/img/sessions/%1_indicator_press.svg")
-        .arg(resolvedIcon);
+    const QString normal = indicatorIconPath(resolvedIcon, QStringLiteral("normal"));
+    const QString hover = indicatorIconPath(resolvedIcon, QStringLiteral("hover"));
+    const QString pressed = indicatorIconPath(resolvedIcon, QStringLiteral("press"));
 
     if (!QFile::exists(normal) || !QFile::exists(hover) || !QFile::exists(pressed))
         resolvedIcon = QStringLiteral("unknown");
 
-    m_button->setNormalPic(QStringLiteral(":/img/sessions/%1_indicator_normal.svg")
-        .arg(resolvedIcon));
-    m_button->setHoverPic(QStringLiteral(":/img/sessions/%1_indicator_hover.svg")
-        .arg(resolvedIcon));
-    m_button->setPressPic(QStringLiteral(":/img/sessions/%1_indicator_press.svg")
-        .arg(resolvedIcon));
+    m_button->setNormalPic(indicatorIconPath(resolvedIcon, QStringLiteral("normal")));
+    m_button->setHoverPic(indicatorIconPath(resolvedIcon, QStringLiteral("hover")));
+    m_button->setPressPic(indicatorIconPath(resolvedIcon, QStringLiteral("press")));
 }

@@ -24,6 +24,8 @@
  */
 
 #include <QtCore/QObject>
+#include <QFileInfo>
+#include <QPixmap>
 #include <QSvgRenderer>
 #include "rounditembutton.h"
 
@@ -169,9 +171,18 @@ void RoundItemButton::mouseReleaseEvent(QMouseEvent* e)
 bool RoundItemButton::eventFilter(QObject *watched, QEvent *event)
 {
     if (watched == m_itemIcon && event->type() == QEvent::Paint) {
-        QSvgRenderer renderer(m_currentIcon, m_itemIcon);
         QPainter painter(m_itemIcon);
-        renderer.render(&painter, m_itemIcon->rect());
+        if (QFileInfo(m_currentIcon).suffix().compare(
+                QStringLiteral("svg"), Qt::CaseInsensitive) == 0) {
+            QSvgRenderer renderer(m_currentIcon, m_itemIcon);
+            renderer.render(&painter, m_itemIcon->rect());
+        } else {
+            const QPixmap pixmap(m_currentIcon);
+            if (!pixmap.isNull()) {
+                painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+                painter.drawPixmap(m_itemIcon->rect(), pixmap, pixmap.rect());
+            }
+        }
     }
 
     return false;
