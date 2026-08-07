@@ -80,6 +80,7 @@ private:
     FrameDataBind *m_frameDataBind;
 
     QStringList m_sessionKeys;
+    QStringList m_sessionNames;
     QList<RoundItemButton *> m_sessionBtns;
 };
 

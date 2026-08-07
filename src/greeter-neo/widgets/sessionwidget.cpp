@@ -67,8 +67,13 @@ SessionWidget::SessionWidget(QWidget *parent)
     // Replacing DDE-Daemon: Discover installed sessions
     // 代替DDE-Daemon: 发现安装的session
     gxdm::backend::Sessions sessions;
+    const auto sessionTable = sessions.GetSessionHashTable();
     for (const std::string &key : sessions.GetSessionNameList()) {
         m_sessionKeys << QString::fromStdString(key);
+        const auto profile = sessionTable.find(key);
+        m_sessionNames << (profile == sessionTable.end()
+            ? QString::fromStdString(key)
+            : QString::fromStdString(profile->second.session_name));
     }
 
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -98,7 +103,7 @@ SessionWidget::~SessionWidget()
 
 const QString SessionWidget::currentSessionName() const
 {
-    return m_sessionKeys.value(m_currentSessionIndex);
+    return m_sessionNames.value(m_currentSessionIndex);
 }
 
 const QString SessionWidget::currentSessionKey() const
@@ -289,13 +294,15 @@ void SessionWidget::loadSessionList()
     const int count = m_sessionKeys.size();
     for (int i(0); i != count; ++i)
     {
-        const QString &session_name = m_sessionKeys.value(i);
+        const QString &session_key = m_sessionKeys.value(i);
+        const QString &session_name = m_sessionNames.value(i);
         const QString &session_icon = session_standard_icon_name(session_name);
         const QString normalIcon = QString(":/img/sessions_icon/%1_normal.svg").arg(session_icon);
         const QString hoverIcon = QString(":/img/sessions_icon/%1_hover.svg").arg(session_icon);
         const QString checkedIcon = QString(":/img/sessions_icon/%1_press.svg").arg(session_icon);
 
-        qDebug() << "found session: " << session_name << session_icon;
+        qDebug() << "(Frontend) SessionWidget: found session:"
+            << session_key << "displayed as" << session_name << session_icon;
         RoundItemButton *sbtn = new RoundItemButton(session_name, this);
         sbtn->setFixedSize(SessionButtonWidth, SessionButtonHeight);
         sbtn->setAutoExclusive(true);
