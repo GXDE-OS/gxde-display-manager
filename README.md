@@ -143,6 +143,7 @@ $ sudo journalctl -u gxdm.service -b --no-pager
 - [x] Add support for Wayland greeter.
 - [x] Update support for CMake.
 - [ ] Add Archlinux packaging.
+- [ ] Add support for on-screen keyboard.
 
 Please refer to [opened issues](https://gitee.com/GXDE-OS/gxde-display-manager/issues) to see those feature requested.
 

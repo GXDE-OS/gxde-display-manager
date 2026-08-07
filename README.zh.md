@@ -143,6 +143,7 @@ $ sudo journalctl -u gxdm.service -b --no-pager
 - [x] 新增Waylanbd greeter支持
 - [x] 新增CMake支持
 - [ ] 新增Archlinux打包
+- [ ] 新增屏幕键盘支持
 
 请参阅[开启的Issues](https://gitee.com/GXDE-OS/gxde-display-manager/issues)以获取当前所有请求的新功能。
 
