@@ -52,6 +52,24 @@
 DCORE_USE_NAMESPACE
 DWIDGET_USE_NAMESPACE
 
+static void enforceWaylandCursorConfig() {
+    const QByteArray variable = "QT_WAYLAND_DISABLED_INTERFACES";
+    QByteArrayList disabledInterfaces = qgetenv(
+        variable.constData()).split(',');
+    for (QByteArray &interface : disabledInterfaces) {
+        interface = interface.trimmed();
+    }
+
+    disabledInterfaces.removeAll(QByteArray());
+
+    const QByteArray cursorShapeInterface = "wp_cursor_shape_manager_v1";
+    if (!disabledInterfaces.contains(cursorShapeInterface)) {
+        disabledInterfaces.append(cursorShapeInterface);
+    }
+
+    qputenv(variable.constData(), disabledInterfaces.join(','));
+}
+
 //Load the System cursor --begin
 static XcursorImages*
 xcLoadImages(const char *image, int size) {
@@ -205,6 +223,10 @@ int main(int argc, char* argv[])
     const bool useX11 = requestedPlatform.startsWith("xcb")
         || requestedPlatform.startsWith("dxcb")
         || (requestedPlatform.isEmpty() && !qEnvironmentVariableIsSet("WAYLAND_DISPLAY"));
+
+    if (!useX11) {
+        enforceWaylandCursorConfig();
+    }
 
     // load dpi settings
     if (useX11 && !QFile::exists("/etc/lightdm/deepin/qt-theme.ini")) {
