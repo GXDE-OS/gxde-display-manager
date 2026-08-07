@@ -11,6 +11,9 @@
         <file>img/sessions_icon/fluxbox_hover.svg</file>
         <file>img/sessions_icon/fluxbox_normal.svg</file>
         <file>img/sessions_icon/fluxbox_press.svg</file>
+        <file>img/sessions_icon/gxde-wlcom_hover.svg</file>
+        <file>img/sessions_icon/gxde-wlcom_normal.svg</file>
+        <file>img/sessions_icon/gxde-wlcom_press.svg</file>
         <file>img/sessions_icon/gnome_hover.svg</file>
         <file>img/sessions_icon/gnome_normal.svg</file>
         <file>img/sessions_icon/gnome_press.svg</file>
@@ -50,6 +53,9 @@
         <file>img/sessions/fluxbox_indicator_hover.svg</file>
         <file>img/sessions/fluxbox_indicator_normal.svg</file>
         <file>img/sessions/fluxbox_indicator_press.svg</file>
+        <file>img/sessions/gxde-wlcom_indicator_hover.svg</file>
+        <file>img/sessions/gxde-wlcom_indicator_normal.svg</file>
+        <file>img/sessions/gxde-wlcom_indicator_press.svg</file>
         <file>img/sessions/gnome_indicator_hover.svg</file>
         <file>img/sessions/gnome_indicator_normal.svg</file>
         <file>img/sessions/gnome_indicator_press.svg</file>

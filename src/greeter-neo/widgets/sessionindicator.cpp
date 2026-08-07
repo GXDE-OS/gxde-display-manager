@@ -26,6 +26,7 @@ QString standardIconName(const QString &sessionName)
         QStringLiteral("deepin"),
         QStringLiteral("enlightenment"),
         QStringLiteral("fluxbox"),
+        QStringLiteral("gxde-wlcom"),
         QStringLiteral("gnome"),
         QStringLiteral("lxde"),
         QStringLiteral("plasma"),

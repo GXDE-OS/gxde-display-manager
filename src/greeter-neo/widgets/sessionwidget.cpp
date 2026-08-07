@@ -44,6 +44,7 @@ const QString session_standard_icon_name(const QString &realName)
     const QStringList standard_icon_list = {
         "deepin",
         "fluxbox",
+        "gxde-wlcom",
         "gnome",
         "plasma",
         "ubuntu",
