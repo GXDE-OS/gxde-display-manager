@@ -43,7 +43,7 @@ GXDE Display Manager（简称`GXDM`）基于`SDDM`开发，专为GXDE OS打造�
 ### 工具链
 #### 构建时
 * 必要
-  * Bazel/Bzlmod
+  * Bazel/Bzlmod或CMake 3.16+
   * PAM, X11, XCB, XCursor, XFixes, XInput, XKB, XRandR, XTest
   * 一个兼容C++ 20的编译器
   * **Qt6**: Core, DBus, Gui, Widgets, Network, Qml, Quick, Svg, Xml
@@ -68,14 +68,20 @@ GXDE Display Manager（简称`GXDM`）基于`SDDM`开发，专为GXDE OS打造�
 ### 前置条件
 在开始前，请安装所有上述依赖包。
 
-本程序使用Bazel构建，在编译前请确保Bazel在系统上可用。如果需要安装Bazel，可以阅读[安装Bazel](https://bazel.build/install)。
+本程序同时支持Bazel和CMake构建。使用Bazel前请确保其在系统上可用；安装方法参见[安装Bazel](https://bazel.build/install)。
 
-### 从源码构建（手动）
+### 从源码构建（Bazel）
 ```bash
 $ bazel build --spawn_strategy=local //:gxdm-dist
 ```
 
 生成的部署归档位于`bazel-bin/gxdm-dist.tar`。
+
+### 从源码构建（CMake）
+```bash
+$ cmake -S . -B build-cmake -DBUILD_WITH_QT6=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+$ cmake --build build-cmake --parallel
+```
 
 
 ### 从源码构建（自动DEB打包）

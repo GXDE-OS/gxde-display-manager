@@ -1,39 +1,40 @@
-## Installation instructions
+## CMake installation instructions
 
-SDDM uses CMake to configure and build the project.
+GXDM requires CMake 3.16 or newer, a C++20 compiler, Qt 6 and DTK2Widget-Qt6.
+The complete package dependency list is maintained in `debian/control`.
 
-  1. From the project root, create a build directory: `mkdir build`
-  2. From the build directory, run cmake to the project root. Eg: `cd build && cmake ..`
-  3. To build, run `make`.
-  4. To install, run `make install`.
+Configure and build from the project root:
 
-CMake accepts a number of standard and extra arguments:
+```sh
+cmake -S . -B build-cmake \
+    -DBUILD_WITH_QT6=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build build-cmake --parallel
+```
 
-  - BUILD_MAN_PAGES, pass -DBUILD_MAN_PAGES=ON to build man pages
-  - ENABLE_JOURNALD, pass -DENABLE_JOURNALD=OFF
-    to disable logging to the journal
+The default build includes the daemon, the Qt 6 QML greeter, the GXDE greeter,
+the GXDE lock screen and all helper executables. Stage the complete install tree
+before installing it onto the host:
 
-By default, a debug build is created. To build for production, use
-`cmake -DCMAKE_BUILD_TYPE=Release`.
+```sh
+DESTDIR="$PWD/build-cmake/stage" cmake --install build-cmake
+```
 
-To see all the possible arguments, run `cmake -L ..`.
-For documentation on standard CMake variables, see:
-  http://www.cmake.org/cmake/help/v3.0/manual/cmake-variables.7.html
+After inspecting `build-cmake/stage`, install it with:
 
-### Post-installation steps
+```sh
+sudo cmake --install build-cmake
+```
 
-By default, SDDM runs as its own user. An `sddm` user needs to be created, with
-its home set to `/var/lib/sddm` by default.
+Useful project options include:
 
-### Dependencies
+- `BUILD_MAN_PAGES=ON` builds the manual pages (requires `rst2man`).
+- `ENABLE_JOURNALD=OFF` disables journald logging.
+- `BUILD_NEO_GREETER=OFF` excludes the GXDE greeter and lock screen.
+- `BUILD_WITH_QT6=OFF -DBUILD_NEO_GREETER=OFF` enables the legacy Qt 5 build.
+- `INSTALL_PAM_CONFIGURATION=OFF` skips installation of PAM configuration.
 
-SDDM depends on PAM for authorization and XCB to communicate with the X server.
-Apart from other things, it also depends on Qt for the user interface and event
-loop management.
-SDDM can optionally make use of logind (the systemd login manager API), or
-ConsoleKit2, or upower to enable support for suspend, hibernate etc.
-In order to build the man pages, you will need `rst2man` installed. It is
-provided by the python `docutils` package
-
-Note that SDDM makes use of C++11 features for a modern and clean codebase,
-therefore it needs a recent version of GCC to compile (4.7 at least).
+Run `cmake -S . -B build-cmake -LAH` to list all cached options. CMake installs
+files directly and does not produce a Debian package; use `./build-deb -d` for
+the package-managed installation path.

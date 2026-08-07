@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.16)
 
 project(SDDM)
 
@@ -18,11 +18,17 @@ option(BUILD_MAN_PAGES "Build man pages" OFF)
 option(ENABLE_JOURNALD "Enable logging to journald" ON)
 option(NO_SYSTEMD "Disable systemd support" OFF)
 option(USE_ELOGIND "Use elogind instead of logind" OFF)
-option(BUILD_WITH_QT6 "Build with Qt 6" OFF)
+option(BUILD_WITH_QT6 "Build with Qt 6" ON)
+option(BUILD_NEO_GREETER "Build the GXDE greeter and lock screen" ON)
 option(INSTALL_PAM_CONFIGURATION "Install PAM configuration files" ON)
 
-set(CMAKE_CXX_STANDARD 17)
+if(BUILD_NEO_GREETER AND NOT BUILD_WITH_QT6)
+    message(FATAL_ERROR "BUILD_NEO_GREETER requires BUILD_WITH_QT6=ON")
+endif()
+
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 

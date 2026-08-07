@@ -14,6 +14,7 @@ set(TRANSLATION_FILES
     gl.ts
     hi_IN.ts
     he.ts
+    hsb.ts
     hu.ts
     ie.ts
     is.ts
