@@ -39,6 +39,7 @@ namespace SDDM {
         LoginSucceeded,
         LoginFailed,
         InformationMessage,
+        LastSession,
     };
 
     enum Capability {

@@ -214,6 +214,11 @@ namespace SDDM {
                     emit informationMessage(message);
                 }
                 break;
+                case DaemonMessages::LastSession: {
+                    QString lastSession;
+                    input >> lastSession;
+                }
+                break;
                 default: {
                     // log message
                     qWarning() << "Unknown message received from daemon.";

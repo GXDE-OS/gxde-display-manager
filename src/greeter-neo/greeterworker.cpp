@@ -7,6 +7,7 @@
 #include <QLocalSocket>
 #include <QDataStream>
 #include <QDebug>
+#include <QFileInfo>
 
 namespace {
 // Mirrors SDDM::GreeterMessages / DaemonMessages (src/common/Messages.h)
@@ -27,6 +28,7 @@ enum class DaemonMessages : quint32 {
     LoginSucceeded,
     LoginFailed,
     InformationMessage,
+    LastSession,
 };
 
 // SDDM::Session::Type
@@ -38,6 +40,25 @@ enum SddmSessionType : quint32 {
 
 // SDDM::Capability
 constexpr quint32 kCapSuspend = 0x0004;
+
+QString sessionKeyForDesktopFile(const QString& desktopFile) {
+    if (desktopFile.isEmpty()) {
+        return QString();
+    }
+
+    const QString desktopName = QFileInfo(desktopFile).completeBaseName();
+    gxdm::backend::Sessions sessions;
+    const auto table = sessions.GetSessionHashTable();
+    for (const auto &entry : table) {
+        const QString candidate = QString::fromStdString(
+            entry.second.xdg_session_desktop);
+        if (candidate.compare(desktopName, Qt::CaseInsensitive) == 0) {
+            return QString::fromStdString(entry.first);
+        }
+    }
+
+    return QString();
+}
 }  // namespace
 
 GreeterWorker::GreeterWorker(SessionBaseModel *const model, const QString &socket, QObject *parent)
@@ -182,6 +203,22 @@ void GreeterWorker::onReadyRead()
             QString msg;
             in >> msg;
             emit m_model->authFaildMessage(msg);
+            break;
+        }
+        case DaemonMessages::LastSession: {
+            QString desktopFile;
+            in >> desktopFile;
+
+            const QString sessionKey = sessionKeyForDesktopFile(desktopFile);
+            if (!sessionKey.isEmpty()) {
+                qDebug() << "(Frontend) Restoring last session:"
+                    << desktopFile << sessionKey;
+                m_model->setSessionKey(sessionKey);
+            } else if (!desktopFile.isEmpty()) {
+                qWarning()
+                    << "(Frontend) Remembered session is no longer available:"
+                    << desktopFile;
+            }
             break;
         }
         default:

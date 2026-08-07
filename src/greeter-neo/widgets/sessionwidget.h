@@ -28,7 +28,6 @@
 
 #include <QFrame>
 #include <QList>
-#include <QSettings>
 
 
 #include "rounditembutton.h"
@@ -71,6 +70,7 @@ private slots:
 
 private:
     int sessionIndex(const QString &sessionName);
+    void selectSession(const QString &sessionKey);
     void onOtherPageChanged(const QVariant &value);
 
 private:

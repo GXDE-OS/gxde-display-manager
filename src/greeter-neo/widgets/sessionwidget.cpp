@@ -24,7 +24,6 @@
  */
 
 #include "sessionwidget.h"
-#include "constants.h"
 #include "sessionbasemodel.h"
 
 #include "src/backend/sessions/sessions.h"
@@ -34,7 +33,6 @@
 #include <QLabel>
 #include <QFile>
 #include <QButtonGroup>
-#include <QSettings>
 #include <QPropertyAnimation>
 #include <QString>
 
@@ -94,6 +92,8 @@ SessionWidget::SessionWidget(QWidget *parent)
 void SessionWidget::setModel(SessionBaseModel * const model)
 {
     m_model = model;
+    connect(m_model, &SessionBaseModel::onSessionKeyChanged,
+        this, &SessionWidget::selectSession);
 }
 
 SessionWidget::~SessionWidget()
@@ -155,10 +155,7 @@ int SessionWidget::sessionCount() const
 
 const QString SessionWidget::lastSessionName() const
 {
-    QSettings setting(DDESESSIONCC::CONFIG_FILE + m_currentUser, QSettings::IniFormat);
-    setting.beginGroup("User");
-    const QString &session = setting.value("XSession").toString();
-
+    const QString session = m_model ? m_model->sessionKey() : QString();
     return session.isEmpty() ? m_sessionKeys.value(0) : session;
 }
 
@@ -240,6 +237,15 @@ int SessionWidget::sessionIndex(const QString &sessionName)
     // NOTE: The current session does not exist
     qWarning() << "The session does not exist, using the default value.";
     return 0;
+}
+
+void SessionWidget::selectSession(const QString& sessionKey) {
+    const int index = sessionIndex(sessionKey);
+    if (index == m_currentSessionIndex) {
+        return;
+    }
+
+    m_frameDataBind->updateValue("SessionWidget", index);
 }
 
 void SessionWidget::onOtherPageChanged(const QVariant &value)

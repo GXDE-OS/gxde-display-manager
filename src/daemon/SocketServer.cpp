@@ -20,6 +20,7 @@
 
 #include "SocketServer.h"
 
+#include "Configuration.h"
 #include "DaemonApp.h"
 #include "Messages.h"
 #include "PowerManager.h"
@@ -126,6 +127,13 @@ namespace SDDM {
 
                     // send host name
                     SocketWriter(socket) << quint32(DaemonMessages::HostName) << daemonApp->hostName();
+
+                    // send last session
+                    const QString lastSession = mainConfig.Users
+                        .RememberLastSession.get()
+                            ? stateConfig.Last.Session.get()
+                            : QString();
+                    SocketWriter(socket) << quint32(DaemonMessages::LastSession) << lastSession;
 
                     // emit signal
                     emit connected();
