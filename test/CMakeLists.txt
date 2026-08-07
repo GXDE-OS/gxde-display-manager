@@ -19,3 +19,19 @@ add_executable(SessionTest ${SessionTest_SRCS})
 target_include_directories(SessionTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../src/common)
 add_test(NAME Session COMMAND SessionTest)
 target_link_libraries(SessionTest Qt${QT_MAJOR_VERSION}::Core Qt${QT_MAJOR_VERSION}::Test)
+
+if(BUILD_NEO_GREETER)
+    find_package(Qt${QT_MAJOR_VERSION} REQUIRED COMPONENTS Widgets)
+    pkg_check_modules(TEST_DTK2WIDGET REQUIRED IMPORTED_TARGET dtk2widget)
+    add_executable(VirtualKeyboardTest
+        VirtualKeyboardTest.cpp
+        ../src/greeter-neo/widgets/virtualkbinstance.cpp
+        ../src/greeter-neo/widgets/virtualkbinstance.h
+    )
+    add_test(NAME VirtualKeyboard COMMAND VirtualKeyboardTest -platform offscreen)
+    target_link_libraries(VirtualKeyboardTest PRIVATE
+        Qt${QT_MAJOR_VERSION}::Widgets
+        Qt${QT_MAJOR_VERSION}::Test
+        PkgConfig::TEST_DTK2WIDGET
+    )
+endif()

@@ -5,8 +5,6 @@
 #include "src/backend/users/users.h"
 
 #include <QFile>
-#include <QGuiApplication>
-#include <QProcess>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTextStream>
@@ -237,12 +235,9 @@ void AuthInterface::checkPowerInfo()
 
 void AuthInterface::checkVirtualKB()
 {
-    if (!QGuiApplication::platformName().contains(QLatin1String("xcb"))) {
-        m_model->setHasVirtualKB(false);
-        return;
-    }
-
-    m_model->setHasVirtualKB(QProcess::execute("which", QStringList() << "onboard") == 0);
+    // The greeter owns its virtual keyboard, so it works without an external
+    // X11 window or input injection helper on both X11 and Wayland.
+    m_model->setHasVirtualKB(true);
 }
 
 void AuthInterface::checkSwap()

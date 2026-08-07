@@ -103,13 +103,11 @@ LockContent::LockContent(SessionBaseModel * const model, QWidget *parent)
         emit requestSetLayout(m_user, value);
     });
 
-    auto initVirtualKB = [&] (bool hasvirtualkb) {
+    auto initVirtualKB = [this] (bool hasvirtualkb) {
         if (hasvirtualkb && !m_virtualKB) {
-            connect(&VirtualKBInstance::Instance(), &VirtualKBInstance::initFinished, this, [&] {
-                m_virtualKB = VirtualKBInstance::Instance().virtualKBWidget();
-                m_controlWidget->setVirtualKBVisible(true);
-            }, Qt::QueuedConnection);
-            VirtualKBInstance::Instance().init();
+            m_virtualKB = new VirtualKBInstance(this);
+            m_virtualKB->hide();
+            m_controlWidget->setVirtualKBVisible(true);
         }
     };
 
@@ -225,6 +223,8 @@ void LockContent::showEvent(QShowEvent *event)
 void LockContent::hideEvent(QHideEvent *event)
 {
     releaseAllKeyboard();
+    if (m_virtualKB)
+        m_virtualKB->hide();
 
     return QFrame::hideEvent(event);
 }
@@ -281,17 +281,9 @@ void LockContent::onBlurDone(const QString &source, const QString &blur, bool st
 
 void LockContent::toggleVirtualKB()
 {
-    if (!m_virtualKB) {
-        VirtualKBInstance::Instance();
-        QTimer::singleShot(500, this, [=] {
-            m_virtualKB = VirtualKBInstance::Instance().virtualKBWidget();
-            qDebug() << "init virtualKB over." << m_virtualKB;
-            toggleVirtualKB();
-        });
+    if (!m_virtualKB)
         return;
-    }
 
-    m_virtualKB->setParent(this);
     m_virtualKB->setVisible(!m_virtualKB->isVisible());
     m_virtualKB->raise();
 
@@ -300,6 +292,14 @@ void LockContent::toggleVirtualKB()
 
 void LockContent::updateVirtualKBPosition()
 {
+    if (!m_virtualKB)
+        return;
+
+    constexpr int preferredWidth = 680;
+    constexpr int edgeMargin = 16;
+    const int keyboardWidth = qMin(preferredWidth, qMax(280, width() - edgeMargin * 2));
+    m_virtualKB->resize(keyboardWidth, m_virtualKB->height());
+
     const int x = qMax(0, (width() - m_virtualKB->width()) / 2);
     const int y = qMax(0, height() - m_virtualKB->height() - 50);
     m_virtualKB->move(x, y);

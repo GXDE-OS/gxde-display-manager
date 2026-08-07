@@ -4,6 +4,7 @@
 
 SessionBaseModel::SessionBaseModel(AuthType type, QObject *parent)
     : QObject(parent)
+    , m_hasVirtualKB(false)
     , m_hasSwap(false)
     , m_isShow(false)
     , m_canSleep(false)
