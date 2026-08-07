@@ -74,6 +74,10 @@ class GxdeDisplayManagerService : public QDBusAbstractAdaptor {
  public slots:
   bool TryEnrollLkScr(bool enabled);
   bool LkScrStat() const;
+  bool SetCursor(const QString& theme);
+  bool SetWallpaperGXDEDefault();
+  bool SetWallpaperDDELockDefault();
+  bool SetWallpaper(const QString& wallpaper);
   void Show();
 
  signals:

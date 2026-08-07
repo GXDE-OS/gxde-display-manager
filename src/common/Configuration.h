@@ -112,6 +112,12 @@ namespace SDDM {
             Entry(User,            QString,     QString(),                                      _S("Name of the last logged-in user.\n"
                                                                                                    "This user will be preselected when the login screen appears"));
         );
+
+        Section(Greeter,
+            Entry(CursorTheme,     QString,     QString(),                                      _S("Global cursor theme used by the greeter."));
+            Entry(Wallpaper,       QString,     _S("/usr/share/backgrounds/default_background.jpg"),
+                                                                                                 _S("Global wallpaper used by the greeter."));
+        );
     );
 
     extern MainConfig mainConfig;

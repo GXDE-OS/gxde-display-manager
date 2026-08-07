@@ -24,7 +24,7 @@ This file carries state configuration for the gxdm display manager **gxdm**\(1\)
 OPTIONS
 =======
 
-All options are configured in the [Last] section:
+The following options are configured in the [Last] section:
 
 `Session=`
 	Name of the session file of the last session selected.
@@ -35,6 +35,16 @@ All options are configured in the [Last] section:
 	Name of last logged-in user. This username will be
 	preselected/shown when the login screen shows up.
 	Default value is empty.
+
+The following options are configured in the [Greeter] section:
+
+`CursorTheme=`
+	Global cursor theme used by the greeter. An empty value keeps the
+	configured display-manager default.
+
+`Wallpaper=`
+	Global wallpaper used by the greeter. The value can be an absolute path
+	or a Qt resource path bundled with the greeter.
 
 SEE ALSO
 ========

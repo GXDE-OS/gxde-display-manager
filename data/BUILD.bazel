@@ -67,9 +67,15 @@ pkg_files(
 # D-Bus system policy
 pkg_files(
     name = "dbus_pkg",
-    srcs = ["org.freedesktop.DisplayManager.conf"],
+    srcs = [
+        "org.freedesktop.DisplayManager.conf",
+        "top.gxde.DisplayManager.conf",
+    ],
     prefix = "/usr/share/dbus-1/system.d",
-    renames = {"org.freedesktop.DisplayManager.conf": "org.freedesktop.DisplayManager-gxdm.conf"},
+    renames = {
+        "org.freedesktop.DisplayManager.conf": "org.freedesktop.DisplayManager-gxdm.conf",
+        "top.gxde.DisplayManager.conf": "top.gxde.DisplayManager.conf",
+    },
 )
 
 gxdm_configure_file(

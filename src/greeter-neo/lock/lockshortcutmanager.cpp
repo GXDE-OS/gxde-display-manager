@@ -4,9 +4,13 @@
 #include <QDBusObjectPath>
 #include <QDBusReply>
 #include <QDBusServiceWatcher>
+#include <QDBusUnixFileDescriptor>
 #include <QDebug>
+#include <QFile>
+#include <QImageReader>
 #include <QKeyCombination>
 #include <QTimer>
+#include <QUrl>
 
 #include "sessionbasemodel.h"
 #include "lockshortcutmanager.h"
@@ -20,9 +24,29 @@ const QString kKGlobalAccelComponentInterface = QStringLiteral(
   "org.kde.kglobalaccel.Component");
 const QString kComponent = QStringLiteral("gxdm-lock-neo");
 const QString kAction = QStringLiteral("lock-screen");
+const QString kSystemDisplayManagerService =
+  QStringLiteral("top.gxde.DisplayManager");
+const QString kSystemDisplayManagerPath =
+  QStringLiteral("/top/gxde/DisplayManager");
+const QString kSystemDisplayManagerInterface =
+  QStringLiteral("top.gxde.DisplayManager.System");
 
 constexpr uint kSetPresent = 2;
 constexpr uint kNoAutoloading = 4;
+
+bool callSystemDisplayManager(const QString& method,
+    const QVariantList& arguments = {}) {
+  QDBusInterface interface(kSystemDisplayManagerService,
+    kSystemDisplayManagerPath, kSystemDisplayManagerInterface,
+    QDBusConnection::systemBus());
+  const QDBusReply<bool> reply(interface.callWithArgumentList(
+    QDBus::Block, method, arguments));
+  if (!reply.isValid()) {
+    qWarning() << method << "failed:" << reply.error().message();
+    return false;
+  }
+  return reply.value();
+}
 
 }  // namespace
 
@@ -229,6 +253,35 @@ bool GxdeDisplayManagerService::TryEnrollLkScr(bool enabled) {
 
 bool GxdeDisplayManagerService::LkScrStat() const {
   return m_manager->isRegistered();
+}
+
+bool GxdeDisplayManagerService::SetCursor(const QString& theme) {
+  return callSystemDisplayManager(QStringLiteral("SetCursor"), {theme});
+}
+
+bool GxdeDisplayManagerService::SetWallpaperGXDEDefault() {
+  return callSystemDisplayManager(QStringLiteral("SetWallpaperGXDEDefault"));
+}
+
+bool GxdeDisplayManagerService::SetWallpaperDDELockDefault() {
+  return callSystemDisplayManager(
+    QStringLiteral("SetWallpaperDDELockDefault"));
+}
+
+bool GxdeDisplayManagerService::SetWallpaper(const QString& wallpaper) {
+  const QUrl url(wallpaper);
+  const QString localPath = url.isLocalFile() ? url.toLocalFile() : wallpaper;
+  QImageReader reader(localPath);
+  if (!reader.canRead()) return false;
+
+  QFile file(localPath);
+  if (!file.open(QIODevice::ReadOnly)) return false;
+
+  const QDBusUnixFileDescriptor descriptor(file.handle());
+  if (!descriptor.isValid()) return false;
+
+  return callSystemDisplayManager(QStringLiteral("SetWallpaper"),
+    {QVariant::fromValue(descriptor)});
 }
 
 void GxdeDisplayManagerService::Show() { m_manager->showLock(); }

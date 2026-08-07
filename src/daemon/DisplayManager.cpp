@@ -19,19 +19,159 @@
 
 #include "DisplayManager.h"
 
+#include "Configuration.h"
+#include "Constants.h"
 #include "DaemonApp.h"
 #include "SeatManager.h"
 
 #include "displaymanageradaptor.h"
+#include "gxdesystemadaptor.h"
 #include "seatadaptor.h"
 #include "sessionadaptor.h"
+
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QRegularExpression>
+#include <QSaveFile>
+#include <QStandardPaths>
+
+#include <pwd.h>
+#include <unistd.h>
 
 const QString DISPLAYMANAGER_SERVICE = QStringLiteral("org.freedesktop.DisplayManager");
 const QString DISPLAYMANAGER_PATH = QStringLiteral("/org/freedesktop/DisplayManager");
 const QString DISPLAYMANAGER_SEAT_PATH = QStringLiteral("/org/freedesktop/DisplayManager/Seat");
 const QString DISPLAYMANAGER_SESSION_PATH = QStringLiteral("/org/freedesktop/DisplayManager/Session");
 
+namespace {
+
+const QString GXDE_DISPLAYMANAGER_SERVICE = QStringLiteral("top.gxde.DisplayManager");
+const QString GXDE_DISPLAYMANAGER_PATH = QStringLiteral("/top/gxde/DisplayManager");
+const QString GXDE_DEFAULT_WALLPAPER = QStringLiteral("/usr/share/backgrounds/default_background.jpg");
+const QString DDE_LOCK_DEFAULT_WALLPAPER = QStringLiteral(":/theme/background/default_background.jpg");
+constexpr qint64 MAX_WALLPAPER_SIZE = 128 * 1024 * 1024;
+
+QString stateDirectory()
+{
+    const passwd *gxdmUser = getpwnam("gxdm");
+    if (gxdmUser && gxdmUser->pw_dir)
+        return QString::fromLocal8Bit(gxdmUser->pw_dir);
+    return QStringLiteral(STATE_DIR);
+}
+
+bool cursorThemeExists(const QString &theme)
+{
+    static const QRegularExpression validName(
+        QStringLiteral("^[A-Za-z0-9][A-Za-z0-9._+-]*$"));
+    if (!validName.match(theme).hasMatch())
+        return false;
+
+    return !QStandardPaths::locate(
+        QStandardPaths::GenericDataLocation,
+        QStringLiteral("icons/%1/index.theme").arg(theme),
+        QStandardPaths::LocateFile).isEmpty();
+}
+
+bool saveWallpaperPath(const QString &path)
+{
+    SDDM::stateConfig.Greeter.Wallpaper.set(path);
+    SDDM::stateConfig.save();
+    return true;
+}
+
+} // namespace
+
 namespace SDDM {
+    GxdeDisplayManager::GxdeDisplayManager(QObject *parent)
+        : QObject(parent)
+    {
+        new SystemAdaptor(this);
+
+        QDBusConnection connection = (daemonApp->testing())
+            ? QDBusConnection::sessionBus()
+            : QDBusConnection::systemBus();
+        if (!connection.registerService(GXDE_DISPLAYMANAGER_SERVICE)) {
+            qWarning() << "Failed to register" << GXDE_DISPLAYMANAGER_SERVICE
+                       << connection.lastError();
+            return;
+        }
+        if (!connection.registerObject(GXDE_DISPLAYMANAGER_PATH, this)) {
+            qWarning() << "Failed to register" << GXDE_DISPLAYMANAGER_PATH
+                       << connection.lastError();
+        }
+    }
+
+    bool GxdeDisplayManager::SetCursor(const QString &theme)
+    {
+        if (!cursorThemeExists(theme))
+            return false;
+
+        stateConfig.Greeter.CursorTheme.set(theme);
+        stateConfig.save();
+        return true;
+    }
+
+    bool GxdeDisplayManager::SetWallpaperGXDEDefault()
+    {
+        return saveWallpaperPath(GXDE_DEFAULT_WALLPAPER);
+    }
+
+    bool GxdeDisplayManager::SetWallpaperDDELockDefault()
+    {
+        return saveWallpaperPath(DDE_LOCK_DEFAULT_WALLPAPER);
+    }
+
+    bool GxdeDisplayManager::SetWallpaper(
+        const QDBusUnixFileDescriptor &wallpaper)
+    {
+        if (!wallpaper.isValid())
+            return false;
+
+        const int sourceFd = dup(wallpaper.fileDescriptor());
+        if (sourceFd < 0)
+            return false;
+
+        QFile source;
+        if (!source.open(sourceFd, QIODevice::ReadOnly,
+                         QFileDevice::AutoCloseHandle)) {
+            close(sourceFd);
+            return false;
+        }
+
+        const QString directory = stateDirectory();
+        if (!QDir().mkpath(directory))
+            return false;
+
+        const QString targetPath = directory
+            + QStringLiteral("/greeter-wallpaper");
+        QSaveFile target(targetPath);
+        if (!target.open(QIODevice::WriteOnly))
+            return false;
+
+        qint64 total = 0;
+        while (!source.atEnd()) {
+            const QByteArray chunk = source.read(1024 * 1024);
+            if (chunk.isEmpty() && source.error() != QFileDevice::NoError) {
+                target.cancelWriting();
+                return false;
+            }
+            total += chunk.size();
+            if (total > MAX_WALLPAPER_SIZE || target.write(chunk) != chunk.size()) {
+                target.cancelWriting();
+                return false;
+            }
+        }
+
+        if (total == 0 || !target.commit())
+            return false;
+
+        QFile::setPermissions(targetPath,
+            QFileDevice::ReadOwner | QFileDevice::WriteOwner
+                | QFileDevice::ReadGroup | QFileDevice::ReadOther);
+        return saveWallpaperPath(targetPath);
+    }
+
     DisplayManager::DisplayManager(QObject *parent) : QObject(parent) {
         // create adaptor
         new DisplayManagerAdaptor(this);
@@ -40,6 +180,8 @@ namespace SDDM {
         QDBusConnection connection = (daemonApp->testing()) ? QDBusConnection::sessionBus() : QDBusConnection::systemBus();
         connection.registerService(DISPLAYMANAGER_SERVICE);
         connection.registerObject(DISPLAYMANAGER_PATH, this);
+
+        new GxdeDisplayManager(this);
     }
 
     QString DisplayManager::seatPath(const QString &seatName) {

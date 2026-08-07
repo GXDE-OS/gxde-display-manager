@@ -1,0 +1,20 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+    <interface name="top.gxde.DisplayManager.System">
+        <method name="SetCursor">
+            <arg type="s" name="theme" direction="in"/>
+            <arg type="b" name="success" direction="out"/>
+        </method>
+        <method name="SetWallpaperGXDEDefault">
+            <arg type="b" name="success" direction="out"/>
+        </method>
+        <method name="SetWallpaperDDELockDefault">
+            <arg type="b" name="success" direction="out"/>
+        </method>
+        <method name="SetWallpaper">
+            <arg type="h" name="wallpaper" direction="in"/>
+            <arg type="b" name="success" direction="out"/>
+        </method>
+    </interface>
+</node>

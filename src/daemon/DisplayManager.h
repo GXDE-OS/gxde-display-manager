@@ -23,9 +23,23 @@
 #include <QObject>
 
 #include <QDBusObjectPath>
+#include <QDBusUnixFileDescriptor>
 #include <QList>
 
 namespace SDDM {
+    class GxdeDisplayManager : public QObject {
+        Q_OBJECT
+        Q_DISABLE_COPY(GxdeDisplayManager)
+    public:
+        explicit GxdeDisplayManager(QObject *parent = nullptr);
+
+    public slots:
+        bool SetCursor(const QString &theme);
+        bool SetWallpaperGXDEDefault();
+        bool SetWallpaperDDELockDefault();
+        bool SetWallpaper(const QDBusUnixFileDescriptor &wallpaper);
+    };
+
     class DisplayManagerSeat;
     class DisplayManagerSession;
 

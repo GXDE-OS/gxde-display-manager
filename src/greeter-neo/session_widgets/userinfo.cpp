@@ -1,5 +1,7 @@
 #include "userinfo.h"
 
+#include "greeterappearance.h"
+
 #include <QDBusConnection>
 #include <QDBusInterface>
 #include <QDBusObjectPath>
@@ -299,7 +301,7 @@ QString NativeUser::avatarPath() const {
 
 QString NativeUser::greeterBackgroundPath() const
 {
-    return QStringLiteral("/usr/share/backgrounds/default_background.jpg");
+    return GxdmGreeterAppearance::wallpaper();
 }
 
 QString NativeUser::desktopBackgroundPath() const
@@ -360,10 +362,10 @@ QString ADDomainUser::avatarPath() const
 
 QString ADDomainUser::greeterBackgroundPath() const
 {
-    return QString("/usr/share/wallpapers/deepin/desktop.jpg");
+    return GxdmGreeterAppearance::wallpaper();
 }
 
 QString ADDomainUser::desktopBackgroundPath() const
 {
-    return QString("/usr/share/wallpapers/deepin/desktop.jpg");
+    return greeterBackgroundPath();
 }

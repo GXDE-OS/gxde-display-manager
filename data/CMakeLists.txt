@@ -6,6 +6,11 @@ install(FILES
     RENAME ${DBUS_CONFIG_FILENAME}
 )
 
+install(FILES
+    "top.gxde.DisplayManager.conf"
+    DESTINATION "${DBUS_CONFIG_DIR}"
+)
+
 configure_file(
     "top.gxde.DisplayManager.service.in"
     "${CMAKE_CURRENT_BINARY_DIR}/top.gxde.DisplayManager.service"

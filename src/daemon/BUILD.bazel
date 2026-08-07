@@ -40,6 +40,13 @@ _adaptors = [
         parent_class = "SDDM::DisplayManagerSession",
         basename = "sessionadaptor",
     ),
+    qt_dbus_adaptor(
+        name = "gen_gxdesystemadaptor",
+        xml = "//data/interfaces:top.gxde.DisplayManager.System.xml",
+        parent_header = "DisplayManager.h",
+        parent_class = "SDDM::GxdeDisplayManager",
+        basename = "gxdesystemadaptor",
+    ),
 ]
 
 # D-Bus interfaces (login1)
@@ -69,6 +76,7 @@ _dbus_moc = qt_moc(
     name = "dbus_moc",
     hdrs = [
         "displaymanageradaptor.h",
+        "gxdesystemadaptor.h",
         "seatadaptor.h",
         "sessionadaptor.h",
         "Login1Manager.h",
@@ -102,6 +110,7 @@ qt_cc_binary(
         # generated headers (needed as inputs)
         "config.h",
         "displaymanageradaptor.h",
+        "gxdesystemadaptor.h",
         "seatadaptor.h",
         "sessionadaptor.h",
         "Login1Manager.h",

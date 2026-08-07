@@ -26,6 +26,7 @@
 #include "loginwindow.h"
 #include "constants.h"
 #include "greeterworker.h"
+#include "greeterappearance.h"
 #include "sessionbasemodel.h"
 #include "propertygroup.h"
 #include "multiscreenmanager.h"
@@ -215,6 +216,10 @@ static void set_auto_QT_SCREEN_SCALE_FACTORS()
 
 int main(int argc, char* argv[])
 {
+    const QString cursorTheme = GxdmGreeterAppearance::cursorTheme();
+    if (!cursorTheme.isEmpty())
+        qputenv("XCURSOR_THEME", cursorTheme.toUtf8());
+
     QByteArray requestedPlatform = qgetenv("QT_QPA_PLATFORM");
     for (int i = 1; requestedPlatform.isEmpty() && i + 1 < argc; ++i) {
         if (QByteArray(argv[i]) == "-platform")

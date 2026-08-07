@@ -37,6 +37,20 @@ if(BUILD_NEO_GREETER)
         Qt${QT_MAJOR_VERSION}::Test
     )
 
+    add_executable(GreeterAppearanceTest
+        GreeterAppearanceTest.cpp
+        ../src/greeter-neo/global_util/greeterappearance.cpp
+        ../src/greeter-neo/global_util/greeterappearance.h
+    )
+    target_include_directories(GreeterAppearanceTest PRIVATE
+        ../src/greeter-neo/global_util
+    )
+    add_test(NAME GreeterAppearance COMMAND GreeterAppearanceTest)
+    target_link_libraries(GreeterAppearanceTest PRIVATE
+        Qt${QT_MAJOR_VERSION}::Core
+        Qt${QT_MAJOR_VERSION}::Test
+    )
+
     add_executable(VirtualKeyboardTest
         VirtualKeyboardTest.cpp
         ../src/greeter-neo/widgets/virtualkbinstance.cpp
