@@ -31,6 +31,7 @@
 #    -c, --clean           仅清理构建产物后退出
 #    -h, --help            打印帮助信息
 
+set -e
 set -o pipefail
 
 # 路径配置：本脚本位于项目根目录(与 debian/ 同级)，故项目根 = 脚本所在目录。
@@ -178,6 +179,13 @@ exec_clean() {
     echo "执行清理..."
     cd "$PROJ_ROOT" || exit 1
 
+    local changes_file package_file
+    while IFS= read -r changes_file; do
+        while IFS= read -r package_file; do
+            rm -f "$(dirname "$changes_file")/$package_file"
+        done < <(awk '$NF ~ /\.deb$/ { print $NF }' "$changes_file" | sort -u)
+    done < <(find "$PROJ_ROOT/.." -maxdepth 1 -type f -name "${PKG_NAME}_*.changes")
+
     # 让 debhelper 清理 debian/ 下的中间产物(它知道有哪些二进制包)
     if [[ -f debian/rules ]]; then
         fakeroot debian/rules clean >/dev/null 2>&1 || dh clean >/dev/null 2>&1 || true
@@ -212,8 +220,23 @@ exec_build() {
     echo "开始使用 dpkg-buildpackage 构建&打包(参数: ${dpkg_args[*]})..."
     dpkg-buildpackage "${dpkg_args[@]}"
 
-    echo "构建完成。Deb 包应位于上级目录:"
-    ls -1 ../"${PKG_NAME}"*_*.deb 2>/dev/null || echo "  (未找到 .deb，请检查上面的构建输出)"
+    local changes_file package_file
+    local found_package=false
+    changes_file="$(find "$PROJ_ROOT/.." -maxdepth 1 -type f -name "${PKG_NAME}_*.changes" \
+        -printf '%T@ %p\n' | sort -nr | sed -n '1s/^[^ ]* //p')"
+
+    echo "构建完成。Deb 包位于上级目录:"
+    if [[ -n "$changes_file" ]]; then
+        while IFS= read -r package_file; do
+            if [[ -f "$PROJ_ROOT/../$package_file" ]]; then
+                echo "  $PROJ_ROOT/../$package_file"
+                found_package=true
+            fi
+        done < <(awk '$NF ~ /\.deb$/ { print $NF }' "$changes_file" | sort -u)
+    fi
+    if [[ "$found_package" != true ]]; then
+        echo "  (未找到 .deb，请检查上面的构建输出)"
+    fi
 }
 
 # 主脚本

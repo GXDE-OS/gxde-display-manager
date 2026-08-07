@@ -2,31 +2,23 @@
 # GXDE Display Manager - Debian packaging
 
 export DH_VERBOSE = 1
-
-BAZEL ?= bazel
-BAZEL_ROOT := $(CURDIR)/debian/.bazel-root
-BAZEL_STARTUP := --output_user_root=$(BAZEL_ROOT)
-BAZEL_OPTS := --repo_contents_cache=
+export DH_ALWAYS_EXCLUDE = .bazel-root
 
 %:
-	dh $@
+	dh $@ --buildsystem=cmake
 
 override_dh_auto_configure:
-
-override_dh_auto_build:
-	$(BAZEL) $(BAZEL_STARTUP) build $(BAZEL_OPTS) //:gxdm-dist
-
-override_dh_auto_test:
+	dh_auto_configure --buildsystem=cmake -- \
+		-DBUILD_WITH_QT6=ON \
+		-DBUILD_NEO_GREETER=ON \
+		-DBUILD_MAN_PAGES=OFF \
+		-DINSTALL_PAM_CONFIGURATION=ON
 
 override_dh_auto_install:
-	mkdir -p debian/gxdm
-	tar -xf "$$($(BAZEL) $(BAZEL_STARTUP) info $(BAZEL_OPTS) bazel-bin)/gxdm-dist.tar" \
-	    -C debian/gxdm
+	dh_auto_install --buildsystem=cmake --destdir=debian/gxdm
 
 override_dh_auto_clean:
-	-$(BAZEL) $(BAZEL_STARTUP) clean $(BAZEL_OPTS) --expunge
-	rm -rf $(BAZEL_ROOT)
-	rm -rf debian/gxdm
+	dh_auto_clean --buildsystem=cmake
 
 override_dh_installsystemd:
 	dh_installsystemd --no-enable --no-start --no-stop-on-upgrade gxdm.service

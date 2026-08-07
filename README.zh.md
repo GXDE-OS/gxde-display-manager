@@ -85,6 +85,8 @@ $ cmake --build build-cmake --parallel
 
 
 ### 从源码构建（自动DEB打包）
+该流程通过`debian/rules`调用CMake完成配置、测试、构建和安装。
+
 ```bash
 $ chmod a+x ./build-deb
 $ ./build-deb -d
@@ -139,7 +141,7 @@ $ sudo journalctl -u gxdm.service -b --no-pager
 - [x] 新增DEB打包
 - [x] 移植DDE Greeter
 - [x] 新增Waylanbd greeter支持
-- [ ] 新增CMake支持
+- [x] 新增CMake支持
 - [ ] 新增Archlinux打包
 
 请参阅[开启的Issues](https://gitee.com/GXDE-OS/gxde-display-manager/issues)以获取当前所有请求的新功能。

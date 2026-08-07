@@ -844,3 +844,4 @@ build/*
 /debian/*.debhelper
 /debian/*.substvars
 /debian/*.log
+/obj-*/
