@@ -27,6 +27,7 @@
 #include "ThemeConfig.h"
 #include "ThemeMetadata.h"
 #include "Display.h"
+#include "Utils.h"
 #include "XorgDisplayServer.h"
 #include "XorgUserDisplayServer.h"
 #include "WaylandDisplayServer.h"
@@ -108,6 +109,9 @@ namespace SDDM {
         QString xcursorTheme = mainConfig.Theme.CursorTheme.get();
         if (m_themeConfig->contains(QLatin1String("cursorTheme")))
             xcursorTheme = m_themeConfig->value(QLatin1String("cursorTheme")).toString();
+        xcursorTheme = resolveCursorTheme(xcursorTheme);
+        qInfo() << "(Frontend) Greeter: Using cursor theme"
+            << (xcursorTheme.isEmpty() ? QStringLiteral("system default") : xcursorTheme);
         QString xcursorSize = mainConfig.Theme.CursorSize.get();
         if (m_themeConfig->contains(QLatin1String("cursorSize")))
             xcursorSize = m_themeConfig->value(QLatin1String("cursorSize")).toString();
@@ -147,16 +151,18 @@ namespace SDDM {
 
             args << QStringLiteral("--test-mode");
 
+            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+            if (!xcursorTheme.isEmpty()) {
+                env.insert(QStringLiteral("XCURSOR_THEME"), xcursorTheme);
+            }
+            if (!xcursorSize.isEmpty()) {
+                env.insert(QStringLiteral("XCURSOR_SIZE"), xcursorSize);
+            }
             if (m_display->displayServerType() == Display::X11DisplayServerType) {
-                // set process environment
-                QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
                 env.insert(QStringLiteral("DISPLAY"), m_display->name());
                 env.insert(QStringLiteral("XAUTHORITY"), qobject_cast<XorgDisplayServer*>(displayServer)->authPath());
-                env.insert(QStringLiteral("XCURSOR_THEME"), xcursorTheme);
-                if (!xcursorSize.isEmpty())
-                    env.insert(QStringLiteral("XCURSOR_SIZE"), xcursorSize);
-                m_process->setProcessEnvironment(env);
             }
+            m_process->setProcessEnvironment(env);
             // Greeter command
             m_process->start(greeterPath, args);
 
@@ -205,11 +211,14 @@ namespace SDDM {
                                    QStringLiteral("LD_LIBRARY_PATH"),
                                    QStringLiteral("QML2_IMPORT_PATH"),
                                    QStringLiteral("QT_PLUGIN_PATH"),
-                                   QStringLiteral("XDG_DATA_DIRS")
+                                   QStringLiteral("XDG_DATA_DIRS"),
+                                   QStringLiteral("XCURSOR_PATH")
             }, sysenv, env);
 
             env.insert(QStringLiteral("PATH"), mainConfig.Users.DefaultPath.get());
-            env.insert(QStringLiteral("XCURSOR_THEME"), xcursorTheme);
+            if (!xcursorTheme.isEmpty()) {
+                env.insert(QStringLiteral("XCURSOR_THEME"), xcursorTheme);
+            }
             if (!xcursorSize.isEmpty())
                 env.insert(QStringLiteral("XCURSOR_SIZE"), xcursorSize);
             env.insert(QStringLiteral("XDG_SEAT"), m_display->seat()->name());

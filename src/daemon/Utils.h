@@ -21,6 +21,11 @@
 #ifndef SDDM_UTILS_H
 #define SDDM_UTILS_H
 
+#include <QDir>
+#include <QString>
+#include <QStringList>
+#include <QStandardPaths>
+
 #include <random>
 
 namespace SDDM {
@@ -43,6 +48,38 @@ inline QString generateName(int length) {
 
     // return result
     return name;
+}
+
+inline QString resolveCursorTheme(const QString& configuredTheme) {
+    const QString requestedTheme = configuredTheme.trimmed();
+    if (!requestedTheme.isEmpty())
+        return requestedTheme;
+
+    QStringList searchPaths = qEnvironmentVariable("XCURSOR_PATH")
+        .split(QLatin1Char(':'), Qt::SkipEmptyParts);
+    for (const QString &dataPath : QStandardPaths::standardLocations(
+            QStandardPaths::GenericDataLocation)) {
+        searchPaths.append(dataPath + QStringLiteral("/icons"));
+    }
+
+    searchPaths.append(QStringLiteral("/usr/share/pixmaps"));
+    searchPaths.removeDuplicates();
+
+    const QStringList preferredThemes = {
+        QStringLiteral("gxde"),
+        QStringLiteral("deepin"),
+        QStringLiteral("Adwaita"),
+    };
+
+    for (const QString &theme : preferredThemes) {
+        for (const QString &path : searchPaths) {
+            if (QDir(path + QLatin1Char('/') + theme + QStringLiteral(
+                    "/cursors")).exists())
+                return theme;
+        }
+    }
+
+    return QString();
 }
 }
 

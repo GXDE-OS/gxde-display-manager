@@ -24,6 +24,7 @@
 #include "DaemonApp.h"
 #include "Display.h"
 #include "Seat.h"
+#include "Utils.h"
 
 #include <QDebug>
 #include <QFile>
@@ -95,7 +96,10 @@ namespace SDDM {
 
         // set process environment
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-        env.insert(QStringLiteral("XCURSOR_THEME"), mainConfig.Theme.CursorTheme.get());
+        const QString xcursorTheme = resolveCursorTheme(mainConfig.Theme.CursorTheme.get());
+        if (!xcursorTheme.isEmpty()) {
+            env.insert(QStringLiteral("XCURSOR_THEME"), xcursorTheme);
+        }
         QString xcursorSize = mainConfig.Theme.CursorSize.get();
         if (!xcursorSize.isEmpty())
             env.insert(QStringLiteral("XCURSOR_SIZE"), xcursorSize);
@@ -268,7 +272,11 @@ namespace SDDM {
         env.insert(QStringLiteral("PATH"), mainConfig.Users.DefaultPath.get());
         env.insert(QStringLiteral("XAUTHORITY"), m_xauth.authPath());
         env.insert(QStringLiteral("SHELL"), QStringLiteral("/bin/sh"));
-        env.insert(QStringLiteral("XCURSOR_THEME"), mainConfig.Theme.CursorTheme.get());
+        const QString xcursorTheme = resolveCursorTheme(mainConfig.Theme.CursorTheme.get());
+        if (!xcursorTheme.isEmpty()) {
+            env.insert(QStringLiteral("XCURSOR_THEME"), xcursorTheme);
+        }
+
         QString xcursorSize = mainConfig.Theme.CursorSize.get();
         if (!xcursorSize.isEmpty())
             env.insert(QStringLiteral("XCURSOR_SIZE"), xcursorSize);

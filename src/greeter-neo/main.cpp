@@ -36,7 +36,6 @@
 #include <QApplication>
 #include <QProcess>
 #include <QThread>
-#include <QSettings>
 #include <QWindow>
 #include <QScreen>
 #include <DLog>
@@ -55,24 +54,22 @@ DWIDGET_USE_NAMESPACE
 
 //Load the System cursor --begin
 static XcursorImages*
-xcLoadImages(const char *image, int size)
-{
-    QSettings settings(DDESESSIONCC::DEFAULT_CURSOR_THEME, QSettings::IniFormat);
-    //The default cursor theme path
-    qDebug() << "Theme Path:" << DDESESSIONCC::DEFAULT_CURSOR_THEME;
-    QString item = "Icon Theme";
-    const char* defaultTheme = "";
-    QVariant tmpCursorTheme = settings.value(item + "/Inherits");
-    if (tmpCursorTheme.isNull()) {
-        qDebug() << "Set a default one instead, if get the cursor theme failed!";
-        defaultTheme = "Deepin";
-    } else {
-        defaultTheme = tmpCursorTheme.toString().toLocal8Bit().data();
+xcLoadImages(const char *image, int size) {
+    const QByteArray configuredTheme = qgetenv("XCURSOR_THEME");
+    if (!configuredTheme.isEmpty()) {
+        return XcursorLibraryLoadImages(image,
+            configuredTheme.constData(), size);
     }
 
-    qDebug() << "Get defaultTheme:" << tmpCursorTheme.isNull()
-             << defaultTheme;
-    return XcursorLibraryLoadImages(image, defaultTheme, size);
+    const QByteArrayList preferredThemes = {"gxde", "deepin", "Adwaita"};
+    for (const QByteArray &theme : preferredThemes) {
+        if (XcursorImages* images = XcursorLibraryLoadImages(
+                image, theme.constData(), size)) {
+            return images;
+        }
+    }
+
+    return nullptr;
 }
 
 static unsigned long loadCursorHandle(Display *dpy, const char *name, int size)
@@ -86,10 +83,7 @@ static unsigned long loadCursorHandle(Display *dpy, const char *name, int size)
     images = xcLoadImages(name, size);
 
     if (!images) {
-        images = xcLoadImages(name, size);
-        if (!images) {
-            return 0;
-        }
+        return 0;
     }
 
     unsigned long handle = (unsigned long)XcursorImagesLoadCursor(dpy,
@@ -106,13 +100,18 @@ static int set_rootwindow_cursor() {
         return -1;
     }
 
-    const char *cursorPath = qApp->devicePixelRatio() > 1.7
-        ? "/usr/share/icons/deepin/cursors/loginspinner@2x"
-        : "/usr/share/icons/deepin/cursors/loginspinner";
+    const char *cursorName = qApp->devicePixelRatio() > 1.7
+        ? "loginspinner@2x"
+        : "loginspinner";
 
-    Cursor cursor = (Cursor)XcursorFilenameLoadCursor(display, cursorPath);
+    Cursor cursor = (Cursor)loadCursorHandle(display, cursorName, 24);
     if (cursor == 0) {
         cursor = (Cursor)loadCursorHandle(display, "watch", 24);
+    }
+
+    if (cursor == 0) {
+        XCloseDisplay(display);
+        return -1;
     }
     XDefineCursor(display, XDefaultRootWindow(display),cursor);
 
