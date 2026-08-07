@@ -127,54 +127,72 @@ static int set_rootwindow_cursor() {
 }
 // Load system cursor --end
 
-static double get_scale_ratio() {
-    Display *display = XOpenDisplay(NULL);
+static double outputScaleRatio(const XRRCrtcInfo *crtcInfo, const XRROutputInfo *outputInfo)
+{
+    const double ratio = static_cast<double>(crtcInfo->width)
+        / static_cast<double>(outputInfo->mm_width)
+        / (1366.0 / 310.0);
 
-    XRRScreenResources *resources = XRRGetScreenResourcesCurrent(display, DefaultRootWindow(display));
-    double scaleRatio = 0.0;
-
-    if (!resources) {
-        resources = XRRGetScreenResources(display, DefaultRootWindow(display));
-        qWarning() << "get XRRGetScreenResourcesCurrent failed, use XRRGetScreenResources.";
-    }
-
-    if (resources) {
-        for (int i = 0; i < resources->noutput; i++) {
-            XRROutputInfo* outputInfo = XRRGetOutputInfo(display, resources, resources->outputs[i]);
-            if (outputInfo->crtc == 0 || outputInfo->mm_width == 0) continue;
-
-            XRRCrtcInfo *crtInfo = XRRGetCrtcInfo(display, resources, outputInfo->crtc);
-            if (crtInfo == nullptr) continue;
-
-            scaleRatio = (double)crtInfo->width / (double)outputInfo->mm_width / (1366.0 / 310.0);
-
-            if (scaleRatio > 1 + 2.0 / 3.0) {
-                scaleRatio = 2;
-            }
-            else if (scaleRatio > 1 + 1.0 / 3.0) {
-                scaleRatio = 1.5;
-            }
-            else {
-                scaleRatio = 1;
-            }
-        }
-    }
-    else {
-        qWarning() << "get scale radio failed, please check X11 Extension.";
-    }
-
-    return scaleRatio;
+    if (ratio > 1 + 2.0 / 3.0)
+        return 2.0;
+    if (ratio > 1 + 1.0 / 3.0)
+        return 1.5;
+    return 1.0;
 }
 
-static void set_auto_QT_SCALE_FACTOR() {
-    const double ratio = get_scale_ratio();
-    if (ratio > 0.0) {
-        setenv("QT_SCALE_FACTOR", QByteArray::number(ratio).constData(), 1);
+static void set_auto_QT_SCREEN_SCALE_FACTORS()
+{
+    if (qEnvironmentVariableIsSet("QT_SCALE_FACTOR")
+        || qEnvironmentVariableIsSet("QT_SCREEN_SCALE_FACTORS")) {
+        return;
     }
 
-    if (!qEnvironmentVariableIsSet("QT_SCALE_FACTOR")) {
-        setenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1", 1);
+    Display *display = XOpenDisplay(nullptr);
+    if (!display) {
+        qputenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1");
+        return;
     }
+
+    XRRScreenResources *resources = XRRGetScreenResourcesCurrent(
+        display, DefaultRootWindow(display));
+    if (!resources) {
+        resources = XRRGetScreenResources(display, DefaultRootWindow(display));
+        qWarning() << "XRRGetScreenResourcesCurrent failed, using XRRGetScreenResources.";
+    }
+
+    QByteArrayList factors;
+    if (resources) {
+        for (int i = 0; i < resources->noutput; ++i) {
+            XRROutputInfo *outputInfo = XRRGetOutputInfo(
+                display, resources, resources->outputs[i]);
+            if (!outputInfo)
+                continue;
+
+            if (outputInfo->crtc != 0 && outputInfo->mm_width > 0) {
+                XRRCrtcInfo *crtcInfo = XRRGetCrtcInfo(
+                    display, resources, outputInfo->crtc);
+                if (crtcInfo) {
+                    const QByteArray outputName(outputInfo->name, outputInfo->nameLen);
+                    const double ratio = outputScaleRatio(crtcInfo, outputInfo);
+                    factors.append(outputName + '=' + QByteArray::number(ratio));
+                    XRRFreeCrtcInfo(crtcInfo);
+                }
+            }
+
+            XRRFreeOutputInfo(outputInfo);
+        }
+        XRRFreeScreenResources(resources);
+    }
+    XCloseDisplay(display);
+
+    if (factors.isEmpty()) {
+        qputenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1");
+        return;
+    }
+
+    const QByteArray screenScaleFactors = factors.join(';');
+    qInfo() << "Using per-screen scale factors:" << screenScaleFactors;
+    qputenv("QT_SCREEN_SCALE_FACTORS", screenScaleFactors);
 }
 
 int main(int argc, char* argv[])
@@ -190,7 +208,7 @@ int main(int argc, char* argv[])
 
     // load dpi settings
     if (useX11 && !QFile::exists("/etc/lightdm/deepin/qt-theme.ini")) {
-        set_auto_QT_SCALE_FACTOR();
+        set_auto_QT_SCREEN_SCALE_FACTORS();
     }
     else if (useX11) {
         DApplication::customQtThemeConfigPath("/etc/lightdm/");

@@ -106,15 +106,18 @@ void FullscreenBackground::updateBackground(const QString &file)
 
 void FullscreenBackground::setScreen(QScreen *screen)
 {
-    updateScreen(screen);
-
     // Wayland compositors place fullscreen surfaces by their associated output,
-    // not by the X11-style global position of the widget.
+    // not by the X11-style global position of the widget. Bind the native
+    // window before laying it out so its initial DPR belongs to this output.
     if (screen && !isX11Platform()) {
         winId();
-        if (QWindow *window = windowHandle())
-            window->setScreen(screen);
+        if (QWindow *window = windowHandle()) {
+            if (window->screen() != screen)
+                window->setScreen(screen);
+        }
     }
+
+    updateScreen(screen);
 }
 
 void FullscreenBackground::setContentVisible(bool contentVisible)
@@ -204,6 +207,8 @@ void FullscreenBackground::keyPressEvent(QKeyEvent *e)
 void FullscreenBackground::showEvent(QShowEvent *event)
 {
     if (QWindow *w = windowHandle()) {
+        connect(w, &QWindow::screenChanged, this, &FullscreenBackground::updateScreen, Qt::UniqueConnection);
+
         if (m_screen) {
             if (w->screen() != m_screen) {
                 w->setScreen(m_screen);
@@ -214,8 +219,6 @@ void FullscreenBackground::showEvent(QShowEvent *event)
         } else {
             updateScreen(w->screen());
         }
-
-        connect(w, &QWindow::screenChanged, this, &FullscreenBackground::updateScreen, Qt::UniqueConnection);
     }
 
     return QWidget::showEvent(event);
@@ -223,7 +226,10 @@ void FullscreenBackground::showEvent(QShowEvent *event)
 
 const QPixmap FullscreenBackground::pixmapHandle(const QPixmap &pixmap)
 {
-    const QSize trueSize { size() * devicePixelRatioF() };
+    const qreal pixelRatio = m_screen
+        ? m_screen->devicePixelRatio()
+        : devicePixelRatioF();
+    const QSize trueSize = (QSizeF(size()) * pixelRatio).toSize();
     QPixmap pix = pixmap.scaled(trueSize,
                                 Qt::KeepAspectRatioByExpanding,
                                 Qt::SmoothTransformation);
@@ -233,8 +239,8 @@ const QPixmap FullscreenBackground::pixmapHandle(const QPixmap &pixmap)
                          trueSize.width(),
                          trueSize.height()));
 
-    // draw pix to widget, so pix need set pixel ratio from qwidget devicepixelratioF
-    pix.setDevicePixelRatio(devicePixelRatioF());
+    // Preserve the target output's native pixel density while painting in logical coordinates.
+    pix.setDevicePixelRatio(pixelRatio);
 
     return pix;
 }
@@ -247,11 +253,13 @@ void FullscreenBackground::updateScreen(QScreen *screen)
     if (m_screen) {
         disconnect(m_screen, &QScreen::geometryChanged, this, &FullscreenBackground::updateGeometry);
         disconnect(m_screen, &QScreen::logicalDotsPerInchChanged, this, &FullscreenBackground::updateGeometry);
+        disconnect(m_screen, &QScreen::physicalDotsPerInchChanged, this, &FullscreenBackground::updateGeometry);
     }
 
     if (screen) {
         connect(screen, &QScreen::geometryChanged, this, &FullscreenBackground::updateGeometry);
         connect(screen, &QScreen::logicalDotsPerInchChanged, this, &FullscreenBackground::updateGeometry);
+        connect(screen, &QScreen::physicalDotsPerInchChanged, this, &FullscreenBackground::updateGeometry);
     }
 
     m_screen = screen;
