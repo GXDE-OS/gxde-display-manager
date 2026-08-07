@@ -6,6 +6,27 @@ install(FILES
     RENAME ${DBUS_CONFIG_FILENAME}
 )
 
+configure_file(
+    "top.gxde.DisplayManager.service.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/top.gxde.DisplayManager.service"
+    @ONLY
+)
+configure_file(
+    "gxdm-lock-neo.desktop.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/gxdm-lock-neo.desktop"
+    @ONLY
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/top.gxde.DisplayManager.service"
+    DESTINATION "${CMAKE_INSTALL_FULL_DATADIR}/dbus-1/services"
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/gxdm-lock-neo.desktop"
+    DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/xdg/autostart"
+)
+
 install(FILES
     "faces/root.face.icon.png"
     DESTINATION "${DATA_INSTALL_DIR}/faces"

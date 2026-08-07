@@ -1,4 +1,5 @@
 load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_files", "strip_prefix")
+load("//bazel/qt:qt.bzl", "gxdm_configure_file")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -69,4 +70,31 @@ pkg_files(
     srcs = ["org.freedesktop.DisplayManager.conf"],
     prefix = "/usr/share/dbus-1/system.d",
     renames = {"org.freedesktop.DisplayManager.conf": "org.freedesktop.DisplayManager-gxdm.conf"},
+)
+
+gxdm_configure_file(
+    name = "configure_lock_autostart",
+    src = "gxdm-lock-neo.desktop.in",
+    out = "gxdm-lock-neo.desktop",
+    extra = {"CMAKE_INSTALL_FULL_BINDIR": "/usr/bin"},
+)
+
+gxdm_configure_file(
+    name = "configure_display_manager_service",
+    src = "top.gxde.DisplayManager.service.in",
+    out = "top.gxde.DisplayManager.service",
+    extra = {"CMAKE_INSTALL_FULL_BINDIR": "/usr/bin"},
+)
+
+pkg_files(
+    name = "session_integration_pkg",
+    srcs = [
+        "gxdm-lock-neo.desktop",
+        "top.gxde.DisplayManager.service",
+    ],
+    prefix = "/",
+    renames = {
+        "gxdm-lock-neo.desktop": "etc/xdg/autostart/gxdm-lock-neo.desktop",
+        "top.gxde.DisplayManager.service": "usr/share/dbus-1/services/top.gxde.DisplayManager.service",
+    },
 )

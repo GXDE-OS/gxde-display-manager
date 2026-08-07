@@ -18,10 +18,14 @@ QString operatingSystemId(const QString &osReleasePath)
     return osRelease.value(QStringLiteral("ID")).toString();
 }
 
+bool isGxdeOperatingSystem(const QString& osReleasePath) {
+    return operatingSystemId(osReleasePath)
+        .compare(QStringLiteral("gxde"), Qt::CaseInsensitive) == 0;
+}
+
 QString defaultSessionDesktopFile(const QString &osReleasePath)
 {
-    if (operatingSystemId(osReleasePath)
-            .compare(QStringLiteral("gxde"), Qt::CaseInsensitive) == 0) {
+    if (isGxdeOperatingSystem(osReleasePath)) {
         return QStringLiteral("deepin.desktop");
     }
 

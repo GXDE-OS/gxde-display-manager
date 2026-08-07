@@ -160,6 +160,7 @@ qt_cc_binary(
     includes = _INCLUDES + ["lock"],
     moc_hdrs = [
         "lock/lockworker.h",
+        "lock/lockshortcutmanager.h",
         "lock/lockframe.h",
         "lock/timewidget.h",
         "lock/freedesktopscreensaver.h",

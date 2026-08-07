@@ -26,6 +26,7 @@
 #include <DLog>
 
 #include "lockframe.h"
+#include "lockshortcutmanager.h"
 #include "dbus/dbuslockfrontservice.h"
 #include "dbus/dbuslockagent.h"
 // PATCHS
@@ -37,12 +38,14 @@
 #include "lockworker.h"
 #include "sessionbasemodel.h"
 #include "propertygroup.h"
+#include "systemdefaults.h"
 
 #include <QLabel>
 #include <QScreen>
 #include <QWindow>
 #include <dapplication.h>
 #include <QDBusInterface>
+#include <QTimer>
 // PATCHS
 // Qt6: removed `#include <QDesktopWidget>` (QDesktopWidget no longer exists)
 // PATCHE
@@ -50,12 +53,40 @@
 DCORE_USE_NAMESPACE
 DWIDGET_USE_NAMESPACE
 
+namespace {
+
+const QString kGxdeDisplayManagerService =
+    QStringLiteral("top.gxde.DisplayManager");
+const QString kGxdeDisplayManagerPath =
+    QStringLiteral("/top/gxde/DisplayManager");
+const QString kGxdeDisplayManagerInterface =
+    QStringLiteral("top.gxde.DisplayManager");
+
+bool shouldUseX11(int argc, char *argv[])
+{
+    QByteArray requestedPlatform = qgetenv("QT_QPA_PLATFORM");
+    for (int i = 1; i + 1 < argc; ++i) {
+        if (QByteArray(argv[i]) == "-platform") {
+            requestedPlatform = argv[i + 1];
+        }
+    }
+
+    return requestedPlatform.startsWith("xcb")
+        || requestedPlatform.startsWith("dxcb")
+        || (requestedPlatform.isEmpty()
+            && !qEnvironmentVariableIsSet("WAYLAND_DISPLAY"));
+}
+
+} // namespace
+
 int main(int argc, char *argv[])
 {
-    DApplication::loadDXcbPlugin();
+    if (shouldUseX11(argc, argv))
+        DApplication::loadDXcbPlugin();
+
     DApplication app(argc, argv);
     app.setOrganizationName("deepin");
-    app.setApplicationName("dde-lock");
+    app.setApplicationName("gxdm-lock-neo");
     app.setApplicationVersion("2015.1.0");
 
     DLogManager::registerConsoleAppender();
@@ -73,10 +104,40 @@ int main(int argc, char *argv[])
     cmdParser.addOption(backend);
     QCommandLineOption switchUser(QStringList() << "s" << "switch", "show user switch");
     cmdParser.addOption(switchUser);
+    QCommandLineOption autoEnroll(
+        QStringLiteral("auto-enroll"),
+        QStringLiteral("run on GXDE and enroll the lock shortcut"));
+    cmdParser.addOption(autoEnroll);
     cmdParser.process(app);
 
-    bool runDaemon = cmdParser.isSet(backend);
-    bool showUserList = cmdParser.isSet(switchUser);
+    const bool runDaemon = cmdParser.isSet(backend);
+    const bool showUserList = cmdParser.isSet(switchUser);
+    const bool isGxde = GxdmSystemDefaults::isGxdeOperatingSystem();
+
+    if (cmdParser.isSet(autoEnroll) && !isGxde)
+        return 0;
+
+    if (!app.setSingleInstance(
+            QStringLiteral("gxdm-lock-neo"), DApplication::UserScope)) {
+        if (!runDaemon) {
+            if (showUserList) {
+                QDBusInterface lockFront(
+                    DBUS_NAME,
+                    DBUS_PATH,
+                    QStringLiteral("com.deepin.dde.lockFront"),
+                    QDBusConnection::sessionBus());
+                lockFront.asyncCall(QStringLiteral("ShowUserList"));
+            } else {
+                QDBusInterface displayManager(
+                    kGxdeDisplayManagerService,
+                    kGxdeDisplayManagerPath,
+                    kGxdeDisplayManagerInterface,
+                    QDBusConnection::sessionBus());
+                displayManager.asyncCall(QStringLiteral("Show"));
+            }
+        }
+        return 0;
+    }
 
     SessionBaseModel *model = new SessionBaseModel(SessionBaseModel::AuthType::LockType);
     LockWorker *worker = new LockWorker(model); //
@@ -115,39 +176,49 @@ int main(int argc, char *argv[])
     Q_UNUSED(screenSaver);
     // PATCHE
 
-    QDBusConnection conn = QDBusConnection::sessionBus();
-    if (!conn.registerService(DBUS_NAME) ||
-            !conn.registerObject("/com/deepin/dde/lockFront", &agent) ||
-            !app.setSingleInstance(QString("dde-lock"), DApplication::UserScope)) {
-        qDebug() << "register dbus failed"<< "maybe lockFront is running..." << conn.lastError();
+    LockShortcutManager shortcutManager(model);
+    GxdeDisplayManagerService displayManagerService(&shortcutManager);
+    Q_UNUSED(displayManagerService)
 
-        if (!runDaemon) {
-            const char *interface = "com.deepin.dde.lockFront";
-            QDBusInterface ifc(DBUS_NAME, DBUS_PATH, interface, QDBusConnection::sessionBus(), NULL);
-            if (showUserList) {
-                ifc.asyncCall("ShowUserList");
-            } else {
-                ifc.asyncCall("Show");
-            }
-        }
-    } else {
-        // PATCHS
-        // Own org.freedesktop.ScreenSaver (best-effort) so generic desktop lock
-        // actions reach us. Registered on the same agent object (which now also
-        // carries the FreedesktopScreenSaver adaptor).
-        conn.registerService(QStringLiteral("org.freedesktop.ScreenSaver"));
-        conn.registerObject(QStringLiteral("/org/freedesktop/ScreenSaver"), &agent);
-        conn.registerObject(QStringLiteral("/ScreenSaver"), &agent);
-        // PATCHE
-        if (!runDaemon) {
-            if (showUserList) {
-                emit model->showUserList();
-            } else {
-                model->setIsShow(true);
-            }
-        }
-        app.exec();
+    QDBusConnection conn = QDBusConnection::sessionBus();
+    if (!conn.registerService(kGxdeDisplayManagerService)
+        || !conn.registerObject(
+            kGxdeDisplayManagerPath,
+            &shortcutManager,
+            QDBusConnection::ExportAdaptors)) {
+        qWarning() << "Failed to register"
+                   << kGxdeDisplayManagerService << conn.lastError();
+        return 1;
     }
+
+    // Compatibility names are best-effort. The GXDE interface and shortcut
+    // remain usable even when another locker already owns one of these names.
+    if (conn.registerService(DBUS_NAME)) {
+        conn.registerObject(
+            QStringLiteral("/com/deepin/dde/lockFront"), &agent);
+    } else {
+        qInfo() << "com.deepin.dde.lockFront is already owned.";
+    }
+
+    if (conn.registerService(QStringLiteral("org.freedesktop.ScreenSaver"))) {
+        conn.registerObject(
+            QStringLiteral("/org/freedesktop/ScreenSaver"), &agent);
+        conn.registerObject(QStringLiteral("/ScreenSaver"), &agent);
+    }
+
+    if (isGxde)
+        QTimer::singleShot(0, &shortcutManager,
+            [&shortcutManager] { shortcutManager.tryEnroll(true); });
+
+    if (!runDaemon) {
+        if (showUserList) {
+            emit model->showUserList();
+        } else {
+            model->setIsShow(true);
+        }
+    }
+
+    app.exec();
 
     return 0;
 }

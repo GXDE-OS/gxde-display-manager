@@ -40,6 +40,7 @@ pkg_tar(
         "//data:flags_pkg",
         "//data:faces_pkg",
         "//data:scripts_pkg",
+        "//data:session_integration_pkg",
         "//data:themes_pkg",
         "//data:translations_pkg",
         "//data:dbus_pkg",
