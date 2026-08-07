@@ -43,6 +43,7 @@ LockContent::LockContent(SessionBaseModel * const model, QWidget *parent)
         });
         connect(m_model, &SessionBaseModel::onSessionKeyChanged, m_controlWidget, &ControlWidget::chooseToSession);
         connect(m_model, &SessionBaseModel::onSessionKeyChanged, this, &LockContent::restoreMode);
+        m_controlWidget->chooseToSession(m_model->sessionKey());
         break;
     case SessionBaseModel::AuthType::LockType:
         m_controlWidget->setMPRISEnable(true);
@@ -118,6 +119,11 @@ LockContent::LockContent(SessionBaseModel * const model, QWidget *parent)
     initVirtualKB(model->hasVirtualKB());
 
     onUserListChanged(model->userList());
+}
+
+bool LockContent::sessionSwitcherEnabled() const
+{
+    return m_sessionFrame && m_sessionFrame->sessionCount() > 1;
 }
 
 void LockContent::onCurrentUserChanged(std::shared_ptr<User> user)

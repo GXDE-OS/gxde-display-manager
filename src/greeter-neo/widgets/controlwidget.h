@@ -33,6 +33,8 @@
 
 DWIDGET_USE_NAMESPACE
 
+class SessionIndicator;
+
 class ControlWidget : public QWidget
 {
     Q_OBJECT
@@ -52,14 +54,9 @@ public slots:
     void setSessionSwitchEnable(const bool visible);
     void chooseToSession(const QString &session);
 
-protected:
-    bool eventFilter(QObject *watched, QEvent *event) Q_DECL_OVERRIDE;
-
 private:
     void initUI();
     void initConnect();
-    void showTips();
-    void hideTips();
 
 private:
     QHBoxLayout *m_mainLayout = nullptr;
@@ -67,12 +64,7 @@ private:
     DImageButton *m_switchUserBtn = nullptr;
     DImageButton *m_powerBtn = nullptr;
     MediaWidget *m_mediaWidget = nullptr;
-    DImageButton *m_sessionBtn = nullptr;
-    QLabel *m_sessionTip = nullptr;
-    QWidget *m_tipWidget = nullptr;
-#ifndef SHENWEI_PLATFORM
-    QPropertyAnimation *m_tipsAni = nullptr;
-#endif
+    SessionIndicator *m_sessionIndicator = nullptr;
 };
 
 #endif // CONTROLWIDGET_H

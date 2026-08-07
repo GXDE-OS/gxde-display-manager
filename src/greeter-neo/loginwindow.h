@@ -31,6 +31,7 @@
 #include <memory>
 
 class LockContent;
+class SessionIndicator;
 class SessionBaseModel;
 class User;
 class LoginWindow : public FullscreenBackground
@@ -45,8 +46,12 @@ signals:
     void requestSwitchToUser(std::shared_ptr<User> user);
     void requestSetLayout(std::shared_ptr<User> user, const QString &layout);
 
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+
 private:
     LockContent *m_loginFrame;
+    SessionIndicator *m_inactiveSessionIndicator;
 };
 
 #endif // LOGINWINDOW_H

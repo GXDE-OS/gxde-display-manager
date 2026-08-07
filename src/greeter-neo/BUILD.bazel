@@ -41,6 +41,7 @@ _COMMON_MOC_HDRS = [
     "widgets/otheruserinput.h",
     "widgets/propertygroup.h",
     "widgets/rounditembutton.h",
+    "widgets/sessionindicator.h",
     "widgets/sessionwidget.h",
     "widgets/shutdownwidget.h",
     "widgets/useravatar.h",

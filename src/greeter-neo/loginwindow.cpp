@@ -25,17 +25,41 @@
 
 #include "loginwindow.h"
 #include "lockcontent.h"
+#include "sessionindicator.h"
 #include "view/logowidget.h"
 #include "userinfo.h"
 
 LoginWindow::LoginWindow(SessionBaseModel * const model, QWidget *parent)
     : FullscreenBackground(parent)
     , m_loginFrame( new LockContent(model, this))
+    , m_inactiveSessionIndicator(new SessionIndicator(this))
 {
     LogoWidget *logoWidget = new LogoWidget;
     m_loginFrame->setLeftBottomWidget(logoWidget);
     setContent(m_loginFrame);
     m_loginFrame->hide();
+
+    m_inactiveSessionIndicator->move(
+        width() - m_inactiveSessionIndicator->width() - 60,
+        height() - m_inactiveSessionIndicator->height() - 33);
+    m_inactiveSessionIndicator->setSession(model->sessionKey());
+    m_inactiveSessionIndicator->setVisible(m_loginFrame->sessionSwitcherEnabled());
+    m_inactiveSessionIndicator->raise();
+
+    connect(this, &FullscreenBackground::contentVisibleChanged,
+        this, [this](bool visible) {
+            m_inactiveSessionIndicator->setVisible(
+                !visible && m_loginFrame->sessionSwitcherEnabled());
+            if (!visible)
+                m_inactiveSessionIndicator->raise();
+        });
+    connect(model, &SessionBaseModel::onSessionKeyChanged,
+        m_inactiveSessionIndicator, &SessionIndicator::setSession);
+    connect(m_inactiveSessionIndicator, &SessionIndicator::clicked,
+        this, [this, model] {
+            setContentVisible(true);
+            model->setCurrentModeState(SessionBaseModel::ModeStatus::SessionMode);
+        });
 
     connect(m_loginFrame, &LockContent::requestBackground, this, [=] (const QString &wallpaper) {
         updateBackground(wallpaper);
@@ -48,6 +72,8 @@ LoginWindow::LoginWindow(SessionBaseModel * const model, QWidget *parent)
 
     connect(model, &SessionBaseModel::authFinished, this, [=] (bool successd) {
         m_loginFrame->setVisible(!successd);
+        if (successd)
+            m_inactiveSessionIndicator->hide();
 #ifdef DISABLE_LOGIN_ANI
         // 在认证成功以后会通过更改背景来实现登录动画，但是禁用登录动画的情况下，会立即调用startSession，
         // 导致当前进程被lightdm退掉，X上会残留上一帧的画面，可以看到输入框等画面。使用repaint()强制刷新背景来避免这个问题。
@@ -64,4 +90,14 @@ LoginWindow::LoginWindow(SessionBaseModel * const model, QWidget *parent)
             logoWidget->updateLocale(user->locale().split(".").first());
         }
     });
+}
+
+void LoginWindow::resizeEvent(QResizeEvent *event)
+{
+    FullscreenBackground::resizeEvent(event);
+    m_inactiveSessionIndicator->move(
+        width() - m_inactiveSessionIndicator->width() - 60,
+        height() - m_inactiveSessionIndicator->height() - 33);
+    if (m_inactiveSessionIndicator->isVisible())
+        m_inactiveSessionIndicator->raise();
 }

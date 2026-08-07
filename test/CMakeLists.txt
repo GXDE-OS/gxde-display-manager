@@ -23,6 +23,20 @@ target_link_libraries(SessionTest Qt${QT_MAJOR_VERSION}::Core Qt${QT_MAJOR_VERSI
 if(BUILD_NEO_GREETER)
     find_package(Qt${QT_MAJOR_VERSION} REQUIRED COMPONENTS Widgets)
     pkg_check_modules(TEST_DTK2WIDGET REQUIRED IMPORTED_TARGET dtk2widget)
+    add_executable(SystemDefaultsTest
+        SystemDefaultsTest.cpp
+        ../src/greeter-neo/global_util/systemdefaults.cpp
+        ../src/greeter-neo/global_util/systemdefaults.h
+    )
+    target_include_directories(SystemDefaultsTest PRIVATE
+        ../src/greeter-neo/global_util
+    )
+    add_test(NAME SystemDefaults COMMAND SystemDefaultsTest)
+    target_link_libraries(SystemDefaultsTest PRIVATE
+        Qt${QT_MAJOR_VERSION}::Core
+        Qt${QT_MAJOR_VERSION}::Test
+    )
+
     add_executable(VirtualKeyboardTest
         VirtualKeyboardTest.cpp
         ../src/greeter-neo/widgets/virtualkbinstance.cpp

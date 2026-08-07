@@ -1,5 +1,6 @@
 #include "greeterworker.h"
 #include "sessionbasemodel.h"
+#include "systemdefaults.h"
 #include "userinfo.h"
 
 #include "src/backend/sessions/sessions.h"
@@ -209,11 +210,26 @@ void GreeterWorker::onReadyRead()
             QString desktopFile;
             in >> desktopFile;
 
+            const QString initialSession =
+                GxdmSystemDefaults::initialSessionDesktopFile(desktopFile);
+            const bool usingSystemDefault =
+                desktopFile.isEmpty() && !initialSession.isEmpty();
+            desktopFile = initialSession;
+
             const QString sessionKey = sessionKeyForDesktopFile(desktopFile);
             if (!sessionKey.isEmpty()) {
-                qDebug() << "(Frontend) Restoring last session:"
-                    << desktopFile << sessionKey;
+                if (usingSystemDefault) {
+                    qDebug()
+                        << "(Frontend) No remembered session; Defaulting to"
+                        << desktopFile << sessionKey;
+                } else {
+                    qDebug() << "(Frontend) Restoring last session:"
+                        << desktopFile << sessionKey;
+                }
                 m_model->setSessionKey(sessionKey);
+            } else if (usingSystemDefault) {
+                qWarning() << "(Frontend) GXDE default session is unavailable:"
+                    << desktopFile;
             } else if (!desktopFile.isEmpty()) {
                 qWarning()
                     << "(Frontend) Remembered session is no longer available:"

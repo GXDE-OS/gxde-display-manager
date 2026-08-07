@@ -56,12 +56,12 @@ protected:
     void setContent(QWidget * const w);
     void keyPressEvent(QKeyEvent *e) Q_DECL_OVERRIDE;
     void showEvent(QShowEvent *event) override;
+    void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE;
 
 private:
     void paintEvent(QPaintEvent *e) Q_DECL_OVERRIDE;
     void enterEvent(QEnterEvent *event) Q_DECL_OVERRIDE;
     void leaveEvent(QEvent *event) Q_DECL_OVERRIDE;
-    void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE;
 
     const QPixmap pixmapHandle(const QPixmap &pixmap);
 

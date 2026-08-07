@@ -21,6 +21,7 @@ class LockContent : public SessionBaseWindow
     Q_OBJECT
 public:
     explicit LockContent(SessionBaseModel * const model, QWidget *parent = nullptr);
+    bool sessionSwitcherEnabled() const;
 
 signals:
     void requestBackground(const QString &path);
