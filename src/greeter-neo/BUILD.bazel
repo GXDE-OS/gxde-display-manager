@@ -173,4 +173,5 @@ qt_cc_binary(
         ":neo_common",
         "//src/auth:auth",
     ],
+    linkopts = ["-lLayerShellQtInterface"],
 )

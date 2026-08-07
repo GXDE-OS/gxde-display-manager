@@ -48,6 +48,7 @@ GXDE Display Manager（简称`GXDM`）基于`SDDM`开发，专为GXDE OS打造�
   * 一个兼容C++ 20的编译器
   * **Qt6**: Core, DBus, Gui, Widgets, Network, Qml, Quick, Svg, Xml
   * **DTK**: DTK2Widget-Qt6, DTK6 Core, DTK6 DLog
+  * **Wayland锁屏**: LayerShellQt开发文件
 * 可选
   * **Debian包构建**: Debhelper, dpkg-buildpackage
 
@@ -61,6 +62,8 @@ GXDE Display Manager（简称`GXDM`）基于`SDDM`开发，专为GXDE OS打造�
 * XKB, Xcursor
 * Wayland/X11环境
 * 上述Qt6与DTK库
+* LayerShellQt shell integration插件；Wayland锁屏要求合成器支持
+  `zwlr_layer_shell_v1`
 
 
 <!-- GETTING STARTED -->

@@ -17,6 +17,7 @@ remove_definitions(
 )
 
 find_package(Qt6 COMPONENTS Core Gui Widgets DBus Network Xml Svg Qml REQUIRED)
+find_package(LayerShellQt REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(DTK2WIDGET REQUIRED IMPORTED_TARGET dtk2widget)
 
@@ -163,6 +164,7 @@ target_include_directories(gxdm-lock-neo PRIVATE
 )
 target_link_libraries(gxdm-lock-neo PRIVATE
     ${NEO_COMMON_LIBS}
+    LayerShellQt::Interface
     Qt6::Qml
 )
 install(TARGETS gxdm-lock-neo DESTINATION "${CMAKE_INSTALL_BINDIR}")

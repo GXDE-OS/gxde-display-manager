@@ -25,6 +25,9 @@
 
 #include <DLog>
 
+#include <LayerShellQt/Shell>
+#include <LayerShellQt/Window>
+
 #include "lockframe.h"
 #include "lockshortcutmanager.h"
 #include "dbus/dbuslockfrontservice.h"
@@ -81,8 +84,12 @@ bool shouldUseX11(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-    if (shouldUseX11(argc, argv))
+    const bool useX11 = shouldUseX11(argc, argv);
+    if (useX11) {
         DApplication::loadDXcbPlugin();
+    } else {
+        LayerShellQt::Shell::useLayerShell();
+    }
 
     DApplication app(argc, argv);
     app.setOrganizationName("deepin");
@@ -148,6 +155,25 @@ int main(int argc, char *argv[])
     auto createFrame = [&] (QScreen *screen) -> QWidget* {
         LockFrame *lockFrame = new LockFrame(model);
         lockFrame->setScreen(screen);
+        if (!useX11) {
+            LayerShellQt::Window *layerWindow =
+                LayerShellQt::Window::get(lockFrame->windowHandle());
+            layerWindow->setScreenConfiguration(
+                LayerShellQt::Window::ScreenFromQWindow);
+            layerWindow->setScope(QStringLiteral("gxdm-lock"));
+            layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
+            LayerShellQt::Window::Anchors anchors;
+            anchors.setFlag(LayerShellQt::Window::AnchorTop);
+            anchors.setFlag(LayerShellQt::Window::AnchorBottom);
+            anchors.setFlag(LayerShellQt::Window::AnchorLeft);
+            anchors.setFlag(LayerShellQt::Window::AnchorRight);
+            layerWindow->setAnchors(anchors);
+            layerWindow->setExclusiveZone(-1);
+            layerWindow->setMargins(QMargins());
+            layerWindow->setKeyboardInteractivity(
+                LayerShellQt::Window::KeyboardInteractivityExclusive);
+            layerWindow->setCloseOnDismissed(false);
+        }
         property_group->addObject(lockFrame);
         QObject::connect(lockFrame, &LockFrame::requestSwitchToUser, worker, &LockWorker::switchToUser);
         QObject::connect(lockFrame, &LockFrame::requestAuthUser, worker, &LockWorker::authUser);

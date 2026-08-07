@@ -48,6 +48,7 @@ Currently, `GXDM` uses a Wayland greeter by default, it supports `gxde-wlcom`, `
   * A compiler that is compactiable with C20 standard.
   * **Qt6**: Core, DBus, Gui, Widgets, Network, Qml, Quick, Svg, Xml
   * **DTK**: DTK2Widget-Qt6, DTK6 Core, DTK6 DLog
+  * **Wayland lock screen**: LayerShellQt development files
 * Optional
   * **Debian packaging**: Debhelper, dpkg-buildpackage
 
@@ -61,6 +62,8 @@ Currently, `GXDM` uses a Wayland greeter by default, it supports `gxde-wlcom`, `
 * XKB, Xcursor
 * Wayland/X11 environment
 * DTK and Qt6 libraries mentioned above
+* LayerShellQt shell integration plugin; Wayland locking requires a compositor
+  supporting `zwlr_layer_shell_v1`
 
 
 <!-- GETTING STARTED -->
