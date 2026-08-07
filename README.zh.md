@@ -238,3 +238,4 @@ GXDM的开发离不开以下项目提供的参考：
 * **GXDE Session UI**: https://gitee.com/GXDE-OS/gxde-session-ui
 * **Samoyed Greeter**: https://gitee.com/CharOfString/samoyed-greeter
 * **BEST-Readme-Template**: https://github.com/othneildrew/Best-README-Template
+* **SilentSDDM**: https://github.com/uiriansan/SilentSDDM

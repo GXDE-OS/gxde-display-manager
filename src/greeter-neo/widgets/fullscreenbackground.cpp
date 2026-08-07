@@ -31,11 +31,18 @@
 #include <QDebug>
 #include <QUrl>
 #include <QFileInfo>
-#include <QKeyEvent>
 #include <QCryptographicHash>
+#include <QGraphicsBlurEffect>
+#include <QLabel>
 #include <QWindow>
 
+#include <cmath>
+
 namespace {
+
+constexpr int kBackgroundFocusDuration = 400;
+constexpr qreal kBackgroundFocusZoom = 0.06;
+constexpr qreal kBackgroundFocusBlurRadius = 28.0;
 
 bool isX11Platform()
 {
@@ -47,6 +54,9 @@ bool isX11Platform()
 FullscreenBackground::FullscreenBackground(QWidget *parent)
     : QWidget(parent)
     , m_fadeOutAni(new QVariantAnimation(this))
+    , m_focusBackground(new QLabel(this))
+    , m_focusBlurEffect(new QGraphicsBlurEffect(m_focusBackground))
+    , m_focusAnimation(new QVariantAnimation(this))
 {
     Qt::WindowFlags flags = Qt::WindowStaysOnTopHint;
     if (isX11Platform())
@@ -61,6 +71,25 @@ FullscreenBackground::FullscreenBackground(QWidget *parent)
     m_fadeOutAni->setEndValue(0.0f);
 
     connect(m_fadeOutAni, &QVariantAnimation::valueChanged, this, static_cast<void (FullscreenBackground::*)()>(&FullscreenBackground::update));
+
+    m_focusBackground->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_focusBackground->setScaledContents(true);
+    m_focusBackground->setGraphicsEffect(m_focusBlurEffect);
+    m_focusBackground->hide();
+
+    m_focusBlurEffect->setBlurHints(
+        QGraphicsBlurEffect::PerformanceHint | QGraphicsBlurEffect::AnimationHint);
+    m_focusBlurEffect->setBlurRadius(0.0);
+
+    m_focusAnimation->setEasingCurve(QEasingCurve::InOutCubic);
+    connect(m_focusAnimation, &QVariantAnimation::valueChanged, this,
+        [this](const QVariant &value) {
+            setBackgroundFocusProgress(value.toReal());
+        });
+    connect(m_focusAnimation, &QVariantAnimation::finished, this, [this] {
+        if (qFuzzyIsNull(m_focusProgress))
+            m_focusBackground->hide();
+    });
 }
 
 bool FullscreenBackground::contentVisible() const
@@ -76,6 +105,7 @@ void FullscreenBackground::updateBackground(const QPixmap &background)
 
     m_backgroundCache = pixmapHandle(m_background);
     m_fakeBackgroundCache = pixmapHandle(m_fakeBackground);
+    updateFocusBackground();
 
     m_fadeOutAni->start();
 }
@@ -136,6 +166,42 @@ void FullscreenBackground::setContentVisible(bool contentVisible)
     emit contentVisibleChanged(contentVisible);
 }
 
+void FullscreenBackground::setBackgroundFocused(bool focused)
+{
+    if (m_backgroundFocused == focused
+        && m_focusAnimation->state() == QAbstractAnimation::Running) {
+        return;
+    }
+
+    m_backgroundFocused = focused;
+
+#ifdef DISABLE_ANIMATIONS
+    setBackgroundFocusedImmediately(focused);
+#else
+    const qreal target = focused ? 1.0 : 0.0;
+    if (qFuzzyCompare(m_focusProgress + 1.0, target + 1.0)) {
+        setBackgroundFocusProgress(target);
+        return;
+    }
+
+    m_focusAnimation->stop();
+    m_focusAnimation->setDuration(qMax(1, qRound(
+        kBackgroundFocusDuration * std::abs(target - m_focusProgress))));
+    m_focusAnimation->setStartValue(m_focusProgress);
+    m_focusAnimation->setEndValue(target);
+    m_focusBackground->show();
+    m_focusBackground->lower();
+    m_focusAnimation->start();
+#endif
+}
+
+void FullscreenBackground::setBackgroundFocusedImmediately(bool focused)
+{
+    m_backgroundFocused = focused;
+    m_focusAnimation->stop();
+    setBackgroundFocusProgress(focused ? 1.0 : 0.0);
+}
+
 void FullscreenBackground::setContent(QWidget * const w)
 {
     Q_ASSERT(m_content.isNull());
@@ -187,21 +253,9 @@ void FullscreenBackground::resizeEvent(QResizeEvent *event)
 
     m_backgroundCache = pixmapHandle(m_background);
     m_fakeBackgroundCache = pixmapHandle(m_fakeBackground);
+    updateFocusBackground();
 
     return QWidget::resizeEvent(event);
-}
-
-void FullscreenBackground::keyPressEvent(QKeyEvent *e)
-{
-    QWidget::keyPressEvent(e);
-
-    switch (e->key())
-    {
-#ifdef QT_DEBUG
-    case Qt::Key_Escape:        qApp->quit();       break;
-#endif
-    default:;
-    }
 }
 
 void FullscreenBackground::showEvent(QShowEvent *event)
@@ -245,6 +299,34 @@ const QPixmap FullscreenBackground::pixmapHandle(const QPixmap &pixmap)
     return pix;
 }
 
+void FullscreenBackground::setBackgroundFocusProgress(qreal progress)
+{
+    m_focusProgress = qBound(0.0, progress, 1.0);
+    m_focusBlurEffect->setBlurRadius(
+        kBackgroundFocusBlurRadius * m_focusProgress);
+    updateFocusBackground();
+}
+
+void FullscreenBackground::updateFocusBackground()
+{
+    if (m_backgroundCache.isNull() || qFuzzyIsNull(m_focusProgress)) {
+        m_focusBackground->hide();
+        return;
+    }
+
+    m_focusBackground->setPixmap(m_backgroundCache);
+
+    const qreal scale = 1.0 + kBackgroundFocusZoom * m_focusProgress;
+    const QSize focusSize = (QSizeF(size()) * scale).toSize();
+    m_focusBackground->setGeometry(
+        (width() - focusSize.width()) / 2,
+        (height() - focusSize.height()) / 2,
+        focusSize.width(),
+        focusSize.height());
+    m_focusBackground->show();
+    m_focusBackground->lower();
+}
+
 void FullscreenBackground::updateScreen(QScreen *screen)
 {
     if (screen == m_screen)
@@ -280,5 +362,6 @@ void FullscreenBackground::updateGeometry()
 
     m_backgroundCache = pixmapHandle(m_background);
     m_fakeBackgroundCache = pixmapHandle(m_fakeBackground);
+    updateFocusBackground();
     update();
 }

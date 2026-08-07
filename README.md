@@ -238,3 +238,4 @@ The development of GXDM draws heavily on the reference and inspiration from the 
 * **GXDE Session UI**: https://gitee.com/GXDE-OS/gxde-session-ui
 * **Samoyed Greeter**: https://gitee.com/CharOfString/samoyed-greeter
 * **BEST-Readme-Template**: https://github.com/othneildrew/Best-README-Template
+* **SilentSDDM**: https://github.com/uiriansan/SilentSDDM

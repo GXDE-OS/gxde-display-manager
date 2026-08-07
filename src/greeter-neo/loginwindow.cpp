@@ -37,6 +37,7 @@ LoginWindow::LoginWindow(SessionBaseModel * const model, QWidget *parent)
     LogoWidget *logoWidget = new LogoWidget;
     m_loginFrame->setLeftBottomWidget(logoWidget);
     setContent(m_loginFrame);
+    setBackgroundFocusedImmediately(false);
     m_loginFrame->hide();
 
     m_inactiveSessionIndicator->move(
@@ -69,6 +70,8 @@ LoginWindow::LoginWindow(SessionBaseModel * const model, QWidget *parent)
         repaint();
 #endif
     });
+    connect(m_loginFrame, &LockContent::requestBackgroundFocus,
+        this, &FullscreenBackground::setBackgroundFocused);
 
     connect(model, &SessionBaseModel::authFinished, this, [=] (bool successd) {
         m_loginFrame->setVisible(!successd);

@@ -8,9 +8,12 @@ SessionBaseModel::SessionBaseModel(AuthType type, QObject *parent)
     , m_hasSwap(false)
     , m_isShow(false)
     , m_canSleep(false)
+    , m_allowShowUserSwitchButton(true)
+    , m_alwaysShowUserSwitchButton(false)
     , m_currentType(type)
     , m_currentUser(nullptr)
     , m_powerAction(PowerAction::RequireNormal)
+    , m_currentModeState(ModeStatus::PasswordMode)
 {
 }
 

@@ -26,7 +26,10 @@ LockContent::LockContent(SessionBaseModel * const model, QWidget *parent)
     m_shutdownFrame->setModel(model);
     m_userFrame->setModel(model);
 
-    model->setCurrentModeState(SessionBaseModel::ModeStatus::PasswordMode);
+    model->setCurrentModeState(
+        model->currentType() == SessionBaseModel::AuthType::LightdmType
+        ? SessionBaseModel::ModeStatus::UserMode
+        : SessionBaseModel::ModeStatus::PasswordMode);
 
     setRightBottomWidget(m_controlWidget);
 
@@ -190,6 +193,11 @@ void LockContent::pushShutdownFrame()
 
 void LockContent::onStatusChanged(SessionBaseModel::ModeStatus status)
 {
+    if (m_model->currentType() == SessionBaseModel::AuthType::LightdmType) {
+        emit requestBackgroundFocus(
+            status == SessionBaseModel::ModeStatus::PasswordMode);
+    }
+
     switch (status) {
     case SessionBaseModel::ModeStatus::PasswordMode:
         restoreCenterContent();

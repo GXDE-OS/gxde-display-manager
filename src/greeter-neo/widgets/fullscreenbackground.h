@@ -33,6 +33,9 @@
 #include <QGraphicsOpacityEffect>
 #include <QVariantAnimation>
 
+class QLabel;
+class QGraphicsBlurEffect;
+
 class FullscreenBackground : public QWidget
 {
     Q_OBJECT
@@ -48,13 +51,14 @@ public slots:
     void updateBackground(const QString &file);
     void setScreen(QScreen *screen);
     void setContentVisible(bool contentVisible);
+    void setBackgroundFocused(bool focused);
+    void setBackgroundFocusedImmediately(bool focused);
 
 signals:
     void contentVisibleChanged(bool contentVisible);
 
 protected:
     void setContent(QWidget * const w);
-    void keyPressEvent(QKeyEvent *e) Q_DECL_OVERRIDE;
     void showEvent(QShowEvent *event) override;
     void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE;
 
@@ -64,6 +68,8 @@ private:
     void leaveEvent(QEvent *event) Q_DECL_OVERRIDE;
 
     const QPixmap pixmapHandle(const QPixmap &pixmap);
+    void setBackgroundFocusProgress(qreal progress);
+    void updateFocusBackground();
 
 private:
     void updateScreen(QScreen *screen);
@@ -79,6 +85,11 @@ private:
     QPixmap m_fakeBackgroundCache;
     QPointer<QWidget> m_content;
     QVariantAnimation *m_fadeOutAni;
+    QLabel *m_focusBackground;
+    QGraphicsBlurEffect *m_focusBlurEffect;
+    QVariantAnimation *m_focusAnimation;
+    qreal m_focusProgress = 0.0;
+    bool m_backgroundFocused = false;
     QScreen *m_screen = nullptr;
 };
 
