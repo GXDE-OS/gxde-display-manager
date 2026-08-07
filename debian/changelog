@@ -1,3 +1,9 @@
+gxde-display-manager-se (1.1.0-gxde2) unstable; urgency=medium
+
+  * Debian打包现在默认使用CMake
+
+ -- CharOfString <root@charofstring.cc>  Fri, 07 Aug 2026 18:04:23 +0800
+
 gxde-display-manager-se (1.1.0-gxde1) unstable; urgency=medium
 
   * 默认前端Greeter切换至Wayland
