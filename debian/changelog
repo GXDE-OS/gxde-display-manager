@@ -1,3 +1,11 @@
+gxde-display-manager-se (1.1.0-gxde5) unstable; urgency=medium
+
+  * 修复了X11的deepin.desktop会话(GXDE)logo为空的问题，会话切换现在正确显示GXDE logo
+  * Wayland greeter不再硬依赖weston，缺少gxde-wlcom时依次回退到labwc、sway、weston
+  * 移除了deb依赖中的weston，避免多出Weston会话入口
+
+ -- shenmo <jifengshenmo@outlook.com>  Sun, 09 Aug 2026 11:19:17 +0800
+
 gxde-display-manager-se (1.1.0-gxde4) unstable; urgency=medium
 
   * 修复了登录界面无法获取系统锁屏壁纸的问题（与lightdm greeter一致，改用用户锁屏壁纸）

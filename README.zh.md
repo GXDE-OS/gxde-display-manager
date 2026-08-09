@@ -36,7 +36,7 @@
 ## 关于本项目
 GXDE Display Manager（简称`GXDM`）基于`SDDM`开发，专为GXDE OS打造，旨在提供开箱即用的登录管理与欢迎界面体验。
 
-目前，`GXDM`默认采用Wayland环境，并内置了对`gxde-wlcom`、`LabWC`和`Weston`三款合成器的支持。欢迎界面本身源自DDE 15时代的Deepin `session-ui`组件，现已完成全面改造，兼容Qt6与Wayland协议栈。
+目前，`GXDM`默认采用Wayland环境，优先使用`gxde-wlcom`，不可用时依次回退到`LabWC`、`Sway`或`Weston`。欢迎界面本身源自DDE 15时代的Deepin `session-ui`组件，现已完成全面改造，兼容Qt6与Wayland协议栈。
 
 
 

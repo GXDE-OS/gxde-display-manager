@@ -27,6 +27,7 @@ QString standardIconName(const QString &sessionName)
         QStringLiteral("enlightenment"),
         QStringLiteral("fluxbox"),
         QStringLiteral("gxde-wlcom"),
+        QStringLiteral("gxde"),
         QStringLiteral("gnome"),
         QStringLiteral("lxde"),
         QStringLiteral("plasma"),
@@ -57,11 +58,17 @@ QString displayNameForSession(const QString &sessionKey)
 
 QString indicatorIconPath(const QString &iconName, const QString &state)
 {
-    const QString suffix = iconName == QStringLiteral("gxde-wlcom")
+    // The "gxde" session (x11 deepin.desktop) shares the GXDE logo
+    // assets with the gxde-wlcom session.
+    const QString assetName = iconName == QStringLiteral("gxde")
+        ? QStringLiteral("gxde-wlcom")
+        : iconName;
+    const QString suffix = (iconName == QStringLiteral("gxde-wlcom")
+            || iconName == QStringLiteral("gxde"))
         ? QStringLiteral("png")
         : QStringLiteral("svg");
     return QStringLiteral(":/img/sessions/%1_indicator_%2.%3")
-        .arg(iconName, state, suffix);
+        .arg(assetName, state, suffix);
 }
 
 } // namespace

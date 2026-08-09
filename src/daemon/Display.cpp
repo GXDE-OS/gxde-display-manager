@@ -184,14 +184,25 @@ namespace SDDM {
             {
                 QString compositorCommand = mainConfig.Wayland.CompositorCommand.get();
                 if (compositorCommand.trimmed().isEmpty()) {
-                    const QString gxdeWlcom = QStandardPaths::findExecutable(QStringLiteral("gxde-wlcom"));
-                    if (!gxdeWlcom.isEmpty()) {
-                        compositorCommand = gxdeWlcom;
-                    } else {
-                        QString weston = QStandardPaths::findExecutable(QStringLiteral("weston"));
-                        if (weston.isEmpty())
-                            weston = QStringLiteral("/usr/bin/weston");
-                        compositorCommand = weston + QStringLiteral(" --shell=kiosk-shell.so");
+                    // No hard dependency on a single compositor: prefer
+                    // gxde-wlcom and fall back to other common ones.
+                    struct CompositorCandidate {
+                        const char *binary;
+                        const char *args;
+                    };
+                    const CompositorCandidate candidates[] = {
+                        { "gxde-wlcom", "" },
+                        { "labwc", "" },
+                        { "sway", "" },
+                        { "weston", " --shell=kiosk-shell.so" },
+                    };
+                    for (const auto &candidate : candidates) {
+                        const QString executable =
+                            QStandardPaths::findExecutable(QString::fromLatin1(candidate.binary));
+                        if (!executable.isEmpty()) {
+                            compositorCommand = executable + QLatin1String(candidate.args);
+                            break;
+                        }
                     }
                     qInfo() << "Automatically selected Wayland greeter compositor:" << compositorCommand;
                 }

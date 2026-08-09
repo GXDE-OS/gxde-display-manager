@@ -45,6 +45,7 @@ const QString session_standard_icon_name(const QString &realName)
         "deepin",
         "fluxbox",
         "gxde-wlcom",
+        "gxde",
         "gnome",
         "plasma",
         "ubuntu",
@@ -304,15 +305,21 @@ void SessionWidget::loadSessionList()
         const QString &session_key = m_sessionKeys.value(i);
         const QString &session_name = m_sessionNames.value(i);
         const QString &session_icon = session_standard_icon_name(session_name);
-        const QString iconSuffix = session_icon == QStringLiteral("gxde-wlcom")
+        // The "gxde" session (x11 deepin.desktop) shares the GXDE logo
+        // assets with the gxde-wlcom session.
+        const QString iconFile = session_icon == QStringLiteral("gxde")
+            ? QStringLiteral("gxde-wlcom")
+            : session_icon;
+        const QString iconSuffix = (session_icon == QStringLiteral("gxde-wlcom")
+                || session_icon == QStringLiteral("gxde"))
             ? QStringLiteral("png")
             : QStringLiteral("svg");
         const QString normalIcon = QStringLiteral(":/img/sessions_icon/%1_normal.%2")
-            .arg(session_icon, iconSuffix);
+            .arg(iconFile, iconSuffix);
         const QString hoverIcon = QStringLiteral(":/img/sessions_icon/%1_hover.%2")
-            .arg(session_icon, iconSuffix);
+            .arg(iconFile, iconSuffix);
         const QString checkedIcon = QStringLiteral(":/img/sessions_icon/%1_press.%2")
-            .arg(session_icon, iconSuffix);
+            .arg(iconFile, iconSuffix);
 
         qDebug() << "(Frontend) SessionWidget: found session:"
             << session_key << "displayed as" << session_name << session_icon;

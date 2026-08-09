@@ -170,9 +170,9 @@ The `UserAuthFile=` option was removed, the file is always created as
 
 `CompositorCommand=`
         Command used to start the compositor for the greeter.
-        An explicitly configured command is always used. When empty, GXDM uses
-        gxde-wlcom if it is available in PATH; otherwise it uses
-        /usr/bin/weston --shell=kiosk-shell.so.
+        An explicitly configured command is always used. When empty, GXDM
+        tries, in order, gxde-wlcom, labwc, sway and weston (kiosk shell),
+        whichever is found in PATH.
         Default value is empty.
 
 `SessionDir=`

@@ -36,7 +36,7 @@
 ## About the Project
 GXDE Display Manager (`GXDM`) is a fork of `SDDM` and is build specifically for GXDE OS. It aims to bring an out-of-box experience of logining and greeter.
 
-Currently, `GXDM` uses a Wayland greeter by default, it supports `gxde-wlcom`, `LabWC` and `Weston`. The greeter itself is from Deepin `session-ui` from the DDE 15 era, and it is fully adapted to Wayland and Qt6.
+Currently, `GXDM` uses a Wayland greeter by default. It prefers `gxde-wlcom` and falls back to `LabWC`, `Sway` or `Weston` when it is unavailable. The greeter itself is from Deepin `session-ui` from the DDE 15 era, and it is fully adapted to Wayland and Qt6.
 
 
 
