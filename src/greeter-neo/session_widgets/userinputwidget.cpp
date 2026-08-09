@@ -363,14 +363,6 @@ void UserInputWidget::hideKeyboard()
     m_kbLayoutBorder->hide();
 }
 
-void UserInputWidget::setDimBackgroundEnabled(bool enabled)
-{
-    if (m_dimBackgroundEnabled == enabled) return;
-
-    m_dimBackgroundEnabled = enabled;
-    updateDimBackground();
-}
-
 bool UserInputWidget::event(QEvent *event)
 {
     if (event->type() == QEvent::LanguageChange) {
@@ -452,10 +444,7 @@ void UserInputWidget::refreshAvatarPosition()
 
 void UserInputWidget::updateDimBackground()
 {
-    if (!m_dimBackground || !m_dimBackgroundEnabled) {
-        if (m_dimBackground) m_dimBackground->hide();
-        return;
-    }
+    if (!m_dimBackground) return;
 
     QRect contentRect;
     const QList<QWidget*> widgets = {

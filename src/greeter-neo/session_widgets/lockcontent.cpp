@@ -28,11 +28,7 @@ LockContent::LockContent(SessionBaseModel * const model, QWidget *parent)
 
     // 锁屏从"中间头像"开始，点击头像后进入登录界面；
     // 登录界面在只有一个用户时直接显示登录框，多用户时与锁屏一致先从头像开始。
-    const bool startFromAvatar =
-        model->currentType() == SessionBaseModel::AuthType::LockType
-        || (model->currentType() == SessionBaseModel::AuthType::LightdmType
-            && model->userList().size() > 1);
-    model->setCurrentModeState(startFromAvatar
+    model->setCurrentModeState(startFromAvatarMode()
         ? SessionBaseModel::ModeStatus::UserMode
         : SessionBaseModel::ModeStatus::PasswordMode);
 
@@ -246,6 +242,11 @@ void LockContent::showEvent(QShowEvent *event)
         updateBackground(m_user->greeterBackgroundPath());
     }
 
+    // 每次显示都回到初始模式，避免解锁后再次锁屏仍停留在登录框界面
+    m_model->setCurrentModeState(startFromAvatarMode()
+        ? SessionBaseModel::ModeStatus::UserMode
+        : SessionBaseModel::ModeStatus::PasswordMode);
+
     onStatusChanged(m_model->currentModeState());
 
     return QFrame::showEvent(event);
@@ -295,6 +296,14 @@ void LockContent::restoreMode()
     m_model->setCurrentModeState(SessionBaseModel::ModeStatus::PasswordMode);
 }
 
+bool LockContent::startFromAvatarMode() const
+{
+    // 锁屏始终从头像开始；登录界面仅在存在多个用户时才从头像开始
+    return m_model->currentType() == SessionBaseModel::AuthType::LockType
+        || (m_model->currentType() == SessionBaseModel::AuthType::LightdmType
+            && m_model->userList().size() > 1);
+}
+
 void LockContent::updateBackground(const QString &path)
 {
     // No dde-daemon ImageBlur; use the wallpaper as-is.
@@ -342,10 +351,4 @@ void LockContent::onUserListChanged(QList<std::shared_ptr<User> > list)
     const bool alwaysShowUserSwitchButton = m_model->alwaysShowUserSwitchButton();
 
     m_controlWidget->setUserSwitchEnable(alwaysShowUserSwitchButton || (allowShowUserSwitchButton && list.size() > 1));
-
-    // 登录框 dim 效果：锁屏与多用户登录启用；单用户登录保留现状
-    const bool dimEnabled =
-        m_model->currentType() == SessionBaseModel::AuthType::LockType
-        || list.size() > 1;
-    m_userInputWidget->setDimBackgroundEnabled(dimEnabled);
 }

@@ -47,6 +47,7 @@ private:
     void releaseAllKeyboard();
     void restoreCenterContent();
     void restoreMode();
+    bool startFromAvatarMode() const;
     void updateBackground(const QString &path);
     void onBlurDone(const QString &source, const QString &blur, bool status);
     void toggleVirtualKB();

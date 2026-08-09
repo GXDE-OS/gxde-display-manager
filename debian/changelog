@@ -5,7 +5,7 @@ gxde-display-manager-se (1.1.0-gxde4) unstable; urgency=medium
   * 登录界面仅有一个用户时直接显示登录框，多用户时与锁屏一致从头像开始
   * 锁屏/登录进入密码框界面时启用全屏背景模糊与登录框压暗效果
 
- -- CharOfString <root@charofstring.cc>  Sun, 09 Aug 2026 10:17:23 +0800
+ -- shenmo <shenmo@spark-app.store>  Sun, 09 Aug 2026 10:17:23 +0800
 
 gxde-display-manager-se (1.1.0-gxde3) unstable; urgency=medium
 

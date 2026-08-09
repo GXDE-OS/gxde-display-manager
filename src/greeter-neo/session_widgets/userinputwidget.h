@@ -50,8 +50,6 @@ public:
 
     void hideKeyboard();
 
-    void setDimBackgroundEnabled(bool enabled);
-
 signals:
     void requestAuthUser(const QString &password);
     void abortOperation();
@@ -91,7 +89,6 @@ private:
     std::list<std::pair<std::function<void (QString)>, QString>> m_trList;
     SessionBaseModel::AuthType m_authType;
     QMap<uint, QString> m_passwords;
-    bool m_dimBackgroundEnabled = true;
 };
 
 #endif // USERINPUTWIDGET_H
