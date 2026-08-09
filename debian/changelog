@@ -1,3 +1,9 @@
+gxde-display-manager-se (1.1.0-gxde6) unstable; urgency=medium
+
+  * 首次非交互安装时自动选择GXDM为默认显示管理器
+
+ -- CharOfString <root@charofstring.cc>  Sun, 09 Aug 2026 13:46:00 +0800
+
 gxde-display-manager-se (1.1.0-gxde5) unstable; urgency=medium
 
   * 修复了X11的deepin.desktop会话(GXDE)logo为空的问题，会话切换现在正确显示GXDE logo
