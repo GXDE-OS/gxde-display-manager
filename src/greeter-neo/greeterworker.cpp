@@ -102,7 +102,7 @@ void GreeterWorker::switchToUser(std::shared_ptr<User> user)
         return;
 
     m_model->setCurrentUser(user);
-    emit requestUpdateBackground(user->desktopBackgroundPath());
+    emit requestUpdateBackground(user->greeterBackgroundPath());
 }
 
 void GreeterWorker::authUser(const QString &password)

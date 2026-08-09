@@ -21,6 +21,7 @@
 DWIDGET_USE_NAMESPACE
 
 class KbLayoutWidget;
+class QFrame;
 class UserInputWidget : public QWidget
 {
     Q_OBJECT
@@ -49,6 +50,8 @@ public:
 
     void hideKeyboard();
 
+    void setDimBackgroundEnabled(bool enabled);
+
 signals:
     void requestAuthUser(const QString &password);
     void abortOperation();
@@ -71,6 +74,7 @@ private:
     void refreshInputState();
     void onOtherPagePasswordChanged(const QVariant &value);
     void onOtherPageKBLayoutChanged(const QVariant &value);
+    void updateDimBackground();
 
 private:
     UserAvatar *m_userAvatar;
@@ -81,11 +85,13 @@ private:
     NeoArrowRectangle *m_kbLayoutBorder;
     KbLayoutWidget *m_kbLayoutWidget;
     LockPasswordWidget *m_lockPasswordWidget;
+    QFrame *m_dimBackground;
     std::shared_ptr<User> m_user;
     QList<QMetaObject::Connection> m_currentUserConnects;
     std::list<std::pair<std::function<void (QString)>, QString>> m_trList;
     SessionBaseModel::AuthType m_authType;
     QMap<uint, QString> m_passwords;
+    bool m_dimBackgroundEnabled = true;
 };
 
 #endif // USERINPUTWIDGET_H

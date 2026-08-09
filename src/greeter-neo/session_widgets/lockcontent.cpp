@@ -26,8 +26,13 @@ LockContent::LockContent(SessionBaseModel * const model, QWidget *parent)
     m_shutdownFrame->setModel(model);
     m_userFrame->setModel(model);
 
-    model->setCurrentModeState(
-        model->currentType() == SessionBaseModel::AuthType::LightdmType
+    // 锁屏从"中间头像"开始，点击头像后进入登录界面；
+    // 登录界面在只有一个用户时直接显示登录框，多用户时与锁屏一致先从头像开始。
+    const bool startFromAvatar =
+        model->currentType() == SessionBaseModel::AuthType::LockType
+        || (model->currentType() == SessionBaseModel::AuthType::LightdmType
+            && model->userList().size() > 1);
+    model->setCurrentModeState(startFromAvatar
         ? SessionBaseModel::ModeStatus::UserMode
         : SessionBaseModel::ModeStatus::PasswordMode);
 
@@ -58,8 +63,15 @@ LockContent::LockContent(SessionBaseModel * const model, QWidget *parent)
     // init connect
     connect(model, &SessionBaseModel::currentUserChanged, this, &LockContent::onCurrentUserChanged);
     connect(m_userInputWidget, &UserInputWidget::requestAuthUser, this, &LockContent::requestAuthUser);
-    connect(m_userFrame, &UserFrame::requestSwitchUser, this, &LockContent::requestSwitchToUser);
-    connect(m_userFrame, &UserFrame::requestSwitchUser, this, &LockContent::restoreMode);
+    connect(m_userFrame, &UserFrame::requestSwitchUser, this,
+        [this](std::shared_ptr<User> user) {
+            // 锁屏点击当前用户头像：只进入登录界面；点击其他用户仍走原有切换逻辑
+            const std::shared_ptr<User> currentUser = m_model->currentUser();
+            if (user && currentUser && user->uid() != currentUser->uid()) {
+                emit requestSwitchToUser(user);
+            }
+            restoreMode();
+        });
     connect(m_controlWidget, &ControlWidget::requestSwitchUser, this, [=] {
         if (m_model->currentModeState() == SessionBaseModel::ModeStatus::UserMode) return;
         m_userFrame->setFixedSize(m_userInputWidget->size());
@@ -157,11 +169,9 @@ void LockContent::onCurrentUserChanged(std::shared_ptr<User> user)
 
     //TODO: refresh blur image
     QTimer::singleShot(0, this, [=] {
-        const QString background =
-            m_model->currentType() == SessionBaseModel::AuthType::LockType
-            ? user->greeterBackgroundPath()
-            : user->desktopBackgroundPath();
-        updateBackground(background);
+        // 登录与锁屏都使用用户锁屏壁纸（与 lightdm greeter 行为一致），
+        // 而不是全局 greeter 壁纸。
+        updateBackground(user->greeterBackgroundPath());
     });
 }
 
@@ -193,10 +203,9 @@ void LockContent::pushShutdownFrame()
 
 void LockContent::onStatusChanged(SessionBaseModel::ModeStatus status)
 {
-    if (m_model->currentType() == SessionBaseModel::AuthType::LightdmType) {
-        emit requestBackgroundFocus(
-            status == SessionBaseModel::ModeStatus::PasswordMode);
-    }
+    // 锁屏与登录在进入密码框界面时都启用全屏背景模糊
+    emit requestBackgroundFocus(
+        status == SessionBaseModel::ModeStatus::PasswordMode);
 
     switch (status) {
     case SessionBaseModel::ModeStatus::PasswordMode:
@@ -233,8 +242,7 @@ void LockContent::mouseReleaseEvent(QMouseEvent *event)
 
 void LockContent::showEvent(QShowEvent *event)
 {
-    if (m_user
-        && m_model->currentType() == SessionBaseModel::AuthType::LockType) {
+    if (m_user) {
         updateBackground(m_user->greeterBackgroundPath());
     }
 
@@ -334,4 +342,10 @@ void LockContent::onUserListChanged(QList<std::shared_ptr<User> > list)
     const bool alwaysShowUserSwitchButton = m_model->alwaysShowUserSwitchButton();
 
     m_controlWidget->setUserSwitchEnable(alwaysShowUserSwitchButton || (allowShowUserSwitchButton && list.size() > 1));
+
+    // 登录框 dim 效果：锁屏与多用户登录启用；单用户登录保留现状
+    const bool dimEnabled =
+        m_model->currentType() == SessionBaseModel::AuthType::LockType
+        || list.size() > 1;
+    m_userInputWidget->setDimBackgroundEnabled(dimEnabled);
 }

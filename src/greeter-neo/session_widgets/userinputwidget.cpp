@@ -5,6 +5,7 @@
 #include "kblayoutwidget.h"
 
 #include <QVBoxLayout>
+#include <QFrame>
 #include <QEvent>
 #include <QKeyEvent>
 #include <QApplication>
@@ -23,7 +24,19 @@ UserInputWidget::UserInputWidget(QWidget *parent)
     , m_kbLayoutBorder(new NeoArrowRectangle(NeoArrowRectangle::ArrowTop))
     , m_kbLayoutWidget(new KbLayoutWidget(QStringList()))
     , m_lockPasswordWidget(new LockPasswordWidget)
+    , m_dimBackground(nullptr)
 {
+    // 登录框 dim 背景面板：半透明黑色圆角矩形，置于所有输入控件之下
+    m_dimBackground = new QFrame(this);
+    m_dimBackground->setObjectName("DimBackground");
+    m_dimBackground->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_dimBackground->setStyleSheet(
+        QStringLiteral("#DimBackground {"
+                       "  background-color: rgba(0, 0, 0, 0.45);"
+                       "  border-radius: 16px;"
+                       "}"));
+    m_dimBackground->hide();
+
     std::function<void (QString)> loginTr = std::bind(&LoginButton::setText, m_loginBtn, std::placeholders::_1);
     m_trList.push_back(std::pair<std::function<void (QString)>, QString>(loginTr, "Login"));
 
@@ -149,6 +162,9 @@ UserInputWidget::UserInputWidget(QWidget *parent)
 
     refreshLanguage();
     refreshAvatarPosition();
+
+    m_dimBackground->lower();
+    updateDimBackground();
 }
 
 UserInputWidget::~UserInputWidget()
@@ -347,6 +363,14 @@ void UserInputWidget::hideKeyboard()
     m_kbLayoutBorder->hide();
 }
 
+void UserInputWidget::setDimBackgroundEnabled(bool enabled)
+{
+    if (m_dimBackgroundEnabled == enabled) return;
+
+    m_dimBackgroundEnabled = enabled;
+    updateDimBackground();
+}
+
 bool UserInputWidget::event(QEvent *event)
 {
     if (event->type() == QEvent::LanguageChange) {
@@ -373,10 +397,11 @@ void UserInputWidget::keyPressEvent(QKeyEvent *event)
 
 void UserInputWidget::resizeEvent(QResizeEvent *event)
 {
-    QTimer::singleShot(0, this, &UserInputWidget::refreshAvatarPosition);
-    QTimer::singleShot(0, this, &UserInputWidget::refreshKBLayoutWidgetPosition);
     QTimer::singleShot(0, m_userAvatar, &QWidget::show);
     QTimer::singleShot(0, m_nameLbl, &QWidget::show);
+    QTimer::singleShot(0, this, &UserInputWidget::refreshAvatarPosition);
+    QTimer::singleShot(0, this, &UserInputWidget::refreshKBLayoutWidgetPosition);
+    QTimer::singleShot(0, this, &UserInputWidget::updateDimBackground);
 
     return QWidget::resizeEvent(event);
 }
@@ -421,6 +446,42 @@ void UserInputWidget::refreshAvatarPosition()
 
     m_nameLbl->move((width() - m_nameLbl->width()) / 2, bottom_y - m_nameLbl->height() - 20);
     m_userAvatar->move((width() - m_userAvatar->width()) / 2, m_nameLbl->y() - m_userAvatar->height());
+
+    updateDimBackground();
+}
+
+void UserInputWidget::updateDimBackground()
+{
+    if (!m_dimBackground || !m_dimBackgroundEnabled) {
+        if (m_dimBackground) m_dimBackground->hide();
+        return;
+    }
+
+    QRect contentRect;
+    const QList<QWidget*> widgets = {
+        m_userAvatar, m_nameLbl, m_passwordEdit, m_loginBtn,
+        m_otherUserInput, m_lockPasswordWidget,
+    };
+    for (QWidget *w : widgets) {
+        if (w->isVisible()) {
+            contentRect = contentRect.united(w->geometry());
+        }
+    }
+
+    if (contentRect.isNull()) {
+        m_dimBackground->hide();
+        return;
+    }
+
+    constexpr int kPadding = 20;
+    contentRect = contentRect.adjusted(-kPadding, -kPadding, kPadding, kPadding);
+    contentRect.setWidth(qMax(contentRect.width(),
+        DDESESSIONCC::PASSWDLINEEIDT_WIDTH + kPadding * 2));
+    contentRect.moveLeft((width() - contentRect.width()) / 2);
+
+    m_dimBackground->setGeometry(contentRect);
+    m_dimBackground->show();
+    m_dimBackground->lower();
 }
 
 void UserInputWidget::toggleKBLayoutWidget()
@@ -478,6 +539,8 @@ void UserInputWidget::refreshInputState()
     }
 
     setFixedHeight(frameHeight);
+
+    updateDimBackground();
 }
 
 void UserInputWidget::onOtherPagePasswordChanged(const QVariant &value)

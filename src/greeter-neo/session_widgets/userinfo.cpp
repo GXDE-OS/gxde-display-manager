@@ -131,6 +131,44 @@ static QString deepinAccountsLockBackground(const QString& userName) {
     return background;
 }
 
+static QString accountsServiceLockBackground(const QString& userName) {
+    // org.freedesktop.Accounts is a system service that is already running
+    // before any user session, so it is reachable from the greeter even when
+    // com.deepin.daemon.Accounts (dde) is not available. The deepin/GXDE
+    // accounts-service fork exposes the lock-screen wallpaper through the
+    // GreeterBackground / BackgroundFile extensions.
+    QDBusInterface accounts(QStringLiteral("org.freedesktop.Accounts"),
+        QStringLiteral("/org/freedesktop/Accounts"),
+        QStringLiteral("org.freedesktop.Accounts"),
+        QDBusConnection::systemBus());
+
+    if (!accounts.isValid()) {
+        return QString();
+    }
+
+    const QDBusReply<QDBusObjectPath> userPath = accounts.call(
+        QStringLiteral("FindUserByName"), userName);
+    if (!userPath.isValid() || userPath.value().path().isEmpty()) {
+        return QString();
+    }
+
+    QDBusInterface user(QStringLiteral("org.freedesktop.Accounts"),
+        userPath.value().path(),
+        QStringLiteral("org.freedesktop.Accounts.User"),
+        QDBusConnection::systemBus());
+    if (!user.isValid()) {
+        return QString();
+    }
+
+    QString background = readableImagePath(
+        user.property("GreeterBackground").toString());
+    if (background.isEmpty()) {
+        background = readableImagePath(
+            user.property("BackgroundFile").toString());
+    }
+    return background;
+}
+
 static QString gsettingsLockBackground() {
     const QByteArray schema("com.deepin.dde.appearance");
     if (!QGSettings::isSchemaInstalled(schema)) {
@@ -159,6 +197,9 @@ static QString gsettingsLockBackground() {
 }
 
 static QString lockBackgroundForUser(const QString& userName, uid_t uid) {
+    // 1. Deepin Accounts (com.deepin.daemon.Accounts), the same interface the
+    //    classic lightdm greeter used for the login wallpaper. It is provided
+    //    by a system service, so it also works before the user session starts.
     const QString accountsBackground =
         deepinAccountsLockBackground(userName);
     if (!accountsBackground.isEmpty()) {
@@ -167,6 +208,19 @@ static QString lockBackgroundForUser(const QString& userName, uid_t uid) {
         return accountsBackground;
     }
 
+    // 2. Freedesktop AccountsService (org.freedesktop.Accounts) as a fallback
+    //    for systems without the Deepin accounts daemon.
+    const QString freedesktopBackground =
+        accountsServiceLockBackground(userName);
+    if (!freedesktopBackground.isEmpty()) {
+        qInfo() << "(Frontend) Lock background: Using AccountsService for"
+            << userName << freedesktopBackground;
+        return freedesktopBackground;
+    }
+
+    // 3. GSettings com.deepin.dde.appearance. Only meaningful when this
+    //    process runs as the user itself (e.g. the in-session locker), where
+    //    the user's real desktop/lock wallpaper can be read.
     if (uid == getuid()) {
         const QString gsettingsBackground = gsettingsLockBackground();
         if (!gsettingsBackground.isEmpty()) {
@@ -176,9 +230,10 @@ static QString lockBackgroundForUser(const QString& userName, uid_t uid) {
         }
     }
 
+    // 4. Global greeter wallpaper (state.conf) and finally the built-in one.
     qWarning() << "(Frontend) Lock background: No usable user wallpaper for"
-        << userName << "; using the default";
-    return GxdmGreeterAppearance::ddeLockDefaultWallpaper();
+        << userName << "; using the greeter wallpaper";
+    return GxdmGreeterAppearance::wallpaper();
 }
 
 static QString accountsServiceAvatar(const QString& userName) {
