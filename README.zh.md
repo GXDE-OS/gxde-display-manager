@@ -46,10 +46,10 @@ GXDE Display Manager（简称`GXDM`）基于`SDDM`开发，专为GXDE OS打造�
   * Bazel/Bzlmod或CMake 3.16+
   * PAM, X11, XCB, XCursor, XFixes, XInput, XKB, XRandR, XTest
   * 一个兼容C++ 20的编译器
-  * **Qt6**: Core, DBus, Gui, Widgets, Network, Qml, Quick, Svg, Xml
+  * **Qt6**: Core, DBus, Gui, Widgets, Network, Qml, Quick, Svg, Xml, WaylandClient
   * **DTK**: DTK2Widget-Qt6, DTK6 Core, DTK6 DLog
   * **GSettings**: gsettings-qt6开发文件
-  * **Wayland锁屏**: LayerShellQt开发文件
+  * **Wayland锁屏**: Qt WaylandClient 与 LayerShellQt 开发文件
 * 可选
   * **Debian包构建**: Debhelper, dpkg-buildpackage
 
@@ -64,8 +64,8 @@ GXDE Display Manager（简称`GXDM`）基于`SDDM`开发，专为GXDE OS打造�
 * Wayland/X11环境
 * 上述Qt6与DTK库
 * gsettings-qt6
-* LayerShellQt shell integration插件；Wayland锁屏要求合成器支持
-  `zwlr_layer_shell_v1`
+* Wayland锁屏优先使用 `ext-session-lock-v1`；合成器不支持时回退到
+  LayerShellQt/`zwlr_layer_shell_v1` 兼容路径
 
 
 <!-- GETTING STARTED -->

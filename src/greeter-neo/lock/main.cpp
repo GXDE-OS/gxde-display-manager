@@ -36,6 +36,7 @@
 #include "freedesktopscreensaver.h"
 // PATCHE
 #include "multiscreenmanager.h"
+#include "waylandsessionlock.h"
 
 #include "lockcontent.h"
 #include "lockworker.h"
@@ -49,6 +50,9 @@
 #include <dapplication.h>
 #include <QDBusInterface>
 #include <QTimer>
+#include <QtGui/qguiapplication_platform.h>
+#include <wayland-client.h>
+#include <memory>
 // PATCHS
 // Qt6: removed `#include <QDesktopWidget>` (QDesktopWidget no longer exists)
 // PATCHE
@@ -80,7 +84,37 @@ bool shouldUseX11(int argc, char *argv[])
             && !qEnvironmentVariableIsSet("WAYLAND_DISPLAY"));
 }
 
-} // namespace
+void roundtripWaylandDisplay() {
+    auto* native =
+        qGuiApp->nativeInterface<QNativeInterface::QWaylandApplication>();
+    if (!native || !native->display()) {
+        return;
+    }
+
+    wl_display_roundtrip(native->display());
+}
+
+void configureLayerShell(LockFrame* lockFrame) {
+    LayerShellQt::Window *layerWindow =
+        LayerShellQt::Window::get(lockFrame->windowHandle());
+    layerWindow->setScreenConfiguration(
+        LayerShellQt::Window::ScreenFromQWindow);
+    layerWindow->setScope(QStringLiteral("gxdm-lock"));
+    layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
+    LayerShellQt::Window::Anchors anchors;
+    anchors.setFlag(LayerShellQt::Window::AnchorTop);
+    anchors.setFlag(LayerShellQt::Window::AnchorBottom);
+    anchors.setFlag(LayerShellQt::Window::AnchorLeft);
+    anchors.setFlag(LayerShellQt::Window::AnchorRight);
+    layerWindow->setAnchors(anchors);
+    layerWindow->setExclusiveZone(-1);
+    layerWindow->setMargins(QMargins());
+    layerWindow->setKeyboardInteractivity(
+        LayerShellQt::Window::KeyboardInteractivityExclusive);
+    layerWindow->setCloseOnDismissed(false);
+}
+
+}  // namespace
 
 int main(int argc, char *argv[])
 {
@@ -152,27 +186,55 @@ int main(int argc, char *argv[])
 
     property_group->addProperty("contentVisible");
 
+    std::unique_ptr<WaylandSessionLockIntegration> sessionLockIntegration;
+    if (!useX11) {
+        sessionLockIntegration =
+            std::make_unique<WaylandSessionLockIntegration>(&app);
+        sessionLockIntegration->initialize(nullptr);
+        roundtripWaylandDisplay();
+
+        if (sessionLockIntegration->isAvailable()) {
+            qInfo() << "(Lock) Protocol: Using ext-session-lock-v1.";
+            QObject::connect(sessionLockIntegration.get(),
+                    &WaylandSessionLockIntegration::locked,
+                    &app, [] {
+                qInfo() << "(Lock) Status: Wayland session is locked.";
+            });
+
+            QObject::connect(sessionLockIntegration.get(),
+                    &WaylandSessionLockIntegration::finished,
+                    model, [model] {
+                qWarning() << "(Lock) Status: Wayland session lock was finished"
+                    " by WM.";
+                model->setIsShow(false);
+            });
+
+            QObject::connect(model,
+                    &SessionBaseModel::authFinished,
+                    sessionLockIntegration.get(),
+                    [lock = sessionLockIntegration.get()](bool ok) {
+                if (ok) {
+                    lock->unlock();
+                }
+            });
+        } else {
+            qWarning()
+                << "(Lock) Fatal: ext-session-lock-v1 is not available!!!";
+        }
+    }
+
     auto createFrame = [&] (QScreen *screen) -> QWidget* {
         LockFrame *lockFrame = new LockFrame(model);
         lockFrame->setScreen(screen);
         if (!useX11) {
-            LayerShellQt::Window *layerWindow =
-                LayerShellQt::Window::get(lockFrame->windowHandle());
-            layerWindow->setScreenConfiguration(
-                LayerShellQt::Window::ScreenFromQWindow);
-            layerWindow->setScope(QStringLiteral("gxdm-lock"));
-            layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
-            LayerShellQt::Window::Anchors anchors;
-            anchors.setFlag(LayerShellQt::Window::AnchorTop);
-            anchors.setFlag(LayerShellQt::Window::AnchorBottom);
-            anchors.setFlag(LayerShellQt::Window::AnchorLeft);
-            anchors.setFlag(LayerShellQt::Window::AnchorRight);
-            layerWindow->setAnchors(anchors);
-            layerWindow->setExclusiveZone(-1);
-            layerWindow->setMargins(QMargins());
-            layerWindow->setKeyboardInteractivity(
-                LayerShellQt::Window::KeyboardInteractivityExclusive);
-            layerWindow->setCloseOnDismissed(false);
+            const bool usingSessionLock =
+                sessionLockIntegration
+                && sessionLockIntegration->isAvailable()
+                && sessionLockIntegration->installOnWindow(
+                    lockFrame->windowHandle());
+            if (!usingSessionLock) {
+                configureLayerShell(lockFrame);
+            }
         }
         property_group->addObject(lockFrame);
         QObject::connect(lockFrame, &LockFrame::requestSwitchToUser, worker, &LockWorker::switchToUser);

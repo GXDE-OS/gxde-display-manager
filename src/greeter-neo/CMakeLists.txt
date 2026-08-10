@@ -16,11 +16,14 @@ remove_definitions(
     -DQT_NO_FOREACH
 )
 
-find_package(Qt6 COMPONENTS Core Gui Widgets DBus Network Xml Svg Qml REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui Widgets DBus Network Xml Svg Qml WaylandClient REQUIRED)
 find_package(LayerShellQt REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(DTK2WIDGET REQUIRED IMPORTED_TARGET dtk2widget)
 pkg_check_modules(GSETTINGS_QT6 REQUIRED IMPORTED_TARGET gsettings-qt6)
+pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
+pkg_get_variable(WAYLAND_PROTOCOLS_DATADIR wayland-protocols pkgdatadir)
+find_program(WAYLAND_SCANNER_EXECUTABLE NAMES wayland-scanner REQUIRED)
 
 # Repo root: the lock reuses GXDM's own authenticator (src/auth + src/common).
 get_filename_component(GXDM_REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
@@ -137,6 +140,34 @@ set(GXDM_AUTH_FILES
 )
 
 # --- Lock screen (in-session, reuses GXDM's SDDM::Auth in auth-only mode) -----
+set(EXT_SESSION_LOCK_PROTOCOL
+    "${WAYLAND_PROTOCOLS_DATADIR}/staging/ext-session-lock/ext-session-lock-v1.xml")
+set(EXT_SESSION_LOCK_CLIENT_HEADER
+    "${CMAKE_CURRENT_BINARY_DIR}/wayland-ext-session-lock-v1-client-protocol.h")
+set(EXT_SESSION_LOCK_PROTOCOL_CODE
+    "${CMAKE_CURRENT_BINARY_DIR}/wayland-ext-session-lock-v1-protocol.c")
+
+add_custom_command(
+    OUTPUT "${EXT_SESSION_LOCK_CLIENT_HEADER}"
+    COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" --include-core-only client-header
+            "${EXT_SESSION_LOCK_PROTOCOL}" "${EXT_SESSION_LOCK_CLIENT_HEADER}"
+    DEPENDS "${EXT_SESSION_LOCK_PROTOCOL}"
+    VERBATIM
+)
+
+add_custom_command(
+    OUTPUT "${EXT_SESSION_LOCK_PROTOCOL_CODE}"
+    COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" --include-core-only public-code
+            "${EXT_SESSION_LOCK_PROTOCOL}" "${EXT_SESSION_LOCK_PROTOCOL_CODE}"
+    DEPENDS "${EXT_SESSION_LOCK_PROTOCOL}" "${EXT_SESSION_LOCK_CLIENT_HEADER}"
+    VERBATIM
+)
+
+set(NEO_LOCK_WAYLAND_PROTOCOL_SOURCES
+    "${EXT_SESSION_LOCK_CLIENT_HEADER}"
+    "${EXT_SESSION_LOCK_PROTOCOL_CODE}"
+)
+
 file(GLOB NEO_LOCK_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/lock/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/lock/dbus/*.cpp"
@@ -153,11 +184,13 @@ add_executable(gxdm-lock-neo
     ${NEO_VENDOR_SOURCES}
     ${NEO_VENDOR_HEADERS}
     ${GXDM_AUTH_FILES}
+    ${NEO_LOCK_WAYLAND_PROTOCOL_SOURCES}
     lock/images.qrc
     lock/logintheme.qrc
     ${NEO_WIDGET_RESOURCES}
 )
 target_include_directories(gxdm-lock-neo PRIVATE
+    "${CMAKE_CURRENT_BINARY_DIR}"
     ${NEO_INCLUDE_DIRS}
     "${CMAKE_CURRENT_SOURCE_DIR}/lock"
     "${GXDM_REPO_ROOT}/src/auth"
@@ -168,5 +201,6 @@ target_link_libraries(gxdm-lock-neo PRIVATE
     ${NEO_COMMON_LIBS}
     LayerShellQt::Interface
     Qt6::Qml
+    Qt6::WaylandClientPrivate
 )
 install(TARGETS gxdm-lock-neo DESTINATION "${CMAKE_INSTALL_BINDIR}")

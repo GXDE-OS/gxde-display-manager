@@ -1,3 +1,4 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel/qt:qt.bzl", "qt_cc_binary", "qt_cc_library", "qt_rcc")
 
 package(default_visibility = ["//visibility:public"])
@@ -123,6 +124,28 @@ _WIDGET_RCC = [
     ),
 ]
 
+genrule(
+    name = "ext_session_lock_v1_protocol",
+    outs = [
+        "wayland-ext-session-lock-v1-client-protocol.h",
+        "wayland-ext-session-lock-v1-protocol.c",
+    ],
+    cmd = "set -e; " +
+          "/usr/bin/wayland-scanner --include-core-only client-header " +
+          "/usr/share/wayland-protocols/staging/ext-session-lock/ext-session-lock-v1.xml " +
+          "$(@D)/wayland-ext-session-lock-v1-client-protocol.h; " +
+          "/usr/bin/wayland-scanner --include-core-only public-code " +
+          "/usr/share/wayland-protocols/staging/ext-session-lock/ext-session-lock-v1.xml " +
+          "$(@D)/wayland-ext-session-lock-v1-protocol.c",
+)
+
+cc_library(
+    name = "ext_session_lock_v1_protocol_lib",
+    srcs = [":wayland-ext-session-lock-v1-protocol.c"],
+    hdrs = [":wayland-ext-session-lock-v1-client-protocol.h"],
+    includes = ["."],
+)
+
 # --- Greeter (talks to the GXDM daemon over --socket) ------------------------
 qt_cc_binary(
     name = "gxdm-greeter-neo",
@@ -163,6 +186,7 @@ qt_cc_binary(
         "lock/lockshortcutmanager.h",
         "lock/lockframe.h",
         "lock/timewidget.h",
+        "lock/waylandsessionlock.h",
         "lock/freedesktopscreensaver.h",
         "lock/dbus/dbuslockfrontservice.h",
         "lock/dbus/dbuslockagent.h",
@@ -171,7 +195,12 @@ qt_cc_binary(
     # locker reuses it in auth-only mode instead of doing PAM/logind itself.
     deps = [
         ":neo_common",
+        ":ext_session_lock_v1_protocol_lib",
         "//src/auth:auth",
     ],
-    linkopts = ["-lLayerShellQtInterface"],
+    linkopts = [
+        "-lLayerShellQtInterface",
+        "-lQt6WaylandClient",
+        "-lwayland-client",
+    ],
 )

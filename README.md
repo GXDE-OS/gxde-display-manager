@@ -46,10 +46,10 @@ Currently, `GXDM` uses a Wayland greeter by default. It prefers `gxde-wlcom` and
   * Bazel/Bzlmod或CMake 3.16+
   * PAM, X11, XCB, XCursor, XFixes, XInput, XKB, XRandR, XTest
   * A compiler that is compactiable with C20 standard.
-  * **Qt6**: Core, DBus, Gui, Widgets, Network, Qml, Quick, Svg, Xml
+  * **Qt6**: Core, DBus, Gui, Widgets, Network, Qml, Quick, Svg, Xml, WaylandClient
   * **DTK**: DTK2Widget-Qt6, DTK6 Core, DTK6 DLog
   * **GSettings**: gsettings-qt6 development files
-  * **Wayland lock screen**: LayerShellQt development files
+  * **Wayland lock screen**: Qt WaylandClient and LayerShellQt development files
 * Optional
   * **Debian packaging**: Debhelper, dpkg-buildpackage
 
@@ -64,8 +64,8 @@ Currently, `GXDM` uses a Wayland greeter by default. It prefers `gxde-wlcom` and
 * Wayland/X11 environment
 * DTK and Qt6 libraries mentioned above
 * gsettings-qt6
-* LayerShellQt shell integration plugin; Wayland locking requires a compositor
-  supporting `zwlr_layer_shell_v1`
+* Wayland locking uses `ext-session-lock-v1` when the compositor supports it;
+  LayerShellQt/`zwlr_layer_shell_v1` remains the compatibility fallback
 
 
 <!-- GETTING STARTED -->

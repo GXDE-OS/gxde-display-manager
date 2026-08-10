@@ -79,6 +79,13 @@ find_package(XCB REQUIRED)
 
 # XKB
 find_package(XKB REQUIRED)
+if(BUILD_WITH_QT6 AND NOT TARGET XKB::XKB)
+    pkg_check_modules(XKBCOMMON IMPORTED_TARGET xkbcommon)
+    if(TARGET PkgConfig::XKBCOMMON)
+        add_library(XKB::XKB INTERFACE IMPORTED)
+        target_link_libraries(XKB::XKB INTERFACE PkgConfig::XKBCOMMON)
+    endif()
+endif()
 
 # Qt
 if(BUILD_WITH_QT6)
