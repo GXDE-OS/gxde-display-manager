@@ -5,6 +5,16 @@
 # This file is extracted from kde-workspace (kdm/kfrontend/genkdmconf.c)
 # Copyright (C) 2001-2005 Oswald Buddenhagen <ossi@kde.org>
 
+sync_gxdm_activation_env() {
+  if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+    dbus-update-activation-environment --systemd \
+      DESKTOP_SESSION DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP \
+      XDG_RUNTIME_DIR XDG_SEAT XDG_SEAT_PATH XDG_SESSION_CLASS \
+      XDG_SESSION_DESKTOP XDG_SESSION_ID XDG_SESSION_PATH XDG_SESSION_TYPE \
+      XDG_VTNR >/dev/null 2>&1
+  fi
+}
+
 # Note that the respective logout scripts are not sourced.
 case $SHELL in
   */bash)
@@ -86,6 +96,8 @@ fi
 if [ -f "$USERXSESSION" ]; then
   . "$USERXSESSION"
 fi
+
+sync_gxdm_activation_env
 
 if [ -z "$*" ]; then
     exec xmessage -center -buttons OK:0 -default OK "Sorry, $DESKTOP_SESSION is no valid session."
