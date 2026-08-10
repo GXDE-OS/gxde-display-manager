@@ -1,3 +1,9 @@
+gxde-display-manager-se (1.1.1-gxde1) unstable; urgency=medium
+
+  * 登录时自动更新D-Bus激活环境
+
+ -- CharOfString <root@charofstring.cc>  Mon, 10 Aug 2026 14:56:10 +0800
+
 gxde-display-manager-se (1.1.0-gxde6) unstable; urgency=medium
 
   * 首次非交互安装时自动选择GXDM为默认显示管理器
