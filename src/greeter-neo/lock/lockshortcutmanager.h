@@ -67,6 +67,7 @@ class GxdeDisplayManagerService : public QDBusAbstractAdaptor {
   Q_OBJECT
   Q_CLASSINFO("D-Bus Interface", "top.gxde.DisplayManager")
   Q_PROPERTY(bool LkScrStat READ LkScrStat NOTIFY LkScrStatChanged)
+  Q_PROPERTY(QString GreeterDisplayServer READ GreeterDisplayServer)
 
  public:
   explicit GxdeDisplayManagerService(LockShortcutManager* manager);
@@ -78,6 +79,8 @@ class GxdeDisplayManagerService : public QDBusAbstractAdaptor {
   bool SetWallpaperGXDEDefault();
   bool SetWallpaperDDELockDefault();
   bool SetWallpaper(const QString& wallpaper);
+  bool SetGreeterDisplayServer(const QString& displayServer);
+  QString GreeterDisplayServer() const;
   void Show();
 
  signals:

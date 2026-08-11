@@ -80,6 +80,135 @@ bool saveWallpaperPath(const QString &path)
     return true;
 }
 
+QString normalizedDisplayServer(const QString& displayServer) {
+    const QString normalized = displayServer.trimmed().toLower();
+    if (normalized == QLatin1String("wayland")
+            || normalized == QLatin1String("x11")
+            || normalized == QLatin1String("x11-user")) {
+        return normalized;
+    }
+    return QString();
+}
+
+QString configLineWithoutComment(const QString& line) {
+    const int commentPosition = line.indexOf(QLatin1Char('#'));
+    return (commentPosition < 0 ? line : line.left(commentPosition)).trimmed();
+}
+
+QString sectionName(const QString& line) {
+    const QString configLine = configLineWithoutComment(line);
+    if (!configLine.startsWith(QLatin1Char('['))
+            || !configLine.endsWith(QLatin1Char(']'))) {
+        return QString();
+    }
+    return configLine.mid(1, configLine.size() - 2).trimmed();
+}
+
+QString assignmentName(const QString& line) {
+    const QString configLine = configLineWithoutComment(line);
+    const int separator = configLine.indexOf(QLatin1Char('='));
+    if (separator < 0)
+        return QString();
+    return configLine.left(separator).trimmed();
+}
+
+QString displayServerLine(const QString& originalLine,
+        const QString& displayServer) {
+    const int commentPosition = originalLine.indexOf(QLatin1Char('#'));
+    const QString comment = commentPosition < 0
+        ? QString() : originalLine.mid(commentPosition).trimmed();
+    return QStringLiteral("DisplayServer=%1%2").arg(displayServer,
+        comment.isEmpty() ? QString() : QStringLiteral(" ") + comment);
+}
+
+bool saveDisplayServerConfig(const QString& displayServer) {
+    const QString configPath = QStringLiteral(CONFIG_FILE);
+    const QFileInfo configInfo(configPath);
+    if (!QDir().mkpath(configInfo.absolutePath())) {
+        return false;
+    }
+
+    QStringList lines;
+    QFile currentConfig(configPath);
+    if (currentConfig.exists()) {
+        if (!currentConfig.open(QIODevice::ReadOnly)) {
+            return false;
+        }
+
+        const QString content = QString::fromUtf8(currentConfig.readAll());
+        lines = content.split(QLatin1Char('\n'));
+        if (content.endsWith(QLatin1Char('\n')))
+            lines.removeLast();
+    }
+
+    bool inGeneral = true;
+    bool sawExplicitGeneral = false;
+    bool wroteDisplayServer = false;
+    int firstNonGeneralSection = -1;
+    int generalInsertIndex = lines.size();
+
+    for (int i = 0; i < lines.size(); ++i) {
+        const QString section = sectionName(lines.at(i));
+        if (!section.isEmpty()) {
+            if (section == QLatin1String(IMPLICIT_SECTION)) {
+                inGeneral = true;
+                sawExplicitGeneral = true;
+                generalInsertIndex = i + 1;
+            } else {
+                if (inGeneral && firstNonGeneralSection < 0)
+                    firstNonGeneralSection = i;
+                if (inGeneral)
+                    generalInsertIndex = i;
+                inGeneral = false;
+            }
+            continue;
+        }
+
+        if (!inGeneral)
+            continue;
+
+        if (assignmentName(lines.at(i)) == QLatin1String("DisplayServer")) {
+            lines[i] = displayServerLine(lines.at(i), displayServer);
+            wroteDisplayServer = true;
+        } else {
+            generalInsertIndex = i + 1;
+        }
+    }
+
+    if (!wroteDisplayServer) {
+        const QString configLine = displayServerLine(QString(), displayServer);
+        if (lines.isEmpty()) {
+            lines << QStringLiteral("[%1]")
+                .arg(QStringLiteral(IMPLICIT_SECTION))
+                << configLine;
+        } else if (sawExplicitGeneral || firstNonGeneralSection >= 0) {
+            const int insertIndex = sawExplicitGeneral
+                ? generalInsertIndex
+                : firstNonGeneralSection;
+            lines.insert(insertIndex, configLine);
+        } else {
+            lines << configLine;
+        }
+    }
+
+    QSaveFile savedConfig(configPath);
+    if (!savedConfig.open(QIODevice::WriteOnly))
+        return false;
+
+    const QByteArray content = (lines.join(QLatin1Char('\n'))
+        + QLatin1Char('\n')).toUtf8();
+    if (savedConfig.write(content) != content.size())
+        return false;
+
+    if (!savedConfig.commit())
+        return false;
+
+    QFile::setPermissions(configPath,
+        QFileDevice::ReadOwner | QFileDevice::WriteOwner
+        | QFileDevice::ReadGroup | QFileDevice::ReadOther);
+    return true;
+}
+
 } // namespace
 
 namespace SDDM {
@@ -172,6 +301,28 @@ namespace SDDM {
             return false;
         }
         return saveWallpaperPath(targetPath);
+    }
+
+    bool GxdeDisplayManager::SetGreeterDisplayServer(
+            const QString& displayServer) {
+        const QString normalized = normalizedDisplayServer(displayServer);
+        if (normalized.isEmpty()) {
+            return false;
+        }
+
+        if (!saveDisplayServerConfig(normalized)) {
+            return false;
+        }
+
+        mainConfig.DisplayServer.set(normalized);
+        return true;
+    }
+
+    QString GxdeDisplayManager::GreeterDisplayServer() const {
+        mainConfig.load();
+        const QString normalized =
+            normalizedDisplayServer(mainConfig.DisplayServer.get());
+        return normalized.isEmpty() ? QStringLiteral("x11") : normalized;
     }
 
     DisplayManager::DisplayManager(QObject *parent) : QObject(parent) {

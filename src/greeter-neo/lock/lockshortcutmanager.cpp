@@ -48,6 +48,17 @@ bool callSystemDisplayManager(const QString& method,
   return reply.value();
 }
 
+QString querySystemDisplayManager(const QString& method) {
+  QDBusInterface interface(kSystemDisplayManagerService,
+    kSystemDisplayManagerPath, kSystemDisplayManagerInterface,
+    QDBusConnection::systemBus());
+  const QDBusReply<QString> reply(interface.call(QDBus::Block, method));
+  if (!reply.isValid()) {
+    return QString();
+  }
+  return reply.value();
+}
+
 }  // namespace
 
 QDBusArgument& operator<<(
@@ -282,6 +293,16 @@ bool GxdeDisplayManagerService::SetWallpaper(const QString& wallpaper) {
 
   return callSystemDisplayManager(QStringLiteral("SetWallpaper"),
     {QVariant::fromValue(descriptor)});
+}
+
+bool GxdeDisplayManagerService::SetGreeterDisplayServer(
+    const QString& displayServer) {
+  return callSystemDisplayManager(QStringLiteral("SetGreeterDisplayServer"),
+    {displayServer});
+}
+
+QString GxdeDisplayManagerService::GreeterDisplayServer() const {
+  return querySystemDisplayManager(QStringLiteral("GreeterDisplayServer"));
 }
 
 void GxdeDisplayManagerService::Show() { m_manager->showLock(); }

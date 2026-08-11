@@ -16,5 +16,12 @@
             <arg type="h" name="wallpaper" direction="in"/>
             <arg type="b" name="success" direction="out"/>
         </method>
+        <method name="SetGreeterDisplayServer">
+            <arg type="s" name="displayServer" direction="in"/>
+            <arg type="b" name="success" direction="out"/>
+        </method>
+        <method name="GreeterDisplayServer">
+            <arg type="s" name="displayServer" direction="out"/>
+        </method>
     </interface>
 </node>
