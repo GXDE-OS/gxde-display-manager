@@ -46,6 +46,8 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 
+#include <utility>
+
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QDBusReply>
@@ -109,6 +111,100 @@ namespace SDDM {
         killReply.waitForFinished();
         if (killReply.isError())
             qWarning() << "Failed to kill remaining processes in logind session" << sessionId << killReply.error().message();
+    }
+
+    static QStringList sessionDirs(Session::Type type) {
+        switch (type) {
+        case Session::WaylandSession:
+            return mainConfig.Wayland.SessionDir.get();
+        case Session::X11Session:
+            return mainConfig.X11.SessionDir.get();
+        default:
+            return {};
+        }
+    }
+
+    static bool sessionEntryExists(Session::Type type, const QString& name) {
+        if (name.isEmpty()) {
+            return false;
+        }
+
+        QString fileName = name;
+        const QString extension = QStringLiteral(".desktop");
+        if (!fileName.endsWith(extension))
+            fileName += extension;
+
+        const QFileInfo fileInfo(fileName);
+        for (const auto &path : sessionDirs(type)) {
+            const QDir dir(path);
+
+            if (fileInfo.isAbsolute()) {
+                if (fileInfo.absolutePath() != dir.absolutePath())
+                    continue;
+
+                return fileInfo.exists() && fileInfo.isFile();
+            }
+
+            if (dir.exists(fileName))
+                return true;
+        }
+
+        return false;
+    }
+
+    static bool loadSession(Session::Type type, const QString& name, Session &session) {
+        if (!sessionEntryExists(type, name)) {
+            return false;
+        }
+
+        Session candidate(type, name);
+        if (!candidate.isValid()) {
+            return false;
+        }
+
+        session = candidate;
+        return true;
+    }
+
+    static bool loadNamedSession(const QString& name, Session& session) {
+        if (loadSession(Session::WaylandSession, name, session)) {
+            return true;
+        }
+
+        return loadSession(Session::X11Session, name, session);
+    }
+
+    static bool loadFirstAvailableSession(Session::Type type, const QStringList &dirPaths, Session &session) {
+        QStringList entries;
+        for (const auto& path : dirPaths) {
+            QDir dir(path);
+            dir.setNameFilters({QStringLiteral("*.desktop")});
+            dir.setFilter(QDir::Files);
+            entries += dir.entryList();
+        }
+
+        entries.removeDuplicates();
+        entries.sort(Qt::CaseInsensitive);
+
+        for (const auto &entry : std::as_const(entries)) {
+            Session candidate(type, entry);
+            if (!candidate.isAvailable())
+                continue;
+
+            session = candidate;
+            return true;
+        }
+
+        return false;
+    }
+
+    static bool loadDefaultSession(Session& session) {
+        if (QFileInfo::exists(QStringLiteral("/dev/dri")) &&
+            loadFirstAvailableSession(Session::WaylandSession, mainConfig.Wayland.SessionDir.get(), session)) {
+            return true;
+        }
+
+        return loadFirstAvailableSession(Session::X11Session, mainConfig.X11.SessionDir.get(), session);
     }
 
     bool isTtyInUse(const QString &desiredTty) {
@@ -283,28 +379,27 @@ namespace SDDM {
     }
 
     bool Display::attemptAutologin() {
-        Session::Type sessionType = Session::X11Session;
-
-        // determine session type
-        QString autologinSession = mainConfig.Autologin.Session.get();
-        // not configured: try last successful logged in
-        if (autologinSession.isEmpty()) {
-            autologinSession = stateConfig.Last.Session.get();
-        }
-        if (findSessionEntry(mainConfig.Wayland.SessionDir.get(), autologinSession)) {
-            sessionType = Session::WaylandSession;
-        } else if (findSessionEntry(mainConfig.X11.SessionDir.get(), autologinSession)) {
-            sessionType = Session::X11Session;
-        } else {
-            qCritical() << "Unable to find autologin session entry" << autologinSession;
+        const QString autologinUser = mainConfig.Autologin.User.get().trimmed();
+        if (autologinUser.isEmpty()) {
+            qCritical() << "Autologin requested without a configured user";
             return false;
         }
 
         Session session;
-        session.setTo(sessionType, autologinSession);
+        const QString configuredSession = mainConfig.Autologin.Session.get().trimmed();
+        if (!configuredSession.isEmpty()) {
+            if (!loadNamedSession(configuredSession, session)) {
+                return false;
+            }
+        } else {
+            const QString lastSession = stateConfig.Last.Session.get().trimmed();
+            if (!session.isValid() && !loadDefaultSession(session)) {
+                return false;
+            }
+        }
 
         m_auth->setAutologin(true);
-        return startAuth(mainConfig.Autologin.User.get(), QString(), session);
+        return startAuth(autologinUser, QString(), session);
     }
 
     void Display::startSocketServerAndGreeter() {
@@ -353,7 +448,7 @@ namespace SDDM {
         qDebug() << "Display server started.";
 
         if ((daemonApp->first || mainConfig.Autologin.Relogin.get()) &&
-            !mainConfig.Autologin.User.get().isEmpty()) {
+            !mainConfig.Autologin.User.get().trimmed().isEmpty()) {
             // reset first flag
             daemonApp->first = false;
 
@@ -439,28 +534,6 @@ namespace SDDM {
         // otherwise use the embedded theme
         qWarning() << "The configured theme" << themeName << "doesn't exist, using the embedded theme instead";
         return QString();
-    }
-
-    bool Display::findSessionEntry(const QStringList &dirPaths, const QString &name) const {
-        const QFileInfo fileInfo(name);
-        QString fileName = name;
-
-        // append extension
-        const QString extension = QStringLiteral(".desktop");
-        if (!fileName.endsWith(extension))
-            fileName += extension;
-
-        for (const auto &path: dirPaths) {
-            QDir dir = path;
-
-            // Given an absolute path: Check that it matches dir
-            if (fileInfo.isAbsolute() && fileInfo.absolutePath() != dir.absolutePath())
-                continue;
-
-            if (dir.exists(fileName))
-                return true;
-        }
-        return false;
     }
 
     bool Display::startAuth(const QString &user, const QString &password, const Session &session) {

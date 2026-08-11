@@ -24,7 +24,6 @@
 
 #include <QFileInfo>
 #include <QVector>
-#include <QProcessEnvironment>
 #include <QFileSystemWatcher>
 
 namespace SDDM {
@@ -137,27 +136,8 @@ namespace SDDM {
         sessions.removeDuplicates();
         for (auto& session : qAsConst(sessions)) {
             Session *si = new Session(type, session);
-            bool execAllowed = true;
-            QFileInfo fi(si->tryExec());
-            if (fi.isAbsolute()) {
-                if (!fi.exists() || !fi.isExecutable())
-                    execAllowed = false;
-            } else {
-                execAllowed = false;
-                QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-                QString envPath = env.value(QStringLiteral("PATH"));
-                const QStringList pathList = envPath.split(QLatin1Char(':'));
-                for(const QString &path : pathList) {
-                    QDir pathDir(path);
-                    fi.setFile(pathDir, si->tryExec());
-                    if (fi.exists() && fi.isExecutable()) {
-                        execAllowed = true;
-                        break;
-                    }
-                }
-            }
             // add to sessions list
-            if (!si->isHidden() && !si->isNoDisplay() && execAllowed) {
+            if (si->isAvailable()) {
                 d->displayNames.append(si->displayName());
                 d->sessions.push_back(si);
             } else {

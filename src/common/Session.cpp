@@ -24,6 +24,7 @@
 #include <QSettings>
 #include <QLocale>
 #include <QRegularExpression>
+#include <QStandardPaths>
 #include <QtGlobal>
 #include <QtCore/QtGlobal>
 #include <QtCore/QStringView>
@@ -171,6 +172,23 @@ namespace SDDM {
     bool Session::isNoDisplay() const
     {
         return m_isNoDisplay;
+    }
+
+    bool Session::isAvailable() const {
+        if (!m_valid || m_exec.isEmpty() || m_isHidden || m_isNoDisplay) {
+            return false;
+        }
+
+        if (m_tryExec.isEmpty()) {
+            return true;
+        }
+
+        QFileInfo fi(m_tryExec);
+        if (fi.isAbsolute()) {
+            return fi.exists() && fi.isExecutable();
+        }
+
+        return !QStandardPaths::findExecutable(m_tryExec).isEmpty();
     }
 
     QProcessEnvironment Session::additionalEnv() const {

@@ -240,13 +240,13 @@ The `UserAuthFile=` option was removed, the file is always created as
 
 `Session=`
 	Name of the session to automatically log in when the
-	system starts first time.
+	system starts first time. If empty, gxdm tries the last
+	successfully used session, then the first available session.
 	Default value is empty.
 
 `Relogin=`
-	If true and User and Session are set automatic login will
-	kick in again on session exit, otherwise it will work
-	only the first time.
+	If true and User is set automatic login will kick in again
+	on session exit, otherwise it will work only the first time.
 	Default value is false.
 
 SEE ALSO

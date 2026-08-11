@@ -62,6 +62,7 @@ namespace SDDM {
 
         bool isHidden() const;
         bool isNoDisplay() const;
+        bool isAvailable() const;
 
         QProcessEnvironment additionalEnv() const;
 
