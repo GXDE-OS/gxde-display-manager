@@ -200,8 +200,8 @@ GXDM守护进程还在system bus上拥有同名服务，其内部接口为`top.g
 - [x] 移植DDE Greeter
 - [x] 新增Waylanbd greeter支持
 - [x] 新增CMake支持
+- [x] 新增屏幕键盘支持
 - [ ] 新增Archlinux打包
-- [ ] 新增屏幕键盘支持
 
 请参阅[开启的Issues](https://gitee.com/GXDE-OS/gxde-display-manager/issues)以获取当前所有请求的新功能。
 
@@ -210,6 +210,9 @@ GXDM守护进程还在system bus上拥有同名服务，其内部接口为`top.g
 <!-- CONTRIBUTING -->
 ## 贡献
 我们感激每一位贡献者，如果您有让GXDM更好的建议或者想要请求功能，欢迎您提出新Issue。您也可以fork本仓库并创建拉取请求。
+
+### 打包注意事项
+如果您想为其它发行版打包，请记得让包管理器将`./data/configs/OMG.conf`安装至`/etc/gxdm`。
 
 ### GXDM的贡献者们
 ***注**: GXDM基于SDDM，原版SDDM的贡献者信息可以在[这里](https://github.com/sddm/sddm/graphs/contributors?all=1)找到*

@@ -200,8 +200,8 @@ The GXDM daemon also owns the same service name on the system bus and exposes th
 - [x] Port DDE Greeter.
 - [x] Add support for Wayland greeter.
 - [x] Update support for CMake.
+- [x] Add support for on-screen keyboard.
 - [ ] Add Archlinux packaging.
-- [ ] Add support for on-screen keyboard.
 
 Please refer to [opened issues](https://gitee.com/GXDE-OS/gxde-display-manager/issues) to see those feature requested.
 
@@ -210,6 +210,9 @@ Please refer to [opened issues](https://gitee.com/GXDE-OS/gxde-display-manager/i
 <!-- CONTRIBUTING -->
 ## Contributing
 We are grateful to all contributors. If you have any suggestions for making GXDM better or feature requests, feel free to open a new Issue. You can also fork this repo and submit a pull request.
+
+### Add Packing for Other Distros
+If you want to add packaging for other distros, please make sure that your package installs `./data/configs/OMG.conf` to `/etc/gxdm/`.
 
 ### Top Contributors
 ***NOTE**: GXDM is based on SDDM, and the contribution information of SDDM could be found [here](https://github.com/sddm/sddm/graphs/contributors?all=1).*
