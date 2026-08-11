@@ -1,3 +1,9 @@
+gxde-display-manager-se (1.2.1-gxde2) unstable; urgency=medium
+
+  * 修复了自定义锁屏壁纸不工作的问题
+
+ -- CharOfString <root@charofstring.cc>  Tue, 11 Aug 2026 23:00:01 +0800
+
 gxde-display-manager-se (1.2.1-gxde1) unstable; urgency=medium
 
   [ shenmo ]
