@@ -1,3 +1,24 @@
+gxde-display-manager-se (1.2.1-gxde1) unstable; urgency=medium
+
+  [ shenmo ]
+  * 为Greeter与锁屏新增动画支持
+
+  [ gfdgx_xi ]
+  * 修复构建故障
+
+  [ CharOfString ]
+  * 修复了Wayland锁屏不工作的问题
+  * 新增屏幕键盘支持
+  * 现在GXDM会记住上一个会话
+  * 新增尝试自动注册Super+L至GXDM锁屏的功能
+  * 允许用户全局更换Greeter壁纸
+  * 允许用户更换自己的锁屏壁纸
+  * 新增GXDE Wayland会话图标
+  * 新增自动登录支持
+  * 允许用户在Wayland与X11 Greeter之间切换（需要重启）
+
+ -- CharOfString <root@charofstring.cc>  Tue, 11 Aug 2026 22:08:22 +0800
+
 gxde-display-manager-se (1.1.1-gxde1) unstable; urgency=medium
 
   * 登录时自动更新D-Bus激活环境
