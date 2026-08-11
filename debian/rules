@@ -12,7 +12,9 @@ override_dh_auto_configure:
 		-DBUILD_WITH_QT6=ON \
 		-DBUILD_NEO_GREETER=ON \
 		-DBUILD_MAN_PAGES=OFF \
-		-DINSTALL_PAM_CONFIGURATION=ON
+		-DINSTALL_PAM_CONFIGURATION=ON \
+		-DUID_MIN=1000 \
+		-DUID_MAX=60000
 
 override_dh_auto_install:
 	dh_auto_install --buildsystem=cmake --destdir=debian/gxdm
