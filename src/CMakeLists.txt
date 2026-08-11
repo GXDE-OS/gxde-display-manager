@@ -4,6 +4,6 @@ add_subdirectory(daemon)
 add_subdirectory(greeter)
 add_subdirectory(helper)
 
-if(BUILD_NEO_GREETER)
-    add_subdirectory(greeter-neo)
+if(BUILD_CLASSIC_GREETER)
+    add_subdirectory(greeter-classic)
 endif()

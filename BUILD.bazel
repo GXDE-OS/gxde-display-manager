@@ -10,9 +10,9 @@ pkg_files(
         "//src/daemon:gxdm",
         "//src/greeter:gxdm-greeter-qt6",
         # Default greeter
-        "//src/greeter-neo:gxdm-greeter-neo",
+        "//src/greeter-classic:gxdm-greeter-classic",
         # In-session lock screen (PAM-direct, no dde-daemon)
-        "//src/greeter-neo:gxdm-lock-neo",
+        "//src/greeter-classic:gxdm-lock-classic",
     ],
     attributes = pkg_attributes(mode = "0755"),
     prefix = "/usr/bin",

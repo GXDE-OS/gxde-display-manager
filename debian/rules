@@ -10,7 +10,7 @@ export DH_ALWAYS_EXCLUDE = .bazel-root
 override_dh_auto_configure:
 	dh_auto_configure --buildsystem=cmake -- \
 		-DBUILD_WITH_QT6=ON \
-		-DBUILD_NEO_GREETER=ON \
+		-DBUILD_CLASSIC_GREETER=ON \
 		-DBUILD_MAN_PAGES=OFF \
 		-DINSTALL_PAM_CONFIGURATION=ON \
 		-DUID_MIN=1000 \

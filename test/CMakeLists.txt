@@ -20,16 +20,16 @@ target_include_directories(SessionTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../sr
 add_test(NAME Session COMMAND SessionTest)
 target_link_libraries(SessionTest Qt${QT_MAJOR_VERSION}::Core Qt${QT_MAJOR_VERSION}::Test)
 
-if(BUILD_NEO_GREETER)
+if(BUILD_CLASSIC_GREETER)
     find_package(Qt${QT_MAJOR_VERSION} REQUIRED COMPONENTS Widgets)
     pkg_check_modules(TEST_DTK2WIDGET REQUIRED IMPORTED_TARGET dtk2widget)
     add_executable(SystemDefaultsTest
         SystemDefaultsTest.cpp
-        ../src/greeter-neo/global_util/systemdefaults.cpp
-        ../src/greeter-neo/global_util/systemdefaults.h
+        ../src/greeter-classic/global_util/systemdefaults.cpp
+        ../src/greeter-classic/global_util/systemdefaults.h
     )
     target_include_directories(SystemDefaultsTest PRIVATE
-        ../src/greeter-neo/global_util
+        ../src/greeter-classic/global_util
     )
     add_test(NAME SystemDefaults COMMAND SystemDefaultsTest)
     target_link_libraries(SystemDefaultsTest PRIVATE
@@ -39,11 +39,11 @@ if(BUILD_NEO_GREETER)
 
     add_executable(GreeterAppearanceTest
         GreeterAppearanceTest.cpp
-        ../src/greeter-neo/global_util/greeterappearance.cpp
-        ../src/greeter-neo/global_util/greeterappearance.h
+        ../src/greeter-classic/global_util/greeterappearance.cpp
+        ../src/greeter-classic/global_util/greeterappearance.h
     )
     target_include_directories(GreeterAppearanceTest PRIVATE
-        ../src/greeter-neo/global_util
+        ../src/greeter-classic/global_util
     )
     add_test(NAME GreeterAppearance COMMAND GreeterAppearanceTest)
     target_link_libraries(GreeterAppearanceTest PRIVATE
@@ -53,8 +53,8 @@ if(BUILD_NEO_GREETER)
 
     add_executable(VirtualKeyboardTest
         VirtualKeyboardTest.cpp
-        ../src/greeter-neo/widgets/virtualkbinstance.cpp
-        ../src/greeter-neo/widgets/virtualkbinstance.h
+        ../src/greeter-classic/widgets/virtualkbinstance.cpp
+        ../src/greeter-classic/widgets/virtualkbinstance.h
     )
     add_test(NAME VirtualKeyboard COMMAND VirtualKeyboardTest -platform offscreen)
     target_link_libraries(VirtualKeyboardTest PRIVATE

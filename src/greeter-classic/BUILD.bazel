@@ -148,7 +148,7 @@ cc_library(
 
 # --- Greeter (talks to the GXDM daemon over --socket) ------------------------
 qt_cc_binary(
-    name = "gxdm-greeter-neo",
+    name = "gxdm-greeter-classic",
     srcs = [
         "main.cpp",
         "loginwindow.cpp",
@@ -169,7 +169,7 @@ qt_cc_binary(
 
 # --- Lock screen (in-session, authenticates via PAM directly) ----------------
 qt_cc_binary(
-    name = "gxdm-lock-neo",
+    name = "gxdm-lock-classic",
     srcs = glob([
         "lock/*.cpp",
         "lock/*.h",

@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 
     DApplication app(argc, argv);
     app.setOrganizationName("deepin");
-    app.setApplicationName("gxdm-lock-neo");
+    app.setApplicationName("gxdm-lock-classic");
     app.setApplicationVersion("2015.1.0");
 
     DLogManager::registerConsoleAppender();
@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
         return 0;
 
     if (!app.setSingleInstance(
-            QStringLiteral("gxdm-lock-neo"), DApplication::UserScope)) {
+            QStringLiteral("gxdm-lock-classic"), DApplication::UserScope)) {
         if (!runDaemon) {
             if (showUserList) {
                 QDBusInterface lockFront(

@@ -1,4 +1,4 @@
-#include "../src/greeter-neo/widgets/virtualkbinstance.h"
+#include "../src/greeter-classic/widgets/virtualkbinstance.h"
 
 #include <QLineEdit>
 #include <QPushButton>

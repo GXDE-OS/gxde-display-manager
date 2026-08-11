@@ -1,4 +1,3 @@
 [D-BUS Service]
 Name=top.gxde.DisplayManager
-Exec=@CMAKE_INSTALL_FULL_BINDIR@/gxdm-lock-neo --daemon
-
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/gxdm-lock-classic --daemon

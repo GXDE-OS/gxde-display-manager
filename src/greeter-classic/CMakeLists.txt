@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(gxdm-greeter-neo LANGUAGES CXX)
+project(gxdm-greeter-classic LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
@@ -81,7 +81,7 @@ set(NEO_COMMON_LIBS
 )
 
 # --- Greeter (talks to the GXDM daemon over --socket) ------------------------
-add_executable(gxdm-greeter-neo
+add_executable(gxdm-greeter-classic
     main.cpp
     loginwindow.cpp
     loginwindow.h
@@ -95,9 +95,9 @@ add_executable(gxdm-greeter-neo
     logintheme.qrc
     ${NEO_WIDGET_RESOURCES}
 )
-target_include_directories(gxdm-greeter-neo PRIVATE ${NEO_INCLUDE_DIRS})
-target_link_libraries(gxdm-greeter-neo PRIVATE ${NEO_COMMON_LIBS})
-install(TARGETS gxdm-greeter-neo DESTINATION "${CMAKE_INSTALL_BINDIR}")
+target_include_directories(gxdm-greeter-classic PRIVATE ${NEO_INCLUDE_DIRS})
+target_link_libraries(gxdm-greeter-classic PRIVATE ${NEO_COMMON_LIBS})
+install(TARGETS gxdm-greeter-classic DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
 # --- GXDM authenticator (src/auth + src/common) reused by the lock -----------
 # The top-level build already generated Constants.h with its configured paths.
@@ -176,7 +176,7 @@ file(GLOB NEO_LOCK_HEADERS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/lock/*.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/lock/dbus/*.h"
 )
-add_executable(gxdm-lock-neo
+add_executable(gxdm-lock-classic
     ${NEO_LOCK_SOURCES}
     ${NEO_LOCK_HEADERS}
     ${NEO_COMMON_SOURCES}
@@ -189,7 +189,7 @@ add_executable(gxdm-lock-neo
     lock/logintheme.qrc
     ${NEO_WIDGET_RESOURCES}
 )
-target_include_directories(gxdm-lock-neo PRIVATE
+target_include_directories(gxdm-lock-classic PRIVATE
     "${CMAKE_CURRENT_BINARY_DIR}"
     ${NEO_INCLUDE_DIRS}
     "${CMAKE_CURRENT_SOURCE_DIR}/lock"
@@ -197,10 +197,10 @@ target_include_directories(gxdm-lock-neo PRIVATE
     "${GXDM_REPO_ROOT}/src/common"
     "${GXDM_CONSTANTS_INCLUDE_DIR}"
 )
-target_link_libraries(gxdm-lock-neo PRIVATE
+target_link_libraries(gxdm-lock-classic PRIVATE
     ${NEO_COMMON_LIBS}
     LayerShellQt::Interface
     Qt6::Qml
     Qt6::WaylandClientPrivate
 )
-install(TARGETS gxdm-lock-neo DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(TARGETS gxdm-lock-classic DESTINATION "${CMAKE_INSTALL_BINDIR}")

@@ -31,8 +31,8 @@ Useful project options include:
 
 - `BUILD_MAN_PAGES=ON` builds the manual pages (requires `rst2man`).
 - `ENABLE_JOURNALD=OFF` disables journald logging.
-- `BUILD_NEO_GREETER=OFF` excludes the GXDE greeter and lock screen.
-- `BUILD_WITH_QT6=OFF -DBUILD_NEO_GREETER=OFF` enables the legacy Qt 5 build.
+- `BUILD_CLASSIC_GREETER=OFF` excludes the GXDE greeter and lock screen.
+- `BUILD_WITH_QT6=OFF -DBUILD_CLASSIC_GREETER=OFF` enables the legacy Qt 5 build.
 - `INSTALL_PAM_CONFIGURATION=OFF` skips installation of PAM configuration.
 
 Run `cmake -S . -B build-cmake -LAH` to list all cached options. CMake installs

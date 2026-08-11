@@ -17,8 +17,8 @@ configure_file(
     @ONLY
 )
 configure_file(
-    "gxdm-lock-neo.desktop.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/gxdm-lock-neo.desktop"
+    "gxdm-lock-classic.desktop.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/gxdm-lock-classic.desktop"
     @ONLY
 )
 
@@ -28,7 +28,7 @@ install(FILES
 )
 
 install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/gxdm-lock-neo.desktop"
+    "${CMAKE_CURRENT_BINARY_DIR}/gxdm-lock-classic.desktop"
     DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/xdg/autostart"
 )
 

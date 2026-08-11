@@ -22,7 +22,7 @@ const QString kKGlobalAccelPath = QStringLiteral("/kglobalaccel");
 const QString kKGlobalAccelInterface = QStringLiteral("org.kde.KGlobalAccel");
 const QString kKGlobalAccelComponentInterface = QStringLiteral(
   "org.kde.kglobalaccel.Component");
-const QString kComponent = QStringLiteral("gxdm-lock-neo");
+const QString kComponent = QStringLiteral("gxdm-lock-classic");
 const QString kAction = QStringLiteral("lock-screen");
 const QString kSystemDisplayManagerService =
   QStringLiteral("top.gxde.DisplayManager");

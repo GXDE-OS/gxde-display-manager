@@ -238,7 +238,7 @@ GXDM守护进程还在system bus上拥有同名服务，其内部接口为`top.g
 ## 许可证
 本项目以[GNU GENERAL PUBLIC LICENSE Version 3](./LICENSE)许可发行。
 
-本项目含有来自GXDE `session-ui`的源码，可以在`src/greeter-neo`找到，原版上游位于[GXDE-OS/gxde-session-ui](https://gitee.com/GXDE-OS/gxde-session-ui)，以[GNU GENERAL PUBLIC LICENSE Version 3](https://gitee.com/GXDE-OS/gxde-session-ui/blob/master/LICENSE?svcp_stk=1_ea4aETwwgfjPoBNPiiCDEDSV5zkBHs2UhWwbnE9dOUMgTQpn3GWWsP7g-d5P7vdOc8pUy6n3gqUzBwYWRSpsMn5glSx_AwPrOegiEQB6-z-bFaJX84-951qO7y66p6b5okTkZXtJkAnfclQjppYXX55voA3ESpiytcTqZIN1qUEqZKeRHjnERUf83GXnqoXUeXTWmfPGOafIokUE6EkrfA%3D%3D)获得许可，除非在文件头部另行说明。
+本项目含有来自GXDE `session-ui`的源码，可以在`src/greeter-classic`找到，原版上游位于[GXDE-OS/gxde-session-ui](https://gitee.com/GXDE-OS/gxde-session-ui)，以[GNU GENERAL PUBLIC LICENSE Version 3](https://gitee.com/GXDE-OS/gxde-session-ui/blob/master/LICENSE?svcp_stk=1_ea4aETwwgfjPoBNPiiCDEDSV5zkBHs2UhWwbnE9dOUMgTQpn3GWWsP7g-d5P7vdOc8pUy6n3gqUzBwYWRSpsMn5glSx_AwPrOegiEQB6-z-bFaJX84-951qO7y66p6b5okTkZXtJkAnfclQjppYXX55voA3ESpiytcTqZIN1qUEqZKeRHjnERUf83GXnqoXUeXTWmfPGOafIokUE6EkrfA%3D%3D)获得许可，除非在文件头部另行说明。
 
 本项目含有[CharOfString/samoyed-greeter](https://gitee.com/CharOfString/samoyed-greeter)的部分源码，以[GNU GENERAL PUBLIC LICENSE Version 3](https://gitee.com/CharOfString/samoyed-greeter/blob/main/LICENSE)获得许可，除非在文件头部另行说明。
 
