@@ -152,8 +152,8 @@ GXDM通过会话总线提供锁屏快捷键和全局Greeter外观设置。应用
 
 | 方法 | 说明 |
 | --- | --- |
-| `TryEnrollLkScr(bool enabled) -> bool` | 尝试注册或注销Meta+L GXDM锁屏快捷键。已有程序占用Meta+L时不会抢占。 |
-| `LkScrStat() -> bool` | 返回Meta+L是否已由GXDM成功注册。 |
+| `TryEnrollLkScr(bool enabled) -> bool` | 尝试注册或注销Super+L GXDM锁屏快捷键。已有程序占用Super+L时不会抢占。 |
+| `LkScrStat() -> bool` | 返回Super+L是否已由GXDM成功注册。 |
 | `Show()` | 显示GXDM锁屏界面。 |
 | `SetCursor(string theme) -> bool` | 设置全局Greeter光标主题。主题必须已经安装。 |
 | `SetWallpaperGXDEDefault() -> bool` | 将全局Greeter壁纸恢复为当前GXDE默认壁纸。 |
@@ -165,12 +165,12 @@ GXDM通过会话总线提供锁屏快捷键和全局Greeter外观设置。应用
 常用调用示例：
 
 ```bash
-# 注册Meta+L
+# 注册Super+L
 busctl --user call top.gxde.DisplayManager \
   /top/gxde/DisplayManager top.gxde.DisplayManager \
   TryEnrollLkScr b true
 
-# 查询Meta+L状态
+# 查询Super+L状态
 busctl --user call top.gxde.DisplayManager \
   /top/gxde/DisplayManager top.gxde.DisplayManager \
   LkScrStat

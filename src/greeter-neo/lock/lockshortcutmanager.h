@@ -53,8 +53,8 @@ class LockShortcutManager : public QObject {
   void setRegistered(bool registered);
 
   static QStringList actionId();
-  static DBusKeySequence metaLSequence();
-  static bool containsMetaL(const DBusKeySequenceList& sequences);
+  static DBusKeySequence superLSequence();
+  static bool containsSuperL(const DBusKeySequenceList& sequences);
 
   SessionBaseModel* m_model = nullptr;
   QDBusServiceWatcher* m_serviceWatcher = nullptr;

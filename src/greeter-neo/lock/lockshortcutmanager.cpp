@@ -112,7 +112,7 @@ void LockShortcutManager::onGlobalShortcutPressed(
 
 void LockShortcutManager::onShortcutsChanged(
     const QStringList& changedActionId, const DBusKeySequenceList& keys) {
-  if (changedActionId == actionId()) setRegistered(containsMetaL(keys));
+  if (changedActionId == actionId()) setRegistered(containsSuperL(keys));
 }
 
 void LockShortcutManager::onKGlobalAccelOwnerChanged(
@@ -140,20 +140,20 @@ bool LockShortcutManager::enroll() {
     return false;
   }
 
-  const DBusKeySequenceList requested{metaLSequence()};
+  const DBusKeySequenceList requested{superLSequence()};
   const QDBusReply<DBusKeySequenceList> shortcutReply =
       interface.call(QStringLiteral("setShortcutKeys"), actionId(),
           QVariant::fromValue(requested), kSetPresent | kNoAutoloading);
   if (!shortcutReply.isValid()) {
-    qWarning() << "Setting Meta+L failed:"
+    qWarning() << "Setting Super+L failed:"
       << shortcutReply.error().message();
     withdraw(true);
     return false;
   }
 
-  const bool registered = containsMetaL(shortcutReply.value());
+  const bool registered = containsSuperL(shortcutReply.value());
   if (!registered) {
-    qInfo() << "Meta+L is already registered;"
+    qInfo() << "Super+L is already registered;"
       " leaving the existing shortcut untouched.";
     withdraw(true);
     return false;
@@ -166,7 +166,7 @@ bool LockShortcutManager::enroll() {
   }
 
   setRegistered(true);
-  qInfo() << "Registered Meta+L.";
+  qInfo() << "Registered Super+L.";
   return true;
 }
 
@@ -220,7 +220,7 @@ QStringList LockShortcutManager::actionId() {
   };
 }
 
-DBusKeySequence LockShortcutManager::metaLSequence() {
+DBusKeySequence LockShortcutManager::superLSequence() {
   DBusKeySequence sequence;
   sequence.keys = {
     QKeyCombination(Qt::MetaModifier, Qt::Key_L).toCombined(),
@@ -231,10 +231,10 @@ DBusKeySequence LockShortcutManager::metaLSequence() {
   return sequence;
 }
 
-bool LockShortcutManager::containsMetaL(const DBusKeySequenceList& sequences) {
-  const int metaL = metaLSequence().keys.constFirst();
+bool LockShortcutManager::containsSuperL(const DBusKeySequenceList& sequences) {
+  const int superL = superLSequence().keys.constFirst();
   for (const DBusKeySequence& sequence : sequences) {
-    if (!sequence.keys.isEmpty() && sequence.keys.constFirst() == metaL)
+    if (!sequence.keys.isEmpty() && sequence.keys.constFirst() == superL)
       return true;
   }
   return false;

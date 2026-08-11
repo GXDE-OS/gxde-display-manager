@@ -152,8 +152,8 @@ GXDM exposes lock-shortcut and global greeter appearance controls on the session
 
 | Method | Description |
 | --- | --- |
-| `TryEnrollLkScr(bool enabled) -> bool` | Registers or withdraws the Meta+L GXDM lock shortcut. An existing Meta+L binding is never stolen. |
-| `LkScrStat() -> bool` | Returns whether GXDM successfully owns the Meta+L shortcut. |
+| `TryEnrollLkScr(bool enabled) -> bool` | Registers or withdraws the Super+L GXDM lock shortcut. An existing Super+L binding is never stolen. |
+| `LkScrStat() -> bool` | Returns whether GXDM successfully owns the Super+L shortcut. |
 | `Show()` | Shows the GXDM lock screen. |
 | `SetCursor(string theme) -> bool` | Sets the global greeter cursor theme. The theme must already be installed. |
 | `SetWallpaperGXDEDefault() -> bool` | Restores the current GXDE default as the global greeter wallpaper. |
@@ -165,12 +165,12 @@ GXDM exposes lock-shortcut and global greeter appearance controls on the session
 Examples:
 
 ```bash
-# Register Meta+L
+# Register Super+L
 busctl --user call top.gxde.DisplayManager \
   /top/gxde/DisplayManager top.gxde.DisplayManager \
   TryEnrollLkScr b true
 
-# Query the Meta+L state
+# Query the Super+L state
 busctl --user call top.gxde.DisplayManager \
   /top/gxde/DisplayManager top.gxde.DisplayManager \
   LkScrStat
