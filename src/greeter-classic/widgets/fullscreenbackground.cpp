@@ -33,6 +33,7 @@
 #include <QFileInfo>
 #include <QCryptographicHash>
 #include <QGraphicsBlurEffect>
+#include <QImageReader>
 #include <QLabel>
 #include <QWindow>
 
@@ -116,9 +117,6 @@ void FullscreenBackground::updateBackground(const QString &file)
     if (url.isLocalFile())
         return updateBackground(url.path());
 
-    if (m_bgPath == file)
-        return;
-
     if (QFile::exists(file)) {
         m_bgPath = file;
     }
@@ -131,7 +129,8 @@ void FullscreenBackground::updateBackground(const QString &file)
 
     Q_ASSERT(QFileInfo(m_bgPath).isFile());
 
-    updateBackground(QPixmap(m_bgPath));
+    QImageReader reader(m_bgPath);
+    updateBackground(QPixmap::fromImageReader(&reader));
 }
 
 void FullscreenBackground::setScreen(QScreen *screen)

@@ -37,6 +37,10 @@ public slots:
     void pushShutdownFrame();
     void onStatusChanged(SessionBaseModel::ModeStatus status);
 
+private slots:
+    void onGreeterWallpaperChanged(const QString &wallpaper);
+    void onLockWallpaperOverrideChanged(uint uid, const QString &wallpaper);
+
 protected:
     void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
     void showEvent(QShowEvent *event) Q_DECL_OVERRIDE;
@@ -48,6 +52,7 @@ private:
     void restoreCenterContent();
     void restoreMode();
     bool startFromAvatarMode() const;
+    QString currentBackgroundPath() const;
     void updateBackground(const QString &path);
     void onBlurDone(const QString &source, const QString &blur, bool status);
     void toggleVirtualKB();

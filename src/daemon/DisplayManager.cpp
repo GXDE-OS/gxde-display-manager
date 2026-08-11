@@ -60,6 +60,17 @@ QString stateDirectory()
     return QStringLiteral(STATE_DIR);
 }
 
+QString lockWallpaperOverrideFileName(uint uid)
+{
+    return QStringLiteral("lock-wallpaper-override-%1").arg(uid);
+}
+
+QString lockWallpaperOverridePath(uint uid)
+{
+    return stateDirectory() + QLatin1Char('/')
+        + lockWallpaperOverrideFileName(uid);
+}
+
 bool cursorThemeExists(const QString &theme)
 {
     static const QRegularExpression validName(
@@ -78,6 +89,59 @@ bool saveWallpaperPath(const QString &path)
     SDDM::stateConfig.Greeter.Wallpaper.set(path);
     SDDM::stateConfig.save();
     return true;
+}
+
+QString saveWallpaperDescriptor(const QDBusUnixFileDescriptor &wallpaper,
+        const QString &fileName)
+{
+    if (!wallpaper.isValid())
+        return QString();
+
+    const int sourceFd = dup(wallpaper.fileDescriptor());
+    if (sourceFd < 0)
+        return QString();
+
+    QFile source;
+    if (!source.open(sourceFd, QIODevice::ReadOnly,
+                     QFileDevice::AutoCloseHandle)) {
+        close(sourceFd);
+        return QString();
+    }
+
+    const QString directory = stateDirectory();
+    if (!QDir().mkpath(directory))
+        return QString();
+
+    const QString targetPath = directory + QLatin1Char('/') + fileName;
+    QSaveFile target(targetPath);
+    if (!target.open(QIODevice::WriteOnly))
+        return QString();
+
+    qint64 total = 0;
+    while (!source.atEnd()) {
+        const QByteArray chunk = source.read(1024 * 1024);
+        if (chunk.isEmpty() && source.error() != QFileDevice::NoError) {
+            target.cancelWriting();
+            return QString();
+        }
+        total += chunk.size();
+        if (total > MAX_WALLPAPER_SIZE
+                || target.write(chunk) != chunk.size()) {
+            target.cancelWriting();
+            return QString();
+        }
+    }
+
+    if (total == 0 || !target.commit())
+        return QString();
+
+    if (!QFile::setPermissions(targetPath,
+            QFileDevice::ReadOwner | QFileDevice::WriteOwner
+                | QFileDevice::ReadGroup | QFileDevice::ReadOther)) {
+        return QString();
+    }
+
+    return targetPath;
 }
 
 QString normalizedDisplayServer(const QString& displayServer) {
@@ -243,64 +307,59 @@ namespace SDDM {
 
     bool GxdeDisplayManager::SetWallpaperGXDEDefault()
     {
-        return saveWallpaperPath(GXDE_DEFAULT_WALLPAPER);
+        if (!saveWallpaperPath(GXDE_DEFAULT_WALLPAPER))
+            return false;
+        emit WallpaperChanged(GXDE_DEFAULT_WALLPAPER);
+        return true;
     }
 
     bool GxdeDisplayManager::SetWallpaperDDELockDefault()
     {
-        return saveWallpaperPath(DDE_LOCK_DEFAULT_WALLPAPER);
+        if (!saveWallpaperPath(DDE_LOCK_DEFAULT_WALLPAPER))
+            return false;
+        emit WallpaperChanged(DDE_LOCK_DEFAULT_WALLPAPER);
+        return true;
     }
 
     bool GxdeDisplayManager::SetWallpaper(
         const QDBusUnixFileDescriptor &wallpaper)
     {
-        if (!wallpaper.isValid())
+        const QString targetPath = saveWallpaperDescriptor(wallpaper,
+            QStringLiteral("greeter-wallpaper"));
+        if (targetPath.isEmpty())
             return false;
-
-        const int sourceFd = dup(wallpaper.fileDescriptor());
-        if (sourceFd < 0)
+        if (!saveWallpaperPath(targetPath))
             return false;
+        emit WallpaperChanged(targetPath);
+        return true;
+    }
 
-        QFile source;
-        if (!source.open(sourceFd, QIODevice::ReadOnly,
-                         QFileDevice::AutoCloseHandle)) {
-            close(sourceFd);
+    bool GxdeDisplayManager::SetLockWallpaperOverride(
+        uint uid,
+        const QDBusUnixFileDescriptor &wallpaper)
+    {
+        const QString targetPath = saveWallpaperDescriptor(wallpaper,
+            lockWallpaperOverrideFileName(uid));
+        if (targetPath.isEmpty())
             return false;
-        }
+        emit LockWallpaperOverrideChanged(uid, targetPath);
+        return true;
+    }
 
-        const QString directory = stateDirectory();
-        if (!QDir().mkpath(directory))
+    bool GxdeDisplayManager::ClearLockWallpaperOverride(uint uid)
+    {
+        const QString path = lockWallpaperOverridePath(uid);
+        if (QFileInfo::exists(path) && !QFile::remove(path))
             return false;
+        emit LockWallpaperOverrideChanged(uid, QString());
+        return true;
+    }
 
-        const QString targetPath = directory
-            + QStringLiteral("/greeter-wallpaper");
-        QSaveFile target(targetPath);
-        if (!target.open(QIODevice::WriteOnly))
-            return false;
-
-        qint64 total = 0;
-        while (!source.atEnd()) {
-            const QByteArray chunk = source.read(1024 * 1024);
-            if (chunk.isEmpty() && source.error() != QFileDevice::NoError) {
-                target.cancelWriting();
-                return false;
-            }
-            total += chunk.size();
-            if (total > MAX_WALLPAPER_SIZE || target.write(chunk) != chunk.size()) {
-                target.cancelWriting();
-                return false;
-            }
-        }
-
-        if (total == 0 || !target.commit())
-            return false;
-
-        if (!QFile::setPermissions(targetPath,
-                QFileDevice::ReadOwner | QFileDevice::WriteOwner
-                    | QFileDevice::ReadGroup | QFileDevice::ReadOther)) {
-            return false;
-        }
-        return saveWallpaperPath(targetPath);
+    QString GxdeDisplayManager::LockWallpaperOverride(uint uid) const
+    {
+        const QString path = lockWallpaperOverridePath(uid);
+        const QFileInfo file(path);
+        return file.isFile() && file.isReadable() ? path : QString();
     }
 
     bool GxdeDisplayManager::SetGreeterDisplayServer(

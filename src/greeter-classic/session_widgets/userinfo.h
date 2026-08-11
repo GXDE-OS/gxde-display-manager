@@ -28,7 +28,7 @@ signals:
     void displayNameChanged(const QString &displayname) const;
     void logindChanged(bool islogind) const;
     void avatarChanged(const QString &avatar) const;
-    void greeterBackgroundPathChanged(const QString &path) const;
+    void lockBackgroundPathChanged(const QString &path) const;
     void desktopBackgroundPathChanged(const QString &path) const;
     void localeChanged(const QString &locale) const;
     void kbLayoutListChanged(const QStringList &list);
@@ -63,6 +63,7 @@ public:
     virtual QString displayName() const { return m_userName; }
     virtual QString avatarPath() const = 0;
     virtual QString greeterBackgroundPath() const = 0;
+    virtual QString lockBackgroundPath() const = 0;
     virtual QString desktopBackgroundPath() const = 0;
     virtual QStringList kbLayoutList() { return QStringList(); }
     virtual QString currentKBLayout() { return QString(); }
@@ -95,6 +96,7 @@ public:
     QString displayName() const override;
     QString avatarPath() const override;
     QString greeterBackgroundPath() const override;
+    QString lockBackgroundPath() const override;
     QString desktopBackgroundPath() const override;
     QStringList kbLayoutList() override;
     QString currentKBLayout() override;
@@ -119,6 +121,7 @@ public:
     UserType type() const override { return ADDomain; }
     QString avatarPath() const override;
     QString greeterBackgroundPath() const override;
+    QString lockBackgroundPath() const override;
     QString desktopBackgroundPath() const override;
 
 private:

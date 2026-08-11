@@ -16,6 +16,19 @@
             <arg type="h" name="wallpaper" direction="in"/>
             <arg type="b" name="success" direction="out"/>
         </method>
+        <method name="SetLockWallpaperOverride">
+            <arg type="u" name="uid" direction="in"/>
+            <arg type="h" name="wallpaper" direction="in"/>
+            <arg type="b" name="success" direction="out"/>
+        </method>
+        <method name="ClearLockWallpaperOverride">
+            <arg type="u" name="uid" direction="in"/>
+            <arg type="b" name="success" direction="out"/>
+        </method>
+        <method name="LockWallpaperOverride">
+            <arg type="u" name="uid" direction="in"/>
+            <arg type="s" name="wallpaper" direction="out"/>
+        </method>
         <method name="SetGreeterDisplayServer">
             <arg type="s" name="displayServer" direction="in"/>
             <arg type="b" name="success" direction="out"/>
@@ -23,5 +36,12 @@
         <method name="GreeterDisplayServer">
             <arg type="s" name="displayServer" direction="out"/>
         </method>
+        <signal name="WallpaperChanged">
+            <arg type="s" name="wallpaper"/>
+        </signal>
+        <signal name="LockWallpaperOverrideChanged">
+            <arg type="u" name="uid"/>
+            <arg type="s" name="wallpaper"/>
+        </signal>
     </interface>
 </node>

@@ -12,6 +12,8 @@
 #include <QTimer>
 #include <QUrl>
 
+#include <unistd.h>
+
 #include "sessionbasemodel.h"
 #include "lockshortcutmanager.h"
 
@@ -48,15 +50,32 @@ bool callSystemDisplayManager(const QString& method,
   return reply.value();
 }
 
-QString querySystemDisplayManager(const QString& method) {
+QString querySystemDisplayManager(const QString& method,
+    const QVariantList& arguments = {}) {
   QDBusInterface interface(kSystemDisplayManagerService,
     kSystemDisplayManagerPath, kSystemDisplayManagerInterface,
     QDBusConnection::systemBus());
-  const QDBusReply<QString> reply(interface.call(QDBus::Block, method));
+  const QDBusReply<QString> reply(interface.callWithArgumentList(
+    QDBus::Block, method, arguments));
   if (!reply.isValid()) {
     return QString();
   }
   return reply.value();
+}
+
+bool sendWallpaperFileToSystem(const QString& method, const QString& localPath,
+    QVariantList arguments = {}) {
+  QImageReader reader(localPath);
+  if (!reader.canRead()) return false;
+
+  QFile file(localPath);
+  if (!file.open(QIODevice::ReadOnly)) return false;
+
+  const QDBusUnixFileDescriptor descriptor(file.handle());
+  if (!descriptor.isValid()) return false;
+
+  arguments << QVariant::fromValue(descriptor);
+  return callSystemDisplayManager(method, arguments);
 }
 
 }  // namespace
@@ -282,17 +301,26 @@ bool GxdeDisplayManagerService::SetWallpaperDDELockDefault() {
 bool GxdeDisplayManagerService::SetWallpaper(const QString& wallpaper) {
   const QUrl url(wallpaper);
   const QString localPath = url.isLocalFile() ? url.toLocalFile() : wallpaper;
-  QImageReader reader(localPath);
-  if (!reader.canRead()) return false;
+  return sendWallpaperFileToSystem(QStringLiteral("SetWallpaper"), localPath);
+}
 
-  QFile file(localPath);
-  if (!file.open(QIODevice::ReadOnly)) return false;
+bool GxdeDisplayManagerService::SetLockWallpaperOverride(
+    const QString& wallpaper) {
+  const QUrl url(wallpaper);
+  const QString localPath = url.isLocalFile() ? url.toLocalFile() : wallpaper;
+  return sendWallpaperFileToSystem(
+    QStringLiteral("SetLockWallpaperOverride"), localPath,
+    {QVariant::fromValue(static_cast<uint>(getuid()))});
+}
 
-  const QDBusUnixFileDescriptor descriptor(file.handle());
-  if (!descriptor.isValid()) return false;
+bool GxdeDisplayManagerService::ClearLockWallpaperOverride() {
+  return callSystemDisplayManager(QStringLiteral("ClearLockWallpaperOverride"),
+    {QVariant::fromValue(static_cast<uint>(getuid()))});
+}
 
-  return callSystemDisplayManager(QStringLiteral("SetWallpaper"),
-    {QVariant::fromValue(descriptor)});
+QString GxdeDisplayManagerService::LockWallpaperOverride() const {
+  return querySystemDisplayManager(QStringLiteral("LockWallpaperOverride"),
+    {QVariant::fromValue(static_cast<uint>(getuid()))});
 }
 
 bool GxdeDisplayManagerService::SetGreeterDisplayServer(

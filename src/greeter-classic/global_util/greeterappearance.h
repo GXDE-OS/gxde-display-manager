@@ -8,6 +8,8 @@ namespace GxdmGreeterAppearance {
 QString stateFilePath();
 QString cursorTheme(const QString& statePath = QString());
 QString wallpaper(const QString& statePath = QString());
+QString lockWallpaperOverride(
+  uint uid, const QString& stateDirectory = QString());
 QString gxdeDefaultWallpaper();
 QString ddeLockDefaultWallpaper();
 

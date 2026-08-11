@@ -197,7 +197,17 @@ static QString gsettingsLockBackground() {
 }
 
 static QString lockBackgroundForUser(const QString& userName, uid_t uid) {
-    // 1. Deepin Accounts (com.deepin.daemon.Accounts), the same interface the
+    // 1. A GXDM lock override belongs to one user and never affects greeter.
+    const QString overrideBackground =
+        readableImagePath(
+            GxdmGreeterAppearance::lockWallpaperOverride(uid));
+    if (!overrideBackground.isEmpty()) {
+        qInfo() << "(Frontend) Lock background: Using user override for"
+            << userName << overrideBackground;
+        return overrideBackground;
+    }
+
+    // 2. Deepin Accounts (com.deepin.daemon.Accounts), the same interface the
     //    classic lightdm greeter used for the login wallpaper. It is provided
     //    by a system service, so it also works before the user session starts.
     const QString accountsBackground =
@@ -208,7 +218,7 @@ static QString lockBackgroundForUser(const QString& userName, uid_t uid) {
         return accountsBackground;
     }
 
-    // 2. Freedesktop AccountsService (org.freedesktop.Accounts) as a fallback
+    // 3. Freedesktop AccountsService (org.freedesktop.Accounts) as a fallback
     //    for systems without the Deepin accounts daemon.
     const QString freedesktopBackground =
         accountsServiceLockBackground(userName);
@@ -218,7 +228,7 @@ static QString lockBackgroundForUser(const QString& userName, uid_t uid) {
         return freedesktopBackground;
     }
 
-    // 3. GSettings com.deepin.dde.appearance. Only meaningful when this
+    // 4. GSettings com.deepin.dde.appearance. Only meaningful when this
     //    process runs as the user itself (e.g. the in-session locker), where
     //    the user's real desktop/lock wallpaper can be read.
     if (uid == getuid()) {
@@ -230,7 +240,7 @@ static QString lockBackgroundForUser(const QString& userName, uid_t uid) {
         }
     }
 
-    // 4. Global greeter wallpaper (state.conf) and finally the built-in one.
+    // 5. Global greeter wallpaper (state.conf) and finally the built-in one.
     qWarning() << "(Frontend) Lock background: No usable user wallpaper for"
         << userName << "; using the greeter wallpaper";
     return GxdmGreeterAppearance::wallpaper();
@@ -435,6 +445,11 @@ QString NativeUser::avatarPath() const {
 
 QString NativeUser::greeterBackgroundPath() const
 {
+    return GxdmGreeterAppearance::wallpaper();
+}
+
+QString NativeUser::lockBackgroundPath() const
+{
     return lockBackgroundForUser(m_userName, m_uid);
 }
 
@@ -495,6 +510,11 @@ QString ADDomainUser::avatarPath() const
 }
 
 QString ADDomainUser::greeterBackgroundPath() const
+{
+    return GxdmGreeterAppearance::wallpaper();
+}
+
+QString ADDomainUser::lockBackgroundPath() const
 {
     return lockBackgroundForUser(m_userName, m_uid);
 }

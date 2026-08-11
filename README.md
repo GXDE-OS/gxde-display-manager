@@ -159,10 +159,13 @@ GXDM exposes lock-shortcut and global greeter appearance controls on the session
 | `SetWallpaperGXDEDefault() -> bool` | Restores the current GXDE default as the global greeter wallpaper. |
 | `SetWallpaperDDELockDefault() -> bool` | Uses the bundled DDE lock default background as the global greeter wallpaper. |
 | `SetWallpaper(string path) -> bool` | Sets a custom global greeter wallpaper from a local path or `file://` URL. |
+| `SetLockWallpaperOverride(string path) -> bool` | Sets the current user's lock-screen wallpaper override from a local path or `file://` URL. |
+| `ClearLockWallpaperOverride() -> bool` | Clears the current user's lock-screen wallpaper override. |
+| `LockWallpaperOverride() -> string` | Returns the current user's persisted lock-screen wallpaper override. |
 | `SetGreeterDisplayServer(string displayServer) -> bool` | Persists the greeter display server. Valid values are `wayland`, `x11`, and `x11-user`. |
 | `GreeterDisplayServer() -> string` | Returns the persisted greeter display server. |
 
-**Note:** the `SetWallpaper*` methods configure the login greeter, not the lock-screen wallpaper. The setting applies to every user and display and is loaded the next time the greeter starts. A custom wallpaper must be a recognized image no larger than 128 MiB. GXDM transfers it through a Unix file descriptor and copies it under `~gxdm`, so the greeter does not depend on the original user file. `SetGreeterDisplayServer` takes effect the next time the greeter display is created.
+**Note:** the greeter uses one global wallpaper. The lock screen uses this priority order: the current user's `LockWallpaperOverride`, the current user's Deepin `GreeterBackground`, GSettings desktop backgrounds, then the global greeter wallpaper/default. Every wallpaper setting refreshes the active greeter or lock screen immediately after it is persisted. Custom wallpapers and overrides must be recognized images no larger than 128 MiB. GXDM transfers them through Unix file descriptors and copies persisted images under `~gxdm`, so the greeter does not depend on the original user file. `SetGreeterDisplayServer` takes effect the next time the greeter display is created.
 
 Examples:
 
@@ -192,6 +195,16 @@ busctl --user call top.gxde.DisplayManager \
   /top/gxde/DisplayManager top.gxde.DisplayManager \
   SetWallpaperGXDEDefault
 
+# Override the lock-screen wallpaper
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  SetLockWallpaperOverride s /absolute/path/to/lock-wallpaper.jpg
+
+# Clear the lock-screen wallpaper override
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  ClearLockWallpaperOverride
+
 # Use the X11 greeter display server
 busctl --user call top.gxde.DisplayManager \
   /top/gxde/DisplayManager top.gxde.DisplayManager \
@@ -203,7 +216,7 @@ busctl --user call top.gxde.DisplayManager \
   GreeterDisplayServer
 ```
 
-The GXDM daemon also owns the same service name on the system bus and exposes the internal `top.gxde.DisplayManager.System` interface. It persists global appearance values in `~gxdm/state.conf` and the greeter display server in `/etc/gxdm.conf`; custom wallpapers are accepted as Unix file descriptors rather than caller-supplied paths. This is an implementation detail of the session API and should not be called directly by regular applications.
+The GXDM daemon also owns the same service name on the system bus and exposes the internal `top.gxde.DisplayManager.System` interface. It persists global appearance values in `~gxdm/state.conf`, stores user lock-screen overrides by UID, and writes the greeter display server to `/etc/gxdm.conf`; custom wallpapers are accepted as Unix file descriptors rather than caller-supplied paths. This is an implementation detail of the session API and should not be called directly by regular applications.
 
 
 <!-- ROADMAP -->

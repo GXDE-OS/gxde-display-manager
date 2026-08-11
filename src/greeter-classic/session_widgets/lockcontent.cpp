@@ -8,7 +8,17 @@
 #include "shutdownwidget.h"
 #include "virtualkbinstance.h"
 
+#include <QDBusConnection>
 #include <QMouseEvent>
+
+namespace {
+
+const QString kGxdmService = QStringLiteral("top.gxde.DisplayManager");
+const QString kGxdmPath = QStringLiteral("/top/gxde/DisplayManager");
+const QString kGxdmSystemInterface =
+    QStringLiteral("top.gxde.DisplayManager.System");
+
+}  // namespace
 
 LockContent::LockContent(SessionBaseModel * const model, QWidget *parent)
     : SessionBaseWindow(parent)
@@ -126,6 +136,14 @@ LockContent::LockContent(SessionBaseModel * const model, QWidget *parent)
     connect(model, &SessionBaseModel::hasVirtualKBChanged, this, initVirtualKB);
     connect(model, &SessionBaseModel::onUserListChanged, this, &LockContent::onUserListChanged);
 
+    QDBusConnection::systemBus().connect(kGxdmService, kGxdmPath,
+        kGxdmSystemInterface, QStringLiteral("WallpaperChanged"), this,
+        SLOT(onGreeterWallpaperChanged(QString)));
+    QDBusConnection::systemBus().connect(kGxdmService, kGxdmPath,
+        kGxdmSystemInterface,
+        QStringLiteral("LockWallpaperOverrideChanged"), this,
+        SLOT(onLockWallpaperOverrideChanged(uint,QString)));
+
     onCurrentUserChanged(model->currentUser());
     initVirtualKB(model->hasVirtualKB());
 
@@ -155,7 +173,11 @@ void LockContent::onCurrentUserChanged(std::shared_ptr<User> user)
 
     m_user = user;
 
-    m_currentUserConnects << connect(user.get(), &User::greeterBackgroundPathChanged, this, &LockContent::updateBackground , Qt::UniqueConnection);
+    if (m_model->currentType() == SessionBaseModel::AuthType::LockType) {
+        m_currentUserConnects << connect(user.get(),
+            &User::lockBackgroundPathChanged, this,
+            &LockContent::updateBackground, Qt::UniqueConnection);
+    }
 
     m_userInputWidget->setUser(user);
 
@@ -165,9 +187,7 @@ void LockContent::onCurrentUserChanged(std::shared_ptr<User> user)
 
     //TODO: refresh blur image
     QTimer::singleShot(0, this, [=] {
-        // 登录与锁屏都使用用户锁屏壁纸（与 lightdm greeter 行为一致），
-        // 而不是全局 greeter 壁纸。
-        updateBackground(user->greeterBackgroundPath());
+        updateBackground(currentBackgroundPath());
     });
 }
 
@@ -239,7 +259,7 @@ void LockContent::mouseReleaseEvent(QMouseEvent *event)
 void LockContent::showEvent(QShowEvent *event)
 {
     if (m_user) {
-        updateBackground(m_user->greeterBackgroundPath());
+        updateBackground(currentBackgroundPath());
     }
 
     // 每次显示都回到初始模式，避免解锁后再次锁屏仍停留在登录框界面
@@ -304,6 +324,35 @@ bool LockContent::startFromAvatarMode() const
             && m_model->userList().size() > 1);
 }
 
+QString LockContent::currentBackgroundPath() const
+{
+    if (!m_user)
+        return QString();
+
+    return m_model->currentType() == SessionBaseModel::AuthType::LockType
+        ? m_user->lockBackgroundPath()
+        : m_user->greeterBackgroundPath();
+}
+
+void LockContent::onGreeterWallpaperChanged(const QString &wallpaper)
+{
+    if (m_model->currentType() == SessionBaseModel::AuthType::LightdmType) {
+        updateBackground(wallpaper);
+    } else if (m_user) {
+        updateBackground(currentBackgroundPath());
+    }
+}
+
+void LockContent::onLockWallpaperOverrideChanged(
+    uint uid, const QString &wallpaper)
+{
+    Q_UNUSED(wallpaper)
+    if (m_model->currentType() == SessionBaseModel::AuthType::LockType
+        && m_user && m_user->uid() == uid) {
+        updateBackground(currentBackgroundPath());
+    }
+}
+
 void LockContent::updateBackground(const QString &path)
 {
     // No dde-daemon ImageBlur; use the wallpaper as-is.
@@ -315,7 +364,7 @@ void LockContent::onBlurDone(const QString &source, const QString &blur, bool st
 {
     const QString &sourcePath = QUrl(source).isLocalFile() ? QUrl(source).toLocalFile() : source;
 
-    if (status && m_model->currentUser()->greeterBackgroundPath() == sourcePath)
+    if (status && currentBackgroundPath() == sourcePath)
         emit requestBackground(blur);
 }
 

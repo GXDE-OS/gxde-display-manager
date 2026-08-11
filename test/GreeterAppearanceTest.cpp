@@ -23,6 +23,14 @@ void GreeterAppearanceTest::readsGlobalAppearance() {
   QCOMPARE(wallpaper.write("image"), 5);
   wallpaper.close();
 
+  const uint uid = 1000;
+  const QString lockOverridePath = directory.filePath(
+    QStringLiteral("lock-wallpaper-override-%1").arg(uid));
+  QFile lockOverride(lockOverridePath);
+  QVERIFY(lockOverride.open(QIODevice::WriteOnly));
+  QCOMPARE(lockOverride.write("image"), 5);
+  lockOverride.close();
+
   const QString statePath = directory.filePath(QStringLiteral("state.conf"));
   QSettings settings(statePath, QSettings::IniFormat);
   settings.setValue(
@@ -33,6 +41,11 @@ void GreeterAppearanceTest::readsGlobalAppearance() {
   QCOMPARE(
     GxdmGreeterAppearance::cursorTheme(statePath), QStringLiteral("gxde"));
   QCOMPARE(GxdmGreeterAppearance::wallpaper(statePath), wallpaperPath);
+  QCOMPARE(GxdmGreeterAppearance::lockWallpaperOverride(
+    uid, directory.path()), lockOverridePath);
+  QCOMPARE(GxdmGreeterAppearance::lockWallpaperOverride(
+    uid + 1, directory.path()),
+    QString());
 }
 
 void GreeterAppearanceTest::exposesDefaultWallpaperPaths() {

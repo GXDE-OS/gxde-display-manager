@@ -3,6 +3,7 @@
 #include <pwd.h>
 
 #include <QFile>
+#include <QFileInfo>
 #include <QSettings>
 
 namespace {
@@ -45,6 +46,16 @@ QString wallpaper(const QString& statePath) {
   if (isReadableFile(configured)) return configured;
   if (isReadableFile(gxdeDefaultWallpaper())) return gxdeDefaultWallpaper();
   return ddeLockDefaultWallpaper();
+}
+
+QString lockWallpaperOverride(uint uid, const QString& stateDirectory) {
+  const QString directory = stateDirectory.isEmpty()
+    ? QFileInfo(stateFilePath()).absolutePath()
+    : stateDirectory;
+  const QString configured = directory + QStringLiteral(
+    "/lock-wallpaper-override-%1").arg(uid);
+
+  return isReadableFile(configured) ? configured : QString();
 }
 
 QString gxdeDefaultWallpaper() {

@@ -38,8 +38,16 @@ namespace SDDM {
         bool SetWallpaperGXDEDefault();
         bool SetWallpaperDDELockDefault();
         bool SetWallpaper(const QDBusUnixFileDescriptor &wallpaper);
+        bool SetLockWallpaperOverride(uint uid,
+            const QDBusUnixFileDescriptor &wallpaper);
+        bool ClearLockWallpaperOverride(uint uid);
+        QString LockWallpaperOverride(uint uid) const;
         bool SetGreeterDisplayServer(const QString& displayServer);
         QString GreeterDisplayServer() const;
+
+    signals:
+        void WallpaperChanged(const QString &wallpaper);
+        void LockWallpaperOverrideChanged(uint uid, const QString &wallpaper);
     };
 
     class DisplayManagerSeat;
