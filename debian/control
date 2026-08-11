@@ -14,6 +14,7 @@ Build-Depends: debhelper-compat (= 13),
                libdtk2widget6-dev,
                libdtk6core-dev,
                libdtk6log-dev,
+               libglib2.0-dev,
                libgsettings-qt6-dev,
                liblayershellqtinterface-dev,
                libpam0g-dev,
@@ -33,7 +34,6 @@ Build-Depends: debhelper-compat (= 13),
                qt6-tools-dev-tools,
                libx11-xcb-dev,
                systemd-dev,
-               libgsettings-qt6-dev,
 Standards-Version: 4.7.0
 Rules-Requires-Root: no
 Homepage: https://github.com/GXDE-OS/gxde-display-manager
