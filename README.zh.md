@@ -165,7 +165,7 @@ GXDM通过会话总线提供锁屏快捷键和全局Greeter外观设置。应用
 | `SetGreeterDisplayServer(string displayServer) -> bool` | 持久化Greeter显示服务器。有效值为`wayland`、`x11`和`x11-user`。 |
 | `GreeterDisplayServer() -> string` | 返回当前持久化的Greeter显示服务器。 |
 
-**注意：**Greeter只使用一份全局壁纸。锁屏壁纸优先级为：当前用户的`LockWallpaperOverride`、当前用户的Deepin `GreeterBackground`、GSettings桌面壁纸、全局Greeter壁纸/默认壁纸。所有壁纸设置在持久化成功后立即刷新当前Greeter或锁屏。自定义图片和override必须是可识别的图像且不大于128 MiB；GXDM会通过Unix文件描述符将持久化图片复制到`~gxdm`，不保留对原始用户文件的依赖。`SetGreeterDisplayServer`会在下次创建Greeter显示时生效。
+**注意：**Greeter只使用一份全局壁纸。锁屏壁纸优先级为：当前用户的`LockWallpaperOverride`、当前用户的Deepin `GreeterBackground`、GSettings桌面壁纸、全局Greeter壁纸/默认壁纸。所有壁纸设置在持久化成功后立即刷新当前Greeter或锁屏。自定义图片和override必须是可识别的图像且不大于128 MiB；全局Greeter壁纸复制到`~gxdm`，用户锁屏override复制到`~/.local/share/gxdm/lock-wallpaper-override`，均不依赖原始图片继续存在。`SetGreeterDisplayServer`会在下次创建Greeter显示时生效。
 
 常用调用示例：
 
@@ -216,7 +216,7 @@ busctl --user call top.gxde.DisplayManager \
   GreeterDisplayServer
 ```
 
-GXDM守护进程还在system bus上拥有同名服务，其内部接口为`top.gxde.DisplayManager.System`。该接口负责把全局外观设置写入`~gxdm/state.conf`、按UID持久化用户锁屏override，并将Greeter显示服务器写入`/etc/gxdm.conf`；其中自定义壁纸使用Unix FD而不是用户提供的路径。它是会话接口的实现细节，普通应用不应直接调用。
+GXDM守护进程还在system bus上拥有同名服务，其内部接口为`top.gxde.DisplayManager.System`。该接口负责把全局外观设置写入`~gxdm/state.conf`，并将Greeter显示服务器写入`/etc/gxdm.conf`；其中全局自定义壁纸使用Unix FD而不是用户提供的路径。用户锁屏override由session bus接口直接保存在用户数据目录。system bus接口是实现细节，普通应用不应直接调用。
 
 
 <!-- ROADMAP -->

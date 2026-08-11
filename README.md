@@ -165,7 +165,7 @@ GXDM exposes lock-shortcut and global greeter appearance controls on the session
 | `SetGreeterDisplayServer(string displayServer) -> bool` | Persists the greeter display server. Valid values are `wayland`, `x11`, and `x11-user`. |
 | `GreeterDisplayServer() -> string` | Returns the persisted greeter display server. |
 
-**Note:** the greeter uses one global wallpaper. The lock screen uses this priority order: the current user's `LockWallpaperOverride`, the current user's Deepin `GreeterBackground`, GSettings desktop backgrounds, then the global greeter wallpaper/default. Every wallpaper setting refreshes the active greeter or lock screen immediately after it is persisted. Custom wallpapers and overrides must be recognized images no larger than 128 MiB. GXDM transfers them through Unix file descriptors and copies persisted images under `~gxdm`, so the greeter does not depend on the original user file. `SetGreeterDisplayServer` takes effect the next time the greeter display is created.
+**Note:** the greeter uses one global wallpaper. The lock screen uses this priority order: the current user's `LockWallpaperOverride`, the current user's Deepin `GreeterBackground`, GSettings desktop backgrounds, then the global greeter wallpaper/default. Every wallpaper setting refreshes the active greeter or lock screen immediately after it is persisted. Custom wallpapers and overrides must be recognized images no larger than 128 MiB. The global greeter wallpaper is copied under `~gxdm`, while the user lock override is copied to `~/.local/share/gxdm/lock-wallpaper-override`; neither depends on the original image remaining available. `SetGreeterDisplayServer` takes effect the next time the greeter display is created.
 
 Examples:
 
@@ -216,7 +216,7 @@ busctl --user call top.gxde.DisplayManager \
   GreeterDisplayServer
 ```
 
-The GXDM daemon also owns the same service name on the system bus and exposes the internal `top.gxde.DisplayManager.System` interface. It persists global appearance values in `~gxdm/state.conf`, stores user lock-screen overrides by UID, and writes the greeter display server to `/etc/gxdm.conf`; custom wallpapers are accepted as Unix file descriptors rather than caller-supplied paths. This is an implementation detail of the session API and should not be called directly by regular applications.
+The GXDM daemon also owns the same service name on the system bus and exposes the internal `top.gxde.DisplayManager.System` interface. It persists global appearance values in `~gxdm/state.conf` and writes the greeter display server to `/etc/gxdm.conf`; global custom wallpapers are accepted as Unix file descriptors rather than caller-supplied paths. User lock-screen overrides are stored directly in the user's data directory by the session-bus interface. The system-bus interface is an implementation detail and should not be called directly by regular applications.
 
 
 <!-- ROADMAP -->

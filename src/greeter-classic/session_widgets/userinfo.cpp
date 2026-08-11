@@ -305,6 +305,11 @@ bool User::operator==(const User &user) const
             m_uid == user.m_uid;
 }
 
+void User::refreshLockBackgroundPath()
+{
+    emit lockBackgroundPathChanged(lockBackgroundPath());
+}
+
 void User::setLocale(const QString &locale)
 {
     if (m_locale == locale) return;

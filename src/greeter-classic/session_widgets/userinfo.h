@@ -52,6 +52,7 @@ public:
 
     void setPath(const QString &path);
     const QString path() const { return m_path; }
+    void refreshLockBackgroundPath();
 
     uint lockNum() const { return m_lockNum; }
     bool isLock() const { return m_isLock; }

@@ -34,6 +34,7 @@ class LockShortcutManager : public QObject {
   bool tryEnroll(bool enabled);
   bool isRegistered() const;
   void showLock();
+  void refreshLockWallpaper();
 
  signals:
   void registrationChanged(bool registered);

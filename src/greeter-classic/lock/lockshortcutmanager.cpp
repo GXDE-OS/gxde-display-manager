@@ -6,14 +6,18 @@
 #include <QDBusServiceWatcher>
 #include <QDBusUnixFileDescriptor>
 #include <QDebug>
+#include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QImageReader>
 #include <QKeyCombination>
+#include <QSaveFile>
 #include <QTimer>
 #include <QUrl>
 
 #include <unistd.h>
 
+#include "greeterappearance.h"
 #include "sessionbasemodel.h"
 #include "lockshortcutmanager.h"
 
@@ -35,6 +39,7 @@ const QString kSystemDisplayManagerInterface =
 
 constexpr uint kSetPresent = 2;
 constexpr uint kNoAutoloading = 4;
+constexpr qint64 kMaxWallpaperSize = 128 * 1024 * 1024;
 
 bool callSystemDisplayManager(const QString& method,
     const QVariantList& arguments = {}) {
@@ -76,6 +81,43 @@ bool sendWallpaperFileToSystem(const QString& method, const QString& localPath,
 
   arguments << QVariant::fromValue(descriptor);
   return callSystemDisplayManager(method, arguments);
+}
+
+bool saveCurrentUserLockWallpaper(const QString& localPath) {
+  QImageReader reader(localPath);
+  if (!reader.canRead()) return false;
+
+  QFile source(localPath);
+  if (!source.open(QIODevice::ReadOnly)) return false;
+
+  const QString targetPath =
+    GxdmGreeterAppearance::lockWallpaperOverridePath(getuid());
+  if (targetPath.isEmpty()
+      || !QDir().mkpath(QFileInfo(targetPath).absolutePath())) {
+    return false;
+  }
+
+  QSaveFile target(targetPath);
+  if (!target.open(QIODevice::WriteOnly)) return false;
+
+  qint64 total = 0;
+  while (!source.atEnd()) {
+    const QByteArray chunk = source.read(1024 * 1024);
+    if (chunk.isEmpty() && source.error() != QFileDevice::NoError) {
+      target.cancelWriting();
+      return false;
+    }
+    total += chunk.size();
+    if (total > kMaxWallpaperSize
+        || target.write(chunk) != chunk.size()) {
+      target.cancelWriting();
+      return false;
+    }
+  }
+
+  if (total == 0 || !target.commit()) return false;
+  return QFile::setPermissions(targetPath,
+    QFileDevice::ReadOwner | QFileDevice::WriteOwner);
 }
 
 }  // namespace
@@ -132,6 +174,12 @@ bool LockShortcutManager::isRegistered() const { return m_registered; }
 
 void LockShortcutManager::showLock() {
   if (m_model) m_model->setIsShow(true);
+}
+
+void LockShortcutManager::refreshLockWallpaper() {
+  if (m_model && m_model->currentUser()) {
+    m_model->currentUser()->refreshLockBackgroundPath();
+  }
 }
 
 void LockShortcutManager::onGlobalShortcutPressed(
@@ -308,19 +356,23 @@ bool GxdeDisplayManagerService::SetLockWallpaperOverride(
     const QString& wallpaper) {
   const QUrl url(wallpaper);
   const QString localPath = url.isLocalFile() ? url.toLocalFile() : wallpaper;
-  return sendWallpaperFileToSystem(
-    QStringLiteral("SetLockWallpaperOverride"), localPath,
-    {QVariant::fromValue(static_cast<uint>(getuid()))});
+  if (!saveCurrentUserLockWallpaper(localPath)) return false;
+  m_manager->refreshLockWallpaper();
+  return true;
 }
 
 bool GxdeDisplayManagerService::ClearLockWallpaperOverride() {
-  return callSystemDisplayManager(QStringLiteral("ClearLockWallpaperOverride"),
-    {QVariant::fromValue(static_cast<uint>(getuid()))});
+  const QString path =
+    GxdmGreeterAppearance::lockWallpaperOverridePath(getuid());
+  if (path.isEmpty() || (QFileInfo::exists(path) && !QFile::remove(path))) {
+    return false;
+  }
+  m_manager->refreshLockWallpaper();
+  return true;
 }
 
 QString GxdeDisplayManagerService::LockWallpaperOverride() const {
-  return querySystemDisplayManager(QStringLiteral("LockWallpaperOverride"),
-    {QVariant::fromValue(static_cast<uint>(getuid()))});
+  return GxdmGreeterAppearance::lockWallpaperOverride(getuid());
 }
 
 bool GxdeDisplayManagerService::SetGreeterDisplayServer(
