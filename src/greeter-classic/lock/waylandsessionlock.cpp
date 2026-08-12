@@ -24,6 +24,7 @@
 #include <QGuiApplication>
 #include <QRect>
 #include <QScreen>
+#include <QTimer>
 #include <QWindow>
 
 #include "waylandsessionlock.h"
@@ -271,6 +272,30 @@ WaylandSessionLockSurface::WaylandSessionLockSurface(
         return;
     }
 
+    m_bindingPending = true;
+    // QWaylandWindow commits once while finishing window initialization.
+    // Bind the lock role afterwards to avoid the NONNULL issue.
+    // That drove me MAD...
+    QTimer::singleShot(0, this, [this] { bindLockSurface(); });
+}
+
+void WaylandSessionLockSurface::bindLockSurface() {
+    if (!m_bindingPending || !m_integration) {
+        return;
+    }
+
+    m_bindingPending = false;
+    ext_session_lock_v1* lock = m_integration->ensureLock();
+    wl_surface* surface = wlSurface();
+    auto* waylandWindow =
+        static_cast<QtWaylandClient::QWaylandWindow *>(window());
+    wl_output* output = nativeOutputForWindow(waylandWindow);
+    if (!lock || !surface || !output) {
+        qWarning()
+            << "(Lock) Fatal: Cannot create ext-session-lock-v1 surface!!";
+        return;
+    }
+
     m_surface = ext_session_lock_v1_get_lock_surface(lock, surface, output);
     if (!m_surface) {
         qWarning()
@@ -292,7 +317,7 @@ WaylandSessionLockSurface::~WaylandSessionLockSurface() {
 }
 
 bool WaylandSessionLockSurface::isValid() const {
-    return m_surface;
+    return m_bindingPending || m_surface;
 }
 
 bool WaylandSessionLockSurface::isExposed() const {
@@ -327,6 +352,7 @@ std::any WaylandSessionLockSurface::surfaceRole() const {
 }
 
 void WaylandSessionLockSurface::release() {
+    m_bindingPending = false;
     if (!m_surface) {
         return;
     }

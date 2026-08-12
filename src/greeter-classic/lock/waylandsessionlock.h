@@ -95,11 +95,13 @@ public:
         uint32_t height);
 
 private:
+    void bindLockSurface();
     void handleConfigure(uint32_t serial, uint32_t width, uint32_t height);
 
     WaylandSessionLockIntegration* m_integration = nullptr;
     struct ext_session_lock_surface_v1* m_surface = nullptr;
     QSize m_pendingSize;
+    bool m_bindingPending = false;
     bool m_configured = false;
 };
 

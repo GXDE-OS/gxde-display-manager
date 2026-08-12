@@ -219,7 +219,8 @@ int main(int argc, char *argv[])
             });
         } else {
             qWarning()
-                << "(Lock) Fatal: ext-session-lock-v1 is not available!!!";
+                << "(Lock) Warning: ext-session-lock-v1 is unavailable;"
+                   " using LayerShell fallback.";
         }
     }
 
