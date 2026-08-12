@@ -55,7 +55,6 @@ Depends: ${shlibs:Depends},
          xkb-data,
          xserver-xorg | xserver,
 Recommends: libpam-systemd
-Breaks: gxde-wlcom (< 2.1.9-gxde1)
 Provides: x-display-manager
 Description: GXDE Display Manager
  GXDE Display Manager (GXDM) is a fork of SDDM that is specially designed for
