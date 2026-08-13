@@ -56,6 +56,7 @@ public:
 
 Q_SIGNALS:
     void locked();
+    void unlocked();
     void finished();
 
 private:

@@ -126,6 +126,8 @@ int main(int argc, char *argv[])
     }
 
     DApplication app(argc, argv);
+    // The daemon intentionally has no visible windows between lock cycles.
+    app.setQuitOnLastWindowClosed(false);
     app.setOrganizationName("deepin");
     app.setApplicationName("gxdm-lock-classic");
     app.setApplicationVersion("2015.1.0");
@@ -251,6 +253,22 @@ int main(int argc, char *argv[])
 
     MultiScreenManager multi_screen_manager;
     multi_screen_manager.register_for_mutil_screen(createFrame);
+
+    if (sessionLockIntegration && sessionLockIntegration->isAvailable()) {
+        // ext-session-lock roles are tied to a wl_surface for life. Recreate
+        // the hidden frames after every completed/aborted lock cycle so a
+        // later request receives new surfaces instead of reusing dead roles.
+        QObject::connect(sessionLockIntegration.get(),
+                &WaylandSessionLockIntegration::unlocked,
+                &multi_screen_manager,
+                &MultiScreenManager::recreateFrames,
+                Qt::QueuedConnection);
+        QObject::connect(sessionLockIntegration.get(),
+                &WaylandSessionLockIntegration::finished,
+                &multi_screen_manager,
+                &MultiScreenManager::recreateFrames,
+                Qt::QueuedConnection);
+    }
 
     QObject::connect(model, &SessionBaseModel::visibleChanged, &multi_screen_manager, &MultiScreenManager::startRaiseContentFrame);
 

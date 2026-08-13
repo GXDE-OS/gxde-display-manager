@@ -204,6 +204,7 @@ bool WaylandSessionLockIntegration::unlock() {
     m_locked = false;
     m_unlockPending = false;
     releaseSurfaces();
+    Q_EMIT unlocked();
     return true;
 }
 

@@ -62,4 +62,19 @@ if(BUILD_CLASSIC_GREETER)
         Qt${QT_MAJOR_VERSION}::Test
         PkgConfig::TEST_DTK2WIDGET
     )
+
+    add_executable(MultiScreenManagerTest
+        MultiScreenManagerTest.cpp
+        ../src/greeter-classic/global_util/multiscreenmanager.cpp
+        ../src/greeter-classic/global_util/multiscreenmanager.h
+    )
+    target_include_directories(MultiScreenManagerTest PRIVATE
+        ../src/greeter-classic/global_util
+    )
+    add_test(NAME MultiScreenManager
+        COMMAND MultiScreenManagerTest -platform offscreen)
+    target_link_libraries(MultiScreenManagerTest PRIVATE
+        Qt${QT_MAJOR_VERSION}::Widgets
+        Qt${QT_MAJOR_VERSION}::Test
+    )
 endif()
