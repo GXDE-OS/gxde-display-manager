@@ -1,3 +1,9 @@
+gxde-display-manager-se (1.2.4-gxde1) unstable; urgency=medium
+
+  * 修复了锁屏没发二次锁定的问题
+
+ -- CharOfString <root@charofstring.cc>  Thu, 13 Aug 2026 14:18:00 +0800
+
 gxde-display-manager-se (1.2.3-gxde1) unstable; urgency=medium
 
   * 修复了Debian打包的问题
