@@ -1,3 +1,12 @@
+gxde-display-manager-se (1.2.5-gxde1) unstable; urgency=medium
+
+  * 修复了登录界面无法获取用户壁纸的回归
+  * 登录界面壁纸逻辑：单用户跟随其锁屏壁纸，多用户使用默认登录壁纸
+  * 新增 ClearWallpaper 接口，支持在控制中心清空全局壁纸设置
+  * 锁屏自定义壁纸文件改为全局可读，登录界面也可获取
+
+ -- shenmo <shenmo@spark-app.store>  Sun, 23 Aug 2026 15:21:35 +0800
+
 gxde-display-manager-se (1.2.4-gxde1) unstable; urgency=medium
 
   * 修复了锁屏没发二次锁定的问题
