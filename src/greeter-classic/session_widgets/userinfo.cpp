@@ -450,7 +450,12 @@ QString NativeUser::avatarPath() const {
 
 QString NativeUser::greeterBackgroundPath() const
 {
-    return GxdmGreeterAppearance::wallpaper();
+    // 显式配置了全局 Greeter 壁纸（state.conf）时优先使用；
+    // 否则回退到用户锁屏壁纸链（与 lightdm greeter 行为一致，
+    // override 文件全局可读，登录界面也能取到）。
+    if (GxdmGreeterAppearance::hasConfiguredWallpaper())
+        return GxdmGreeterAppearance::wallpaper();
+    return lockBackgroundForUser(m_userName, m_uid);
 }
 
 QString NativeUser::lockBackgroundPath() const
@@ -516,7 +521,10 @@ QString ADDomainUser::avatarPath() const
 
 QString ADDomainUser::greeterBackgroundPath() const
 {
-    return GxdmGreeterAppearance::wallpaper();
+    // 与 NativeUser 一致：全局壁纸未显式配置时回退到用户锁屏壁纸链。
+    if (GxdmGreeterAppearance::hasConfiguredWallpaper())
+        return GxdmGreeterAppearance::wallpaper();
+    return lockBackgroundForUser(m_userName, m_uid);
 }
 
 QString ADDomainUser::lockBackgroundPath() const

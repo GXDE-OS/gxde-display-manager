@@ -16,6 +16,9 @@
             <arg type="h" name="wallpaper" direction="in"/>
             <arg type="b" name="success" direction="out"/>
         </method>
+        <method name="ClearWallpaper">
+            <arg type="b" name="success" direction="out"/>
+        </method>
         <method name="SetLockWallpaperOverride">
             <arg type="u" name="uid" direction="in"/>
             <arg type="h" name="wallpaper" direction="in"/>

@@ -334,6 +334,18 @@ namespace SDDM {
         return true;
     }
 
+    bool GxdeDisplayManager::ClearWallpaper()
+    {
+        // 写入空值表示“未配置全局壁纸”，登录界面将回退到
+        // 单用户的锁屏壁纸 / 多用户的默认登录壁纸。
+        stateConfig.Greeter.Wallpaper.set(QString());
+        stateConfig.save();
+        // 顺手清理 SetWallpaper 保存的副本文件（尽力而为，失败不影响结果）
+        QFile::remove(stateDirectory() + QStringLiteral("/greeter-wallpaper"));
+        emit WallpaperChanged(QString());
+        return true;
+    }
+
     bool GxdeDisplayManager::SetLockWallpaperOverride(
         uint uid,
         const QDBusUnixFileDescriptor &wallpaper)

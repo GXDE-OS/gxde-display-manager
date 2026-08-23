@@ -38,6 +38,7 @@ namespace SDDM {
         bool SetWallpaperGXDEDefault();
         bool SetWallpaperDDELockDefault();
         bool SetWallpaper(const QDBusUnixFileDescriptor &wallpaper);
+        bool ClearWallpaper();
         bool SetLockWallpaperOverride(uint uid,
             const QDBusUnixFileDescriptor &wallpaper);
         bool ClearLockWallpaperOverride(uint uid);

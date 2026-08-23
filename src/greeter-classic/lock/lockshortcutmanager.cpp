@@ -116,8 +116,11 @@ bool saveCurrentUserLockWallpaper(const QString& localPath) {
   }
 
   if (total == 0 || !target.commit()) return false;
+  // 全局可读（0644）：登录界面以 gxdm 用户运行，需要能读到该 override，
+  // 否则用户自定义的锁屏壁纸无法在登录界面生效。
   return QFile::setPermissions(targetPath,
-    QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+    QFileDevice::ReadOwner | QFileDevice::WriteOwner
+    | QFileDevice::ReadGroup | QFileDevice::ReadOther);
 }
 
 }  // namespace
@@ -350,6 +353,10 @@ bool GxdeDisplayManagerService::SetWallpaper(const QString& wallpaper) {
   const QUrl url(wallpaper);
   const QString localPath = url.isLocalFile() ? url.toLocalFile() : wallpaper;
   return sendWallpaperFileToSystem(QStringLiteral("SetWallpaper"), localPath);
+}
+
+bool GxdeDisplayManagerService::ClearWallpaper() {
+  return callSystemDisplayManager(QStringLiteral("ClearWallpaper"));
 }
 
 bool GxdeDisplayManagerService::SetLockWallpaperOverride(

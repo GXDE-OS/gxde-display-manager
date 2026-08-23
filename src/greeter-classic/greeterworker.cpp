@@ -1,4 +1,5 @@
 #include "greeterworker.h"
+#include "greeterappearance.h"
 #include "sessionbasemodel.h"
 #include "systemdefaults.h"
 #include "userinfo.h"
@@ -102,7 +103,16 @@ void GreeterWorker::switchToUser(std::shared_ptr<User> user)
         return;
 
     m_model->setCurrentUser(user);
-    emit requestUpdateBackground(user->greeterBackgroundPath());
+
+    // 登录界面壁纸：显式配置了全局壁纸或单用户时使用 greeterBackgroundPath()
+    // （单用户与其锁屏壁纸一致）；多用户且未配置时使用默认登录壁纸。
+    // 与 LockContent::currentBackgroundPath 的逻辑保持一致。
+    if (GxdmGreeterAppearance::hasConfiguredWallpaper()
+        || m_model->userList().size() == 1) {
+        emit requestUpdateBackground(user->greeterBackgroundPath());
+    } else {
+        emit requestUpdateBackground(GxdmGreeterAppearance::wallpaper());
+    }
 }
 
 void GreeterWorker::authUser(const QString &password)

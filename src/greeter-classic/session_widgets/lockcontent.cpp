@@ -1,6 +1,7 @@
 #include "lockcontent.h"
 
 #include "controlwidget.h"
+#include "greeterappearance.h"
 #include "userinputwidget.h"
 #include "sessionbasemodel.h"
 #include "userframe.h"
@@ -329,15 +330,26 @@ QString LockContent::currentBackgroundPath() const
     if (!m_user)
         return QString();
 
-    return m_model->currentType() == SessionBaseModel::AuthType::LockType
-        ? m_user->lockBackgroundPath()
-        : m_user->greeterBackgroundPath();
+    if (m_model->currentType() == SessionBaseModel::AuthType::LockType)
+        return m_user->lockBackgroundPath();
+
+    // 登录界面：
+    // - 显式配置了全局壁纸（state.conf）→ 使用全局壁纸；
+    // - 未配置且单用户 → 与该用户的锁屏壁纸保持一致；
+    // - 未配置且多用户 → 使用默认登录壁纸。
+    if (GxdmGreeterAppearance::hasConfiguredWallpaper()
+        || m_model->userList().size() == 1) {
+        return m_user->greeterBackgroundPath();
+    }
+    return GxdmGreeterAppearance::wallpaper();
 }
 
 void LockContent::onGreeterWallpaperChanged(const QString &wallpaper)
 {
     if (m_model->currentType() == SessionBaseModel::AuthType::LightdmType) {
-        updateBackground(wallpaper);
+        // 全局壁纸被清空时（wallpaper 为空）回退到默认的登录壁纸选择逻辑
+        updateBackground(wallpaper.isEmpty() ? currentBackgroundPath()
+                                             : wallpaper);
     } else if (m_user) {
         updateBackground(currentBackgroundPath());
     }

@@ -81,6 +81,7 @@ class GxdeDisplayManagerService : public QDBusAbstractAdaptor {
   bool SetWallpaperGXDEDefault();
   bool SetWallpaperDDELockDefault();
   bool SetWallpaper(const QString& wallpaper);
+  bool ClearWallpaper();
   bool SetLockWallpaperOverride(const QString& wallpaper);
   bool ClearLockWallpaperOverride();
   QString LockWallpaperOverride() const;

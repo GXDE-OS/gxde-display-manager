@@ -47,6 +47,16 @@ QString wallpaper(const QString& statePath) {
   return ddeLockDefaultWallpaper();
 }
 
+bool hasConfiguredWallpaper(const QString& statePath) {
+  // state.conf 中是否显式写入过 [Greeter] Wallpaper。
+  // 值为空（ClearWallpaper 写入 "Wallpaper="）视为未配置，
+  // 未写入时调用方应回退到用户自己的壁纸，而不是全局默认图。
+  const QSettings settings(resolvedStatePath(statePath), QSettings::IniFormat);
+  const QString configured = settings.value(
+    QStringLiteral("Greeter/Wallpaper"), QString()).toString().trimmed();
+  return !configured.isEmpty();
+}
+
 QString lockWallpaperOverridePath(uint uid, const QString& dataDirectory) {
   QString directory = dataDirectory;
   if (directory.isEmpty()) {

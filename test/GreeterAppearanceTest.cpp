@@ -11,6 +11,7 @@ class GreeterAppearanceTest : public QObject {
  private slots:
   void readsGlobalAppearance();
   void exposesDefaultWallpaperPaths();
+  void detectsUnconfiguredWallpaper();
 };
 
 void GreeterAppearanceTest::readsGlobalAppearance() {
@@ -41,6 +42,7 @@ void GreeterAppearanceTest::readsGlobalAppearance() {
   QCOMPARE(
     GxdmGreeterAppearance::cursorTheme(statePath), QStringLiteral("gxde"));
   QCOMPARE(GxdmGreeterAppearance::wallpaper(statePath), wallpaperPath);
+  QVERIFY(GxdmGreeterAppearance::hasConfiguredWallpaper(statePath));
   QCOMPARE(GxdmGreeterAppearance::lockWallpaperOverride(
     uid, directory.path()), lockOverridePath);
   QCOMPARE(GxdmGreeterAppearance::lockWallpaperOverridePath(
@@ -55,6 +57,28 @@ void GreeterAppearanceTest::exposesDefaultWallpaperPaths() {
     QStringLiteral("/usr/share/backgrounds/default_background.jpg"));
   QCOMPARE(GxdmGreeterAppearance::ddeLockDefaultWallpaper(),
     QStringLiteral(":/theme/background/default_background.jpg"));
+}
+
+void GreeterAppearanceTest::detectsUnconfiguredWallpaper() {
+  QTemporaryDir directory;
+  QVERIFY(directory.isValid());
+
+  // state.conf 存在但没有写入 [Greeter] Wallpaper
+  const QString statePath = directory.filePath(QStringLiteral("state.conf"));
+  QSettings settings(statePath, QSettings::IniFormat);
+  settings.setValue(
+    QStringLiteral("Greeter/CursorTheme"), QStringLiteral("gxde"));
+  settings.sync();
+
+  QVERIFY(!GxdmGreeterAppearance::hasConfiguredWallpaper(statePath));
+  // state.conf 文件不存在时同样视为未配置
+  QVERIFY(!GxdmGreeterAppearance::hasConfiguredWallpaper(
+    directory.filePath(QStringLiteral("missing.conf"))));
+
+  // ClearWallpaper 写入空值 "Wallpaper="，同样视为未配置
+  settings.setValue(QStringLiteral("Greeter/Wallpaper"), QString());
+  settings.sync();
+  QVERIFY(!GxdmGreeterAppearance::hasConfiguredWallpaper(statePath));
 }
 
 QTEST_MAIN(GreeterAppearanceTest)
