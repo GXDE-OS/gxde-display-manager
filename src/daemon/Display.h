@@ -90,6 +90,7 @@ namespace SDDM {
 
         void startSocketServerAndGreeter();
         void handleAutologinFailure();
+        void finishLogin(bool success);
         void removeDisplayManagerSession();
 
         DisplayServerType m_displayServerType = X11DisplayServerType;

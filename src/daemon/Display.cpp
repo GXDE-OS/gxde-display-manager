@@ -29,6 +29,7 @@
 #include "Seat.h"
 #include "SocketServer.h"
 #include "Greeter.h"
+#include "SessionReuse.h"
 #include "Utils.h"
 
 #include <QDebug>
@@ -514,7 +515,11 @@ namespace SDDM {
         }
 
         // authenticate
-        startAuth(user, password, session);
+        if (!startAuth(user, password, session)) {
+            qWarning() << "Unable to start authentication for user" << user;
+            emit loginFailed(m_socket);
+            m_socket = nullptr;
+        }
     }
 
     QString Display::findGreeterTheme() const {
@@ -568,10 +573,16 @@ namespace SDDM {
             reply.waitForFinished();
 
             const auto info = reply.value();
-            for(const SessionInfo &s : reply.value()) {
+            for (const SessionInfo &s : reply.value()) {
                 if (s.userName == user) {
-                    OrgFreedesktopLogin1SessionInterface session(Logind::serviceName(), s.sessionPath.path(), QDBusConnection::systemBus());
-                    if (session.service() == QLatin1String("gxdm") && session.state() == QLatin1String("online")) {
+                    OrgFreedesktopLogin1SessionInterface logindSession(
+                        Logind::serviceName(), s.sessionPath.path(),
+                        QDBusConnection::systemBus());
+                    if (canReuseLogindSession(logindSession.service(),
+                            logindSession.state(),
+                            logindSession.className(),
+                            logindSession.type(),
+                            session.xdgSessionType())) {
                         m_reuseSessionId = s.sessionId;
                         break;
                     }
@@ -639,9 +650,19 @@ namespace SDDM {
 
             if (!m_reuseSessionId.isNull()) {
                 OrgFreedesktopLogin1ManagerInterface manager(Logind::serviceName(), Logind::managerPath(), QDBusConnection::systemBus());
-                manager.UnlockSession(m_reuseSessionId);
-                manager.ActivateSession(m_reuseSessionId);
-                m_started = true;
+                auto unlockReply = manager.UnlockSession(m_reuseSessionId);
+                unlockReply.waitForFinished();
+                auto activateReply = manager.ActivateSession(m_reuseSessionId);
+                activateReply.waitForFinished();
+
+                if (unlockReply.isError() || activateReply.isError()) {
+                    qWarning() << "Failed to activate reusable logind session";
+                    m_reuseSessionId.clear();
+                    finishLogin(false);
+                    return;
+                }
+
+                finishLogin(true);
             } else {
                 if (qobject_cast<XorgDisplayServer *>(m_displayServer))
                     m_auth->setCookie(qobject_cast<XorgDisplayServer *>(m_displayServer)->cookie());
@@ -650,8 +671,14 @@ namespace SDDM {
                     daemonApp->displayManager()->AddSession(m_displayManagerSessionName, seat()->name(), m_auth->user());
                 }
             }
+        } else {
+            qDebug() << "Authentication for user " << user << " failed!!";
+            finishLogin(false);
+        }
+    }
 
-            // save last user and last session
+    void Display::finishLogin(bool success) {
+        if (success) {
             if (mainConfig.Users.RememberLastUser.get())
                 stateConfig.Last.User.set(m_auth->user());
             else
@@ -665,9 +692,9 @@ namespace SDDM {
             if (m_socket)
                 emit loginSucceeded(m_socket);
         } else if (m_socket) {
-            qDebug() << "Authentication for user " << user << " failed";
             emit loginFailed(m_socket);
         }
+
         m_socket = nullptr;
     }
 
@@ -722,8 +749,10 @@ namespace SDDM {
                 qWarning() << "Could not determine logind session for helper" << m_auth->helperProcessId();
             else
                 qInfo() << "User session is managed by logind session" << m_logindSessionId;
+            finishLogin(true);
             m_greeter->stop();
         } else {
+            finishLogin(false);
             removeDisplayManagerSession();
         }
     }

@@ -20,6 +20,11 @@ target_include_directories(SessionTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../sr
 add_test(NAME Session COMMAND SessionTest)
 target_link_libraries(SessionTest Qt${QT_MAJOR_VERSION}::Core Qt${QT_MAJOR_VERSION}::Test)
 
+add_executable(SessionReuseTest SessionReuseTest.cpp)
+target_include_directories(SessionReuseTest PRIVATE ../src/daemon)
+add_test(NAME SessionReuse COMMAND SessionReuseTest)
+target_link_libraries(SessionReuseTest Qt${QT_MAJOR_VERSION}::Core Qt${QT_MAJOR_VERSION}::Test)
+
 if(BUILD_CLASSIC_GREETER)
     find_package(Qt${QT_MAJOR_VERSION} REQUIRED COMPONENTS Widgets)
     pkg_check_modules(TEST_DTK2WIDGET REQUIRED IMPORTED_TARGET dtk2widget)
