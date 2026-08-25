@@ -1,3 +1,10 @@
+gxde-display-manager-se (1.2.6-gxde1) unstable; urgency=medium
+
+  * 锁屏壁纸 override 同时保存到用户目录与 ~gxdm，注销后登录界面也能读取
+  * Greeter 优先读取系统级 override，并保留用户级 override 兼容
+
+ -- shenmo <shenmo@spark-app.store>  Tue, 25 Aug 2026 23:04:00 +0800
+
 gxde-display-manager-se (1.2.5-gxde1) unstable; urgency=medium
 
   * 修复了登录界面无法获取用户壁纸的回归

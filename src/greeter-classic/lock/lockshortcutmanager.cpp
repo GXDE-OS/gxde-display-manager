@@ -364,22 +364,51 @@ bool GxdeDisplayManagerService::SetLockWallpaperOverride(
   const QUrl url(wallpaper);
   const QString localPath = url.isLocalFile() ? url.toLocalFile() : wallpaper;
   if (!saveCurrentUserLockWallpaper(localPath)) return false;
+
+  // Also persist a copy under ~gxdm (the greeter user's home). The user-home
+  // copy alone is unreadable by the greeter when the user home directory is
+  // not traversable (e.g. 0700), which makes the wallpaper work on the
+  // in-session lock screen but fall back to the default after logout.
+  const bool systemPersisted = sendWallpaperFileToSystem(
+    QStringLiteral("SetLockWallpaperOverride"), localPath,
+    {QVariant::fromValue(static_cast<uint>(getuid()))});
+  if (!systemPersisted) {
+    qWarning() << "Failed to persist the lock wallpaper override for the"
+      " greeter; it will only work inside the current session.";
+  }
+
   m_manager->refreshLockWallpaper();
-  return true;
+  return systemPersisted;
 }
 
 bool GxdeDisplayManagerService::ClearLockWallpaperOverride() {
+  bool cleared = true;
+
   const QString path =
     GxdmGreeterAppearance::lockWallpaperOverridePath(getuid());
   if (path.isEmpty() || (QFileInfo::exists(path) && !QFile::remove(path))) {
-    return false;
+    cleared = false;
   }
-  m_manager->refreshLockWallpaper();
-  return true;
+
+  if (!callSystemDisplayManager(
+        QStringLiteral("ClearLockWallpaperOverride"),
+        {QVariant::fromValue(static_cast<uint>(getuid()))})) {
+    qWarning() << "Failed to clear the system lock wallpaper override.";
+    cleared = false;
+  }
+
+  if (cleared)
+    m_manager->refreshLockWallpaper();
+  return cleared;
 }
 
 QString GxdeDisplayManagerService::LockWallpaperOverride() const {
-  return GxdmGreeterAppearance::lockWallpaperOverride(getuid());
+  const QString localOverride =
+    GxdmGreeterAppearance::lockWallpaperOverride(getuid());
+  if (!localOverride.isEmpty())
+    return localOverride;
+
+  return GxdmGreeterAppearance::systemLockWallpaperOverride(getuid());
 }
 
 bool GxdeDisplayManagerService::SetGreeterDisplayServer(

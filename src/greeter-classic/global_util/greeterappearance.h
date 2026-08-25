@@ -13,6 +13,10 @@ QString lockWallpaperOverridePath(
   uint uid, const QString& dataDirectory = QString());
 QString lockWallpaperOverride(
   uint uid, const QString& dataDirectory = QString());
+QString systemLockWallpaperOverridePath(
+  uint uid, const QString& stateDirectory = QString());
+QString systemLockWallpaperOverride(
+  uint uid, const QString& stateDirectory = QString());
 QString gxdeDefaultWallpaper();
 QString ddeLockDefaultWallpaper();
 

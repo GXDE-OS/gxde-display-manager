@@ -197,14 +197,43 @@ static QString gsettingsLockBackground() {
 }
 
 static QString lockBackgroundForUser(const QString& userName, uid_t uid) {
-    // 1. A GXDM lock override belongs to one user and never affects greeter.
-    const QString overrideBackground =
-        readableImagePath(
+    // 1. A GXDM lock override belongs to one user and never affects the
+    //    global greeter wallpaper. The override is written to two locations:
+    //    ~/.local/share/gxdm (for the in-session locker) and ~gxdm
+    //    /lock-wallpaper-override-<uid> (readable by the greeter even when
+    //    the user's home directory is not traversable, e.g. mode 0700).
+    const auto overrideFrom = [userName](const QString& path) {
+        const QString background = readableImagePath(path);
+        if (!background.isEmpty()) {
+            qInfo() << "(Frontend) Lock background: Using user override for"
+                << userName << background;
+        }
+        return background;
+    };
+
+    if (uid == getuid()) {
+        // In-session locker: prefer the freshly written user copy.
+        const QString localOverride = overrideFrom(
             GxdmGreeterAppearance::lockWallpaperOverride(uid));
-    if (!overrideBackground.isEmpty()) {
-        qInfo() << "(Frontend) Lock background: Using user override for"
-            << userName << overrideBackground;
-        return overrideBackground;
+        if (!localOverride.isEmpty())
+            return localOverride;
+
+        const QString systemOverride = overrideFrom(
+            GxdmGreeterAppearance::systemLockWallpaperOverride(uid));
+        if (!systemOverride.isEmpty())
+            return systemOverride;
+    } else {
+        // Greeter: the system copy is the only one guaranteed to be readable
+        // before the user session starts.
+        const QString systemOverride = overrideFrom(
+            GxdmGreeterAppearance::systemLockWallpaperOverride(uid));
+        if (!systemOverride.isEmpty())
+            return systemOverride;
+
+        const QString localOverride = overrideFrom(
+            GxdmGreeterAppearance::lockWallpaperOverride(uid));
+        if (!localOverride.isEmpty())
+            return localOverride;
     }
 
     // 2. Deepin Accounts (com.deepin.daemon.Accounts), the same interface the
