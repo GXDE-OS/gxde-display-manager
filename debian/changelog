@@ -1,3 +1,11 @@
+gxde-display-manager-se (1.2.7-gxde1) unstable; urgency=medium
+
+  * 修复了X11登录误激活残留的Wayland session问题
+  * 引入更严格的Session判定：session启动后才发送LoginSucceeded
+  * 尝试修复即使密码正确也无法登录的问题
+
+ -- CharOfString <root@charofstring.cc>  Wed, 26 Aug 2026 02:04:12 +0800
+
 gxde-display-manager-se (1.2.6-gxde1) unstable; urgency=medium
 
   * 锁屏壁纸 override 同时保存到用户目录与 ~gxdm，注销后登录界面也能读取
