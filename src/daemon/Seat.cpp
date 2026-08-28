@@ -32,8 +32,6 @@
 
 #include <functional>
 #include <optional>
-#include <Login1Manager.h>
-#include <Login1Session.h>
 
 namespace SDDM {
     Seat::Seat(const QString &name, QObject *parent) : QObject(parent), m_name(name) {
@@ -111,14 +109,9 @@ namespace SDDM {
 
     void Seat::displayStopped() {
         Display *display = qobject_cast<Display *>(sender());
-        OrgFreedesktopLogin1ManagerInterface manager(Logind::serviceName(), Logind::managerPath(), QDBusConnection::systemBus());
         std::optional<int> nextVt;
-        auto reusing = display->reuseSessionId();
-        if (manager.isValid() && !reusing.isEmpty()) {
-            auto sessionPath = manager.GetSession(reusing);
-            OrgFreedesktopLogin1SessionInterface sessionIface(Logind::serviceName(), sessionPath.value().path(), QDBusConnection::systemBus());
-            nextVt = QStringView(sessionIface.tTY()).mid(3).toInt(); // we need to convert ttyN to N
-        }
+        if (display->reuseSessionVt() > 0)
+            nextVt = display->reuseSessionVt();
 
         // remove display
         removeDisplay(display);

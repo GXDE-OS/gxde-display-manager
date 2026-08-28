@@ -63,6 +63,7 @@ namespace SDDM {
 
         QString sessionType() const;
         QString reuseSessionId() const { return m_reuseSessionId; }
+        int reuseSessionVt() const { return m_reuseSessionVt; }
 
         Seat *seat() const;
 
@@ -91,6 +92,11 @@ namespace SDDM {
 
         void startSocketServerAndGreeter();
         void handleAutologinFailure();
+        void findReusableSession(const QString &user,
+            const QString &requestedType);
+        void finishReusableSessionLookup(quint64 generation,
+            const QString &sessionId = QString(),
+            int sessionVt = 0);
         void activateReusableSession();
         void finishReusableSessionActivation(bool success,
                                               const QString &error = QString());
@@ -103,12 +109,15 @@ namespace SDDM {
         bool m_relogin { true };
         bool m_started { false };
         bool m_stopping { false };
+        bool m_reuseLookupPending { false };
         bool m_reuseActivationPending { false };
         bool m_reuseHelperFinished { false };
+        quint64 m_reuseLookupGeneration { 0 };
         quint64 m_reuseActivationGeneration { 0 };
 
         int m_terminalId = 0;
         int m_sessionTerminalId = 0;
+        int m_reuseSessionVt = 0;
 
         QString m_passPhrase;
         QString m_sessionName;
