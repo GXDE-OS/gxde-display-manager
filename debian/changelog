@@ -1,3 +1,10 @@
+gxde-display-manager-se (1.2.9-gxde1) unstable; urgency=medium
+
+  * 尝试修复自动登录开启后手动登出输入密码卡死的问题
+  * 修复自动登录开启后记不住默认Session的问题
+
+ -- CharOfString <root@charofstring.cc>  Fri, 28 Aug 2026 19:47:06 +0800
+
 gxde-display-manager-se (1.2.8-gxde1) unstable; urgency=medium
 
   * 尝试修复即使密码正确也无法登录的问题
