@@ -195,10 +195,10 @@ namespace SDDM {
                 case SESSION_STATUS: {
                     bool status;
                     str >> status;
-                    Q_EMIT auth->sessionStarted(status);
                     str.reset();
                     str << SESSION_STATUS;
                     str.send();
+                    Q_EMIT auth->sessionStarted(status);
                     break;
                 }
                 case DISPLAY_SERVER_STARTED: {

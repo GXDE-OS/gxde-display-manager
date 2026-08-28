@@ -51,6 +51,8 @@
 
 #include <QDBusConnection>
 #include <QDBusMessage>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
 #include <QDBusReply>
 
 #include "Login1Manager.h"
@@ -262,8 +264,18 @@ namespace SDDM {
         m_auth(new Auth(this)),
         m_seat(parent),
         m_socketServer(new SocketServer(this)),
-        m_greeter(new Greeter(this))
+        m_greeter(new Greeter(this)),
+        m_reuseActivationTimer(new QTimer(this))
     {
+        m_reuseActivationTimer->setSingleShot(true);
+        m_reuseActivationTimer->setInterval(30000);
+        connect(m_reuseActivationTimer, &QTimer::timeout, this, [this] {
+            if (m_reuseActivationPending) {
+                finishReusableSessionActivation(false,
+                    QStringLiteral("Timed out while activating the existing session"));
+            }
+        });
+
         // Create display server
         switch (m_displayServerType) {
         case X11DisplayServerType:
@@ -473,6 +485,12 @@ namespace SDDM {
 
         m_stopping = true;
 
+        m_reuseActivationPending = false;
+        m_reuseHelperFinished = false;
+        ++m_reuseActivationGeneration;
+        m_reuseActivationTimer->stop();
+        finishLogin(false);
+
         if (m_logindSessionId.isEmpty())
             m_logindSessionId = logindSessionForHelper(m_auth->helperProcessId());
         terminateLogindSession(m_logindSessionId);
@@ -505,12 +523,18 @@ namespace SDDM {
     void Display::login(QLocalSocket *socket,
                         const QString &user, const QString &password,
                         const Session &session) {
+        if (m_auth->isActive() || m_socket) {
+            qWarning() << "Rejecting concurrent login request for user" << user;
+            emit loginFailed(socket);
+            return;
+        }
+
         m_socket = socket;
 
         //the gxdm user has special privileges that skip password checking so that we can load the greeter
         //block ever trying to log in as the gxdm user
         if (user == QLatin1String("gxdm")) {
-            emit loginFailed(m_socket);
+            finishLogin(false);
             return;
         }
 
@@ -566,6 +590,10 @@ namespace SDDM {
 
         m_reuseSessionId = QString();
         m_logindSessionId.clear();
+        m_reuseActivationPending = false;
+        m_reuseHelperFinished = false;
+        ++m_reuseActivationGeneration;
+        m_reuseActivationTimer->stop();
 
         if (Logind::isAvailable() && mainConfig.Users.ReuseSession.get()) {
             OrgFreedesktopLogin1ManagerInterface manager(Logind::serviceName(), Logind::managerPath(), QDBusConnection::systemBus());
@@ -649,20 +677,7 @@ namespace SDDM {
             qDebug() << "Authentication for user " << user << " successful";
 
             if (!m_reuseSessionId.isNull()) {
-                OrgFreedesktopLogin1ManagerInterface manager(Logind::serviceName(), Logind::managerPath(), QDBusConnection::systemBus());
-                auto unlockReply = manager.UnlockSession(m_reuseSessionId);
-                unlockReply.waitForFinished();
-                auto activateReply = manager.ActivateSession(m_reuseSessionId);
-                activateReply.waitForFinished();
-
-                if (unlockReply.isError() || activateReply.isError()) {
-                    qWarning() << "Failed to activate reusable logind session";
-                    m_reuseSessionId.clear();
-                    finishLogin(false);
-                    return;
-                }
-
-                finishLogin(true);
+                activateReusableSession();
             } else {
                 if (qobject_cast<XorgDisplayServer *>(m_displayServer))
                     m_auth->setCookie(qobject_cast<XorgDisplayServer *>(m_displayServer)->cookie());
@@ -675,6 +690,75 @@ namespace SDDM {
             qDebug() << "Authentication for user " << user << " failed!!";
             finishLogin(false);
         }
+    }
+
+    void Display::activateReusableSession() {
+        const QString sessionId = m_reuseSessionId;
+        const quint64 generation = ++m_reuseActivationGeneration;
+        m_reuseActivationPending = true;
+        m_reuseActivationTimer->start();
+
+        OrgFreedesktopLogin1ManagerInterface manager(
+            Logind::serviceName(), Logind::managerPath(),
+            QDBusConnection::systemBus());
+        auto *unlockWatcher = new QDBusPendingCallWatcher(
+            manager.UnlockSession(sessionId), this);
+        connect(unlockWatcher, &QDBusPendingCallWatcher::finished, this,
+            [this, sessionId, generation](QDBusPendingCallWatcher *watcher) {
+                const QDBusPendingReply<> reply = *watcher;
+                watcher->deleteLater();
+
+                if (!m_reuseActivationPending
+                        || m_reuseActivationGeneration != generation
+                        || m_reuseSessionId != sessionId) {
+                    return;
+                }
+                if (reply.isError()) {
+                    finishReusableSessionActivation(false,
+                        reply.error().message());
+                    return;
+                }
+
+                OrgFreedesktopLogin1ManagerInterface manager(
+                    Logind::serviceName(), Logind::managerPath(),
+                    QDBusConnection::systemBus());
+                auto *activateWatcher = new QDBusPendingCallWatcher(
+                    manager.ActivateSession(sessionId), this);
+                connect(activateWatcher,
+                    &QDBusPendingCallWatcher::finished, this,
+                    [this, sessionId, generation](QDBusPendingCallWatcher *watcher) {
+                        const QDBusPendingReply<> reply = *watcher;
+                        watcher->deleteLater();
+
+                        if (!m_reuseActivationPending
+                                || m_reuseActivationGeneration != generation
+                                || m_reuseSessionId != sessionId) {
+                            return;
+                        }
+                        finishReusableSessionActivation(!reply.isError(),
+                            reply.isError() ? reply.error().message()
+                                            : QString());
+                    });
+            });
+    }
+
+    void Display::finishReusableSessionActivation(bool success,
+                                                    const QString &error) {
+        if (!m_reuseActivationPending)
+            return;
+
+        m_reuseActivationPending = false;
+        m_reuseActivationTimer->stop();
+
+        if (!success) {
+            qWarning() << "Failed to activate reusable logind session"
+                       << m_reuseSessionId << error;
+            m_reuseSessionId.clear();
+        }
+        finishLogin(success);
+
+        if (m_reuseHelperFinished)
+            stop();
     }
 
     void Display::finishLogin(bool success) {
@@ -714,12 +798,23 @@ namespace SDDM {
             return;
 
         m_socketServer->informationMessage(m_socket, message);
-        if (error == Auth::ERROR_AUTHENTICATION)
-            emit loginFailed(m_socket);
     }
 
     void Display::slotHelperFinished(Auth::HelperExitStatus status) {
         removeDisplayManagerSession();
+
+        if (m_reuseActivationPending) {
+            m_reuseHelperFinished = true;
+            return;
+        }
+
+        // Every greeter request must receive a terminal result. This also
+        // covers helper crashes before AUTHENTICATED or SESSION_STATUS.
+        if (m_socket) {
+            qWarning() << "Authentication helper exited before login completed"
+                       << status;
+            finishLogin(false);
+        }
 
         // Don't restart greeter and display server unless sddm-helper exited
         // with an internal error or the user session finished successfully,
@@ -744,17 +839,63 @@ namespace SDDM {
     void Display::slotSessionStarted(bool success) {
         qDebug() << "Session started" << success;
         if (success) {
-            m_logindSessionId = logindSessionForHelper(m_auth->helperProcessId());
-            if (m_logindSessionId.isEmpty())
-                qWarning() << "Could not determine logind session for helper" << m_auth->helperProcessId();
-            else
-                qInfo() << "User session is managed by logind session" << m_logindSessionId;
+            const qint64 helperPid = m_auth->helperProcessId();
             finishLogin(true);
+            resolveLogindSession(helperPid);
             m_greeter->stop();
         } else {
             finishLogin(false);
             removeDisplayManagerSession();
         }
+    }
+
+    void Display::resolveLogindSession(qint64 helperPid) {
+        if (helperPid <= 0 || !Logind::isAvailable())
+            return;
+
+        OrgFreedesktopLogin1ManagerInterface manager(
+            Logind::serviceName(), Logind::managerPath(),
+            QDBusConnection::systemBus());
+        auto *sessionWatcher = new QDBusPendingCallWatcher(
+            manager.GetSessionByPID(static_cast<uint>(helperPid)), this);
+        connect(sessionWatcher, &QDBusPendingCallWatcher::finished, this,
+            [this, helperPid](QDBusPendingCallWatcher *watcher) {
+                const QDBusPendingReply<QDBusObjectPath> reply = *watcher;
+                watcher->deleteLater();
+                if (m_auth->helperProcessId() != helperPid)
+                    return;
+                if (reply.isError()) {
+                    qWarning() << "Could not determine logind session for helper"
+                               << helperPid << reply.error().message();
+                    return;
+                }
+
+                QDBusMessage propertyCall = QDBusMessage::createMethodCall(
+                    Logind::serviceName(), reply.value().path(),
+                    QStringLiteral("org.freedesktop.DBus.Properties"),
+                    QStringLiteral("Get"));
+                propertyCall << QStringLiteral("org.freedesktop.login1.Session")
+                             << QStringLiteral("Id");
+                auto *idWatcher = new QDBusPendingCallWatcher(
+                    QDBusConnection::systemBus().asyncCall(propertyCall), this);
+                connect(idWatcher, &QDBusPendingCallWatcher::finished, this,
+                    [this, helperPid](QDBusPendingCallWatcher *watcher) {
+                        const QDBusPendingReply<QVariant> reply = *watcher;
+                        watcher->deleteLater();
+                        if (m_auth->helperProcessId() != helperPid)
+                            return;
+                        if (reply.isError()) {
+                            qWarning()
+                                << "Could not read logind session ID for helper"
+                                << helperPid << reply.error().message();
+                            return;
+                        }
+
+                        m_logindSessionId = reply.value().toString();
+                        qInfo() << "User session is managed by logind session"
+                                << m_logindSessionId;
+                    });
+            });
     }
 
     void Display::removeDisplayManagerSession() {

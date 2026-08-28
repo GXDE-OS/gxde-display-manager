@@ -71,7 +71,10 @@ GreeterWorker::GreeterWorker(SessionBaseModel *const model, const QString &socke
     connect(m_socket, &QLocalSocket::readyRead, this, &GreeterWorker::onReadyRead);
     connect(m_socket, &QLocalSocket::errorOccurred, this, [this] {
         qWarning() << "gxdm greeter: socket error:" << m_socket->errorString();
+        onSocketUnavailable();
     });
+    connect(m_socket, &QLocalSocket::disconnected, this,
+            &GreeterWorker::onSocketUnavailable);
 
     // The greeter runs as the unprivileged gxdm user, cannot drive logind directly.
     // PWR actions forwarded to daemon.
@@ -120,6 +123,11 @@ void GreeterWorker::authUser(const QString &password)
     if (m_authenticating)
         return;
 
+    if (m_socket->state() != QLocalSocket::ConnectedState) {
+        emit m_model->authFaildMessage(tr("Login service is unavailable"));
+        return;
+    }
+
     std::shared_ptr<User> user = m_model->currentUser();
     if (!user)
         return;
@@ -150,6 +158,15 @@ void GreeterWorker::authUser(const QString &password)
       << sessionType << sessionFile;
     m_socket->write(data);
     m_socket->flush();
+}
+
+void GreeterWorker::onSocketUnavailable()
+{
+    if (!m_authenticating)
+        return;
+
+    m_authenticating = false;
+    emit m_model->authFaildMessage(tr("Login service is unavailable"));
 }
 
 void GreeterWorker::sendPowerAction(SessionBaseModel::PowerAction action)
@@ -202,6 +219,7 @@ void GreeterWorker::onReadyRead()
         case DaemonMessages::LoginSucceeded: {
             // The daemon now starts the session and tears down the greeter.
             // Daemon拉起session，关闭greeter
+            m_authenticating = false;
             emit m_model->authFinished(true);
             break;
         }

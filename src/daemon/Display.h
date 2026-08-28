@@ -30,6 +30,7 @@
 #include "Session.h"
 
 class QLocalSocket;
+class QTimer;
 
 namespace SDDM {
     class Authenticator;
@@ -90,7 +91,11 @@ namespace SDDM {
 
         void startSocketServerAndGreeter();
         void handleAutologinFailure();
+        void activateReusableSession();
+        void finishReusableSessionActivation(bool success,
+                                              const QString &error = QString());
         void finishLogin(bool success);
+        void resolveLogindSession(qint64 helperPid);
         void removeDisplayManagerSession();
 
         DisplayServerType m_displayServerType = X11DisplayServerType;
@@ -98,6 +103,9 @@ namespace SDDM {
         bool m_relogin { true };
         bool m_started { false };
         bool m_stopping { false };
+        bool m_reuseActivationPending { false };
+        bool m_reuseHelperFinished { false };
+        quint64 m_reuseActivationGeneration { 0 };
 
         int m_terminalId = 0;
         int m_sessionTerminalId = 0;
@@ -114,6 +122,7 @@ namespace SDDM {
         SocketServer *m_socketServer { nullptr };
         QPointer<QLocalSocket> m_socket;
         Greeter *m_greeter { nullptr };
+        QTimer *m_reuseActivationTimer { nullptr };
 
     private slots:
         void slotRequestChanged();

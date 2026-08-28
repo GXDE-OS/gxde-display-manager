@@ -23,6 +23,7 @@ signals:
 private:
     void onConnected();
     void onReadyRead();
+    void onSocketUnavailable();
     void sendPowerAction(SessionBaseModel::PowerAction action);
 
     QLocalSocket *m_socket;
