@@ -1,3 +1,9 @@
+gxde-display-manager-se (1.2.8-gxde1) unstable; urgency=medium
+
+  * 尝试修复即使密码正确也无法登录的问题
+
+ -- CharOfString <root@charofstring.cc>  Fri, 28 Aug 2026 15:44:10 +0800
+
 gxde-display-manager-se (1.2.7-gxde1) unstable; urgency=medium
 
   * 修复了X11登录误激活残留的Wayland session问题
