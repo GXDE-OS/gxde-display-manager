@@ -33,6 +33,10 @@
 #include <QDebug>
 #include <QProcess>
 
+#include <QDBusConnection>
+#include <QDBusInterface>
+#include <QDBusPendingCallWatcher>
+
 using namespace Auth;  // deepin Auth namespace (AuthInterface); SDDM::Auth stays qualified
 
 LockWorker::LockWorker(SessionBaseModel* const model, QObject* parent)
@@ -134,10 +138,9 @@ void LockWorker::onAuthentication(const QString& user, bool ok) {
     Q_UNUSED(user)
     m_authenticating = false;
 
-    emit m_model->authFinished(ok);
-
     if (!ok) {
         qDebug() << "(LockWorker) authentication failed";
+        emit m_model->authFinished(false);
         emit m_model->authFaildTipsMessage(tr("Wrong Password"));
         if (m_model->currentUser() && m_model->currentUser()->isLockForNum())
             m_model->currentUser()->startLock();
@@ -147,8 +150,65 @@ void LockWorker::onAuthentication(const QString& user, bool ok) {
     if (m_model->currentUser())
         m_model->currentUser()->resetLock();
 
-    // NOTE: power actions from the lock (suspend / reboot / shutdown) are not
-    // wired here on purpose -- they should be routed through GXDM rather than
-    // hitting logind directly from the session. TODO.
+    // 将电源操作交由 gxdm daemon 处理，而不是仅执行解锁。
+    switch (m_model->powerAction()) {
+    case SessionBaseModel::RequireShutdown:
+        requestGxdmPowerAction(QStringLiteral("PowerOff"));
+        return;
+    case SessionBaseModel::RequireRestart:
+        requestGxdmPowerAction(QStringLiteral("Reboot"));
+        return;
+    case SessionBaseModel::RequireSuspend:
+        requestGxdmPowerAction(QStringLiteral("Suspend"));
+        return;
+    case SessionBaseModel::RequireHibernate:
+        requestGxdmPowerAction(QStringLiteral("Hibernate"));
+        return;
+    case SessionBaseModel::RequireNormal:
+    default:
+        break;
+    }
+
+    emit m_model->authFinished(true);
+}
+
+void LockWorker::requestGxdmPowerAction(const QString& method)
+{
+    QDBusInterface gxdm(QStringLiteral("top.gxde.DisplayManager"),
+                        QStringLiteral("/top/gxde/DisplayManager"),
+                        QStringLiteral("top.gxde.DisplayManager.System"),
+                        QDBusConnection::systemBus());
+    if (!gxdm.isValid()) {
+        qWarning() << "(LockWorker) GXDM daemon unreachable, falling back to logind for"
+                   << method;
+        requestLogin1PowerAction(method);
+        return;
+    }
+
+    QDBusPendingCallWatcher* watcher =
+        new QDBusPendingCallWatcher(gxdm.asyncCall(method), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this,
+            [this, method, watcher] {
+        if (watcher->isError()) {
+            qWarning() << "(LockWorker) GXDM power action" << method
+                       << "failed:" << watcher->error().message()
+                       << "-- falling back to logind";
+            requestLogin1PowerAction(method);
+        }
+        watcher->deleteLater();
+    });
+}
+
+void LockWorker::requestLogin1PowerAction(const QString& method)
+{
+    QDBusInterface login1(QStringLiteral("org.freedesktop.login1"),
+                          QStringLiteral("/org/freedesktop/login1"),
+                          QStringLiteral("org.freedesktop.login1.Manager"),
+                          QDBusConnection::systemBus());
+    if (!login1.isValid()) {
+        qWarning() << "(LockWorker) logind unreachable, cannot perform" << method;
+        return;
+    }
+    login1.call(method, true);
 }
 // PATCHE
