@@ -31,6 +31,9 @@ private:
     void slotRequestChanged();                          // feed the password to PAM
     void onAuthentication(const QString &user, bool ok);  // unlock result
 
+    void requestGxdmPowerAction(const QString &method);     // route through GXDM
+    void requestLogin1PowerAction(const QString &method);  // fallback
+
     bool m_authenticating;
     SDDM::Auth *m_auth;
     QString m_password;

@@ -39,6 +39,10 @@
         <method name="GreeterDisplayServer">
             <arg type="s" name="displayServer" direction="out"/>
         </method>
+        <method name="PowerOff"/>
+        <method name="Reboot"/>
+        <method name="Suspend"/>
+        <method name="Hibernate"/>
         <signal name="WallpaperChanged">
             <arg type="s" name="wallpaper"/>
         </signal>

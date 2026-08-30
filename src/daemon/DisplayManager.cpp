@@ -22,6 +22,7 @@
 #include "Configuration.h"
 #include "Constants.h"
 #include "DaemonApp.h"
+#include "PowerManager.h"
 #include "SeatManager.h"
 
 #include "displaymanageradaptor.h"
@@ -394,6 +395,31 @@ namespace SDDM {
         const QString normalized =
             normalizedDisplayServer(mainConfig.DisplayServer.get());
         return normalized.isEmpty() ? QStringLiteral("x11") : normalized;
+    }
+
+    // 修复锁屏界面电源选项无效的问题
+    void GxdeDisplayManager::PowerOff() {
+        qDebug() << "GxdeDisplayManager::PowerOff requested by client";
+        if (PowerManager *pm = daemonApp->powerManager())
+            pm->powerOff();
+    }
+
+    void GxdeDisplayManager::Reboot() {
+        qDebug() << "GxdeDisplayManager::Reboot requested by client";
+        if (PowerManager *pm = daemonApp->powerManager())
+            pm->reboot();
+    }
+
+    void GxdeDisplayManager::Suspend() {
+        qDebug() << "GxdeDisplayManager::Suspend requested by client";
+        if (PowerManager *pm = daemonApp->powerManager())
+            pm->suspend();
+    }
+
+    void GxdeDisplayManager::Hibernate() {
+        qDebug() << "GxdeDisplayManager::Hibernate requested by client";
+        if (PowerManager *pm = daemonApp->powerManager())
+            pm->hibernate();
     }
 
     DisplayManager::DisplayManager(QObject *parent) : QObject(parent) {

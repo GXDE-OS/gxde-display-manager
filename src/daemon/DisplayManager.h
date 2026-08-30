@@ -46,6 +46,11 @@ namespace SDDM {
         bool SetGreeterDisplayServer(const QString& displayServer);
         QString GreeterDisplayServer() const;
 
+        void PowerOff();
+        void Reboot();
+        void Suspend();
+        void Hibernate();
+
     signals:
         void WallpaperChanged(const QString &wallpaper);
         void LockWallpaperOverrideChanged(uint uid, const QString &wallpaper);
