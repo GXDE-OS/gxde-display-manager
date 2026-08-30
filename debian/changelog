@@ -1,3 +1,10 @@
+gxde-display-manager-se (1.3.0-gxde1) unstable; urgency=medium
+
+  [ zeqi ]
+  * 修复锁屏电源操作失效的问题
+
+ -- CharOfString <root@charofstring.cc>  Sat, 29 Aug 2026 21:27:33 -0500
+
 gxde-display-manager-se (1.2.9-gxde1) unstable; urgency=medium
 
   * 尝试修复自动登录开启后手动登出输入密码卡死的问题
