@@ -12,6 +12,7 @@ class MultiScreenManagerTest : public QObject
 
 private slots:
     void recreatesEveryManagedFrame();
+    void destroysRemovedScreenFrameSynchronously();
 };
 
 void MultiScreenManagerTest::recreatesEveryManagedFrame()
@@ -43,6 +44,28 @@ void MultiScreenManagerTest::recreatesEveryManagedFrame()
             QVERIFY(originalFrames.at(i).isNull());
         }
     }
+}
+
+void MultiScreenManagerTest::destroysRemovedScreenFrameSynchronously()
+{
+    QScreen *screen = qApp->primaryScreen();
+    QVERIFY(screen);
+
+    QPointer<QWidget> screenFrame;
+    MultiScreenManager manager;
+    manager.register_for_mutil_screen([&](QScreen *candidate) {
+        QWidget *frame = new QWidget;
+        if (candidate == screen) {
+            screenFrame = frame;
+        }
+        return frame;
+    });
+    QVERIFY(screenFrame);
+
+    // A queued deletion leaves an ext-session-lock surface alive long enough
+    // for Qt to unmap it, which is a fatal protocol error.
+    Q_EMIT qApp->screenRemoved(screen);
+    QVERIFY(screenFrame.isNull());
 }
 
 QTEST_MAIN(MultiScreenManagerTest)

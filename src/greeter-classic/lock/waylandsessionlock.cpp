@@ -208,26 +208,40 @@ bool WaylandSessionLockIntegration::unlock() {
     return true;
 }
 
-void WaylandSessionLockIntegration::registerSurface(
-        WaylandSessionLockSurface* surface) {
-    if (surface) {
-        m_surfaces.insert(surface);
+bool WaylandSessionLockIntegration::registerSurface(
+        WaylandSessionLockSurface* surface, wl_output* output) {
+    if (!surface || !output) {
+        return false;
     }
+
+    WaylandSessionLockSurface* existing = m_outputSurfaces.value(output);
+    if (existing && existing != surface) {
+        return false;
+    }
+
+    m_outputSurfaces.insert(output, surface);
+    m_surfaces.insert(surface);
+    return true;
 }
 
 void WaylandSessionLockIntegration::unregisterSurface(
     WaylandSessionLockSurface* surface) {
+    if (surface && surface->m_output
+            && m_outputSurfaces.value(surface->m_output) == surface) {
+        m_outputSurfaces.remove(surface->m_output);
+    }
     m_surfaces.remove(surface);
 }
 
 void WaylandSessionLockIntegration::releaseSurfaces() {
     const auto surfaces = m_surfaces;
+    m_surfaces.clear();
+    m_outputSurfaces.clear();
     for (WaylandSessionLockSurface* surface : surfaces) {
         if (surface) {
             surface->release();
         }
     }
-    m_surfaces.clear();
 }
 
 void WaylandSessionLockIntegration::handleLocked() {
@@ -297,8 +311,17 @@ void WaylandSessionLockSurface::bindLockSurface() {
         return;
     }
 
+    if (!m_integration->registerSurface(this, output)) {
+        qWarning()
+            << "(Lock) Refusing duplicate ext-session-lock-v1 surface for"
+            << window()->window()->screen();
+        return;
+    }
+    m_output = output;
     m_surface = ext_session_lock_v1_get_lock_surface(lock, surface, output);
     if (!m_surface) {
+        m_integration->unregisterSurface(this);
+        m_output = nullptr;
         qWarning()
             << "(Lock) Fatal: Failed to bind ext-session-lock-v1 surface!!";
         return;
@@ -306,7 +329,6 @@ void WaylandSessionLockSurface::bindLockSurface() {
 
     ext_session_lock_surface_v1_add_listener(
         m_surface, &kSurfaceListener, this);
-    m_integration->registerSurface(this);
 }
 
 WaylandSessionLockSurface::~WaylandSessionLockSurface() {
@@ -326,9 +348,25 @@ bool WaylandSessionLockSurface::isExposed() const {
 }
 
 void WaylandSessionLockSurface::applyConfigure() {
+    if (!m_surface || m_pendingConfigureSerial == m_appliedConfigureSerial) {
+        return;
+    }
+
+    const bool wasExposed = isExposed();
     if (!m_pendingSize.isEmpty()) {
         resizeFromApplyConfigure(m_pendingSize);
         m_pendingSize = QSize();
+    }
+
+    // Ack only after Qt has applied the matching size. An ack makes the very
+    // next wl_surface commit subject to ext-session-lock's exact-dimensions
+    // rule, so acking in the protocol callback races normal Qt repainting.
+    m_appliedConfigureSerial = m_pendingConfigureSerial;
+    m_configured = true;
+    ext_session_lock_surface_v1_ack_configure(
+        m_surface, m_appliedConfigureSerial);
+    if (!wasExposed) {
+        window()->sendRecursiveExposeEvent();
     }
 }
 
@@ -362,6 +400,8 @@ void WaylandSessionLockSurface::release() {
     m_surface = nullptr;
     m_configured = false;
     m_pendingSize = QSize();
+    m_pendingConfigureSerial = 0;
+    m_appliedConfigureSerial = 0;
 }
 
 void WaylandSessionLockSurface::handleConfigure(uint32_t serial,
@@ -370,17 +410,21 @@ void WaylandSessionLockSurface::handleConfigure(uint32_t serial,
         return;
     }
 
-    ext_session_lock_surface_v1_ack_configure(m_surface, serial);
-
     QSize size(static_cast<int>(width), static_cast<int>(height));
     if (size.isEmpty()) {
         size = fallbackSurfaceSize(
             static_cast<QtWaylandClient::QWaylandWindow *>(window()));
     }
 
-    m_configured = true;
+    m_pendingConfigureSerial = serial;
     m_pendingSize = size;
-    applyConfigureWhenPossible();
+    if (!m_configured) {
+        // The first configure exposes the window, so it must be applied
+        // immediately. Later resizes are deferred until Qt is not painting.
+        applyConfigure();
+    } else {
+        applyConfigureWhenPossible();
+    }
 }
 
 void WaylandSessionLockSurface::handleConfigureCallback(void* data,

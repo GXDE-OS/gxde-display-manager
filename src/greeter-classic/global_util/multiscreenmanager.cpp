@@ -8,8 +8,11 @@ MultiScreenManager::MultiScreenManager(QObject *parent)
     , m_registerFunction(nullptr)
     , m_raiseContentFrameTimer(new QTimer(this))
 {
+    // Additions may be deferred until Qt has finished publishing the new
+    // QScreen. Removals must be handled synchronously so a Wayland lock
+    // surface is destroyed before Qt can hide/reuse its window.
     connect(qApp, &QGuiApplication::screenAdded, this, &MultiScreenManager::onScreenAdded, Qt::QueuedConnection);
-    connect(qApp, &QGuiApplication::screenRemoved, this, &MultiScreenManager::onScreenRemoved, Qt::QueuedConnection);
+    connect(qApp, &QGuiApplication::screenRemoved, this, &MultiScreenManager::onScreenRemoved, Qt::DirectConnection);
 
     // 在sw平台存在复制模式显示问题，使用延迟来置顶一个Frame
     m_raiseContentFrameTimer->setInterval(50);
@@ -83,7 +86,7 @@ void MultiScreenManager::onScreenRemoved(QScreen *screen)
     }
 
     if (QWidget *frame = m_frames.take(screen)) {
-        frame->deleteLater();
+        delete frame;
     }
 
     startRaiseContentFrame();

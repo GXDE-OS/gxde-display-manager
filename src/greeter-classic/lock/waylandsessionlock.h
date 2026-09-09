@@ -21,6 +21,7 @@
 #include <QtWaylandClient/private/qwaylandshellintegration_p.h>
 #include <QtWaylandClient/private/qwaylandshellsurface_p.h>
 
+#include <QHash>
 #include <QSet>
 #include <QSize>
 
@@ -60,12 +61,14 @@ Q_SIGNALS:
     void finished();
 
 private:
-    void registerSurface(WaylandSessionLockSurface* surface);
+    bool registerSurface(WaylandSessionLockSurface* surface,
+        struct wl_output* output);
     void unregisterSurface(WaylandSessionLockSurface* surface);
     void releaseSurfaces();
     struct ext_session_lock_manager_v1* m_manager = nullptr;
     struct ext_session_lock_v1* m_lock = nullptr;
     QSet<WaylandSessionLockSurface *> m_surfaces;
+    QHash<struct wl_output*, WaylandSessionLockSurface *> m_outputSurfaces;
     bool m_locked = false;
     bool m_unlockPending = false;
 
@@ -101,9 +104,13 @@ private:
 
     WaylandSessionLockIntegration* m_integration = nullptr;
     struct ext_session_lock_surface_v1* m_surface = nullptr;
+    struct wl_output* m_output = nullptr;
     QSize m_pendingSize;
+    uint32_t m_pendingConfigureSerial = 0;
+    uint32_t m_appliedConfigureSerial = 0;
     bool m_bindingPending = false;
     bool m_configured = false;
+    friend class WaylandSessionLockIntegration;
 };
 
 #endif  // SRC_GREETER_NEO_LOCK_WAYLANDSESSIONLOCK_H_
