@@ -37,6 +37,9 @@
 #include <QLabel>
 #include <QWindow>
 
+#include <X11/Xlib.h>
+#include <X11/extensions/Xrandr.h>
+
 #include <cmath>
 
 namespace {
@@ -50,6 +53,60 @@ bool isX11Platform()
     return QGuiApplication::platformName().contains(QLatin1String("xcb"));
 }
 
+QRect x11OutputGeometry(QScreen *screen) {
+    Display *display = XOpenDisplay(nullptr);
+    if (!display)
+        return QRect();
+
+    const Window root = DefaultRootWindow(display);
+    XRRScreenResources *resources = XRRGetScreenResourcesCurrent(display, root);
+    if (!resources)
+        resources = XRRGetScreenResources(display, root);
+
+    const QByteArray targetName = screen ? screen->name().toUtf8() : QByteArray();
+    QRect matchedGeometry;
+    QRect onlyGeometry;
+    int activeOutputs = 0;
+
+    if (resources) {
+        for (int i = 0; i < resources->noutput; ++i) {
+            XRROutputInfo *output = XRRGetOutputInfo(
+                display, resources, resources->outputs[i]);
+            if (!output)
+                continue;
+
+            if (output->connection == RR_Connected && output->crtc != None) {
+                XRRCrtcInfo *crtc = XRRGetCrtcInfo(display, resources, output->crtc);
+                if (crtc) {
+                    const QRect geometry(crtc->x, crtc->y, crtc->width, crtc->height);
+                    ++activeOutputs;
+                    onlyGeometry = geometry;
+                    if (QByteArray(output->name, output->nameLen) == targetName)
+                        matchedGeometry = geometry;
+                    XRRFreeCrtcInfo(crtc);
+                }
+            }
+            XRRFreeOutputInfo(output);
+        }
+        XRRFreeScreenResources(resources);
+    }
+    XCloseDisplay(display);
+
+    QRect geometry = matchedGeometry;
+    if (geometry.isEmpty() && activeOutputs == 1)
+        geometry = onlyGeometry;
+    if (geometry.isEmpty())
+        return QRect();
+
+    // RandR reports native pixels while Qt widget geometry is logical.
+    const qreal pixelRatio = screen ? screen->devicePixelRatio() : 1.0;
+    if (pixelRatio > 0.0) {
+        geometry.setSize(QSize(qRound(geometry.width() / pixelRatio),
+                               qRound(geometry.height() / pixelRatio)));
+    }
+    return geometry;
+}
+
 }
 
 FullscreenBackground::FullscreenBackground(QWidget *parent)
@@ -58,6 +115,8 @@ FullscreenBackground::FullscreenBackground(QWidget *parent)
     , m_focusBackground(new QLabel(this))
     , m_focusBlurEffect(new QGraphicsBlurEffect(m_focusBackground))
     , m_focusAnimation(new QVariantAnimation(this))
+    , m_screenGeometryRefreshTimer(new QTimer(this))
+    , m_x11GeometryPollTimer(new QTimer(this))
 {
     Qt::WindowFlags flags = Qt::WindowStaysOnTopHint;
     if (isX11Platform())
@@ -91,6 +150,17 @@ FullscreenBackground::FullscreenBackground(QWidget *parent)
         if (qFuzzyIsNull(m_focusProgress))
             m_focusBackground->hide();
     });
+
+    // Refer to gxde-dock
+    m_screenGeometryRefreshTimer->setSingleShot(true);
+    connect(m_screenGeometryRefreshTimer, &QTimer::timeout, this, [this] {
+        refreshForCurrentSize();
+        repaint();
+    });
+
+    m_x11GeometryPollTimer->setInterval(250);
+    connect(m_x11GeometryPollTimer, &QTimer::timeout,
+            this, &FullscreenBackground::applyScreenGeometry);
 }
 
 bool FullscreenBackground::contentVisible() const
@@ -248,11 +318,8 @@ void FullscreenBackground::leaveEvent(QEvent *event)
 
 void FullscreenBackground::resizeEvent(QResizeEvent *event)
 {
-    m_content->resize(size());
-
-    m_backgroundCache = pixmapHandle(m_background);
-    m_fakeBackgroundCache = pixmapHandle(m_fakeBackground);
-    updateFocusBackground();
+    refreshForCurrentSize();
+    m_screenGeometryRefreshTimer->start();
 
     return QWidget::resizeEvent(event);
 }
@@ -274,7 +341,16 @@ void FullscreenBackground::showEvent(QShowEvent *event)
         }
     }
 
+    if (isX11Platform())
+        m_x11GeometryPollTimer->start();
+
     return QWidget::showEvent(event);
+}
+
+void FullscreenBackground::hideEvent(QHideEvent *event)
+{
+    m_x11GeometryPollTimer->stop();
+    return QWidget::hideEvent(event);
 }
 
 const QPixmap FullscreenBackground::pixmapHandle(const QPixmap &pixmap)
@@ -326,6 +402,16 @@ void FullscreenBackground::updateFocusBackground()
     m_focusBackground->lower();
 }
 
+void FullscreenBackground::refreshForCurrentSize()
+{
+    if (m_content)
+        m_content->resize(size());
+    m_backgroundCache = pixmapHandle(m_background);
+    m_fakeBackgroundCache = pixmapHandle(m_fakeBackground);
+    updateFocusBackground();
+    update();
+}
+
 void FullscreenBackground::updateScreen(QScreen *screen)
 {
     if (screen == m_screen)
@@ -354,13 +440,24 @@ void FullscreenBackground::updateGeometry()
     if (!m_screen)
         return;
 
-    if (isX11Platform())
-        setGeometry(m_screen->geometry());
-    else
-        resize(m_screen->geometry().size());
+    applyScreenGeometry();
+    refreshForCurrentSize();
+}
 
-    m_backgroundCache = pixmapHandle(m_background);
-    m_fakeBackgroundCache = pixmapHandle(m_fakeBackground);
-    updateFocusBackground();
-    update();
+void FullscreenBackground::applyScreenGeometry()
+{
+    if (!m_screen)
+        return;
+
+    if (isX11Platform()) {
+        const QRect nativeGeometry = x11OutputGeometry(m_screen);
+        const QRect targetGeometry = nativeGeometry.isEmpty()
+            ? m_screen->geometry() : nativeGeometry;
+        if (geometry() != targetGeometry)
+            setGeometry(targetGeometry);
+    } else if (!isVisible()) {
+        // Once mapped, the Wayland compositor's configure/Resize size is
+        // authoritative. QScreen may still contain the previous VM mode.
+        resize(m_screen->geometry().size());
+    }
 }

@@ -60,6 +60,7 @@ signals:
 protected:
     void setContent(QWidget * const w);
     void showEvent(QShowEvent *event) override;
+    void hideEvent(QHideEvent *event) override;
     void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE;
 
 private:
@@ -70,6 +71,8 @@ private:
     const QPixmap pixmapHandle(const QPixmap &pixmap);
     void setBackgroundFocusProgress(qreal progress);
     void updateFocusBackground();
+    void refreshForCurrentSize();
+    void applyScreenGeometry();
 
 private:
     void updateScreen(QScreen *screen);
@@ -88,6 +91,8 @@ private:
     QLabel *m_focusBackground;
     QGraphicsBlurEffect *m_focusBlurEffect;
     QVariantAnimation *m_focusAnimation;
+    QTimer *m_screenGeometryRefreshTimer;
+    QTimer *m_x11GeometryPollTimer;
     qreal m_focusProgress = 0.0;
     bool m_backgroundFocused = false;
     QScreen *m_screen = nullptr;
