@@ -41,6 +41,10 @@ static const int SessionButtonHeight = 160;
 
 const QString session_standard_icon_name(const QString &realName)
 {
+    if (realName.contains(QStringLiteral("gxde-flakewm"), Qt::CaseInsensitive)) {
+        return QStringLiteral("gxde");
+    }
+
     const QStringList standard_icon_list = {
         "deepin",
         "fluxbox",

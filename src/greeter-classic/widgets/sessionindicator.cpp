@@ -22,6 +22,10 @@ constexpr int kSpacing = 26;
 
 QString standardIconName(const QString &sessionName)
 {
+    if (sessionName.contains(QStringLiteral("gxde-flakewm"), Qt::CaseInsensitive)) {
+        return QStringLiteral("gxde");
+    }
+
     const QStringList standardIcons = {
         QStringLiteral("deepin"),
         QStringLiteral("enlightenment"),
