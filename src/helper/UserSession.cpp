@@ -149,8 +149,10 @@ namespace SDDM {
             terminate();
             const bool isGreeter = processEnvironment().value(QStringLiteral("XDG_SESSION_CLASS")) == QLatin1String("greeter");
 
-            // Wait longer for a session than a greeter
-            if (!waitForFinished(isGreeter ? 5000 : 60000)) {
+            const bool isWaylandGreeter = isGreeter &&
+                processEnvironment().value(QStringLiteral("XDG_SESSION_TYPE")) == QLatin1String("wayland");
+            const int timeout = isWaylandGreeter ? 25000 : (isGreeter ? 5000 : 60000);
+            if (!waitForFinished(timeout)) {
                 kill();
                 if (!waitForFinished(5000)) {
                     qWarning() << "Could not fully finish the process" << program();

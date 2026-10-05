@@ -399,9 +399,12 @@ namespace SDDM {
 
         d->child->terminate();
 
-        // wait for finished
-        if (!d->child->waitForFinished(5000))
+        if (!d->child->waitForFinished(d->greeter ? 35000 : 5000)) {
             d->child->kill();
+            if (!d->child->waitForFinished(5000)) {
+                qWarning() << "Could not finish authentication helper";
+            }
+        }
     }
 }
 

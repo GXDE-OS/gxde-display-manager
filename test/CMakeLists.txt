@@ -1,5 +1,20 @@
 set(QT_USE_QTTEST TRUE)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_executable(WaylandCleanupProcess WaylandCleanupProcess.cpp)
+    target_link_libraries(WaylandCleanupProcess PRIVATE
+        Qt${QT_MAJOR_VERSION}::Core Qt${QT_MAJOR_VERSION}::Network)
+    add_executable(WaylandCleanupTest WaylandCleanupTest.cpp)
+    target_link_libraries(WaylandCleanupTest PRIVATE
+        Qt${QT_MAJOR_VERSION}::Core Qt${QT_MAJOR_VERSION}::Test)
+    target_compile_definitions(WaylandCleanupTest PRIVATE
+        WAYLAND_HELPER_PATH="$<TARGET_FILE:gxdm-helper-start-wayland>"
+        CLEANUP_PROCESS_PATH="$<TARGET_FILE:WaylandCleanupProcess>")
+    add_dependencies(WaylandCleanupTest gxdm-helper-start-wayland WaylandCleanupProcess)
+    add_test(NAME WaylandCleanup COMMAND WaylandCleanupTest)
+    set_tests_properties(WaylandCleanup PROPERTIES TIMEOUT 90)
+endif()
+
 include_directories(../src/common)
 
 set(ConfigurationTest_SRCS ConfigurationTest.cpp ../src/common/ConfigReader.cpp)

@@ -30,6 +30,7 @@ class WaylandHelper : public QObject
     Q_OBJECT
 public:
     explicit WaylandHelper(QObject *parent = nullptr);
+    ~WaylandHelper() override;
 
     bool startCompositor(const QString &cmd);
     void startGreeter(const QString &cmd);
@@ -41,6 +42,7 @@ Q_SIGNALS:
 private:
     QProcessEnvironment m_environment;
     QProcess *m_serverProcess = nullptr;
+    qint64 m_serverProcessGroup = -1;
     QProcess *m_greeterProcess = nullptr;
     WaylandSocketWatcher * const m_watcher;
     bool m_stopping = false;

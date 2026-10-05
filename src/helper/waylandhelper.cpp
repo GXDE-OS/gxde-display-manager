@@ -28,9 +28,47 @@
 #include "VirtualTerminal.h"
 
 #include <fcntl.h>
+#include <signal.h>
 #include <unistd.h>
+#ifdef Q_OS_LINUX
+#include <sys/prctl.h>
+#endif
 
 namespace SDDM {
+
+namespace {
+// Keep the greeter compositor's children separate from the helper and from
+// user sessions, so a launcher exiting first cannot leave its WM behind.
+class CompositorProcess : public QProcess
+{
+public:
+    explicit CompositorProcess(QObject *parent) : QProcess(parent)
+    {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        const pid_t parentPid = getpid();
+        setChildProcessModifier([parentPid] { prepareChild(parentPid); });
+#endif
+    }
+
+private:
+    static void prepareChild(pid_t parentPid)
+    {
+        if (setpgid(0, 0) != 0)
+            _exit(127);
+#ifdef Q_OS_LINUX
+        // Also release the GPU if our supervising helper is forcibly killed.
+        if (prctl(PR_SET_PDEATHSIG, SIGKILL) != 0 || getppid() != parentPid)
+            _exit(127);
+#else
+        Q_UNUSED(parentPid);
+#endif
+    }
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    const pid_t m_parentPid = getpid();
+    void setupChildProcess() override { prepareChild(m_parentPid); }
+#endif
+};
+}
 
 WaylandHelper::WaylandHelper(QObject *parent)
     : QObject(parent)
@@ -39,37 +77,53 @@ WaylandHelper::WaylandHelper(QObject *parent)
 {
 }
 
+WaylandHelper::~WaylandHelper()
+{
+    stop();
+}
+
 bool WaylandHelper::startCompositor(const QString &cmd)
 {
     m_watcher->start();
     return startProcess(cmd, &m_serverProcess);
 }
 
-void stopProcess(QProcess *process)
+static void stopProcess(QProcess *&process, qint64 processGroup = -1)
 {
+    if (processGroup > 0)
+        ::kill(-static_cast<pid_t>(processGroup), SIGTERM);
+
     if (process && process->state() != QProcess::NotRunning) {
         qInfo() << "Stopping..." << process->program();
         process->terminate();
         if (!process->waitForFinished(5000)) {
             process->kill();
-            process->waitForFinished(25000);
+            if (!process->waitForFinished(5000))
+                qWarning() << "Could not finish Wayland process" << process->program();
         }
-        process->deleteLater();
-        process = nullptr;
     }
+    // The launcher may already have exited while descendants are still alive.
+    if (processGroup > 0)
+        ::kill(-static_cast<pid_t>(processGroup), SIGKILL);
+    if (process)
+        process->deleteLater();
+    process = nullptr;
 }
 
 void WaylandHelper::stop()
 {
+    if (m_stopping)
+        return;
     m_stopping = true;
     m_watcher->stop();
     stopProcess(m_greeterProcess);
-    stopProcess(m_serverProcess);
+    stopProcess(m_serverProcess, m_serverProcessGroup);
+    m_serverProcessGroup = -1;
 }
 
 bool WaylandHelper::startProcess(const QString &cmd, QProcess **p)
 {
-    auto *process = new QProcess(this);
+    auto *process = new CompositorProcess(this);
     process->setProcessEnvironment(m_environment);
     process->setInputChannelMode(QProcess::ForwardedInputChannel);
     connect(process, &QProcess::readyReadStandardError, this, [process] {
@@ -98,6 +152,7 @@ bool WaylandHelper::startProcess(const QString &cmd, QProcess **p)
 
     if (p)
         *p = process;
+    m_serverProcessGroup = process->processId();
 
     qDebug() << "started succesfully" << cmd;
     return true;
