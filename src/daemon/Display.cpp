@@ -279,12 +279,13 @@ namespace SDDM {
                 QString compositorCommand = mainConfig.Wayland.CompositorCommand.get();
                 if (compositorCommand.trimmed().isEmpty()) {
                     // No hard dependency on a single compositor: prefer
-                    // gxde-wlcom and fall back to other common ones.
+                    // flakewm and fall back to other common ones.
                     struct CompositorCandidate {
                         const char *binary;
                         const char *args;
                     };
                     const CompositorCandidate candidates[] = {
+                        { "flakewm", "" },
                         { "gxde-wlcom", "" },
                         { "labwc", "" },
                         { "sway", "" },
@@ -373,7 +374,31 @@ namespace SDDM {
     }
 
     bool Display::start() {
-        return m_started || m_displayServer->start();
+        if (m_started)
+            return true;
+
+        const bool autologinRequested =
+            (daemonApp->first || mainConfig.Autologin.Relogin.get()) &&
+            !mainConfig.Autologin.User.get().trimmed().isEmpty();
+
+        // An unprivileged X11 or Wayland greeter has its own display server.
+        // Start autologin before that display server so the user compositor can
+        // use this display's VT and DRM devices directly.  Rootful X11 is the
+        // exception: an X11 user session runs on the already-started X server.
+        if (autologinRequested &&
+            m_displayServerType != X11DisplayServerType) {
+            daemonApp->first = false;
+            m_started = true;
+
+            if (attemptAutologin())
+                return true;
+
+            qWarning() << "Autologin could not be started; falling back to the greeter";
+            m_auth->setAutologin(false);
+            m_started = false;
+        }
+
+        return m_displayServer->start();
     }
 
     bool Display::attemptAutologin() {
@@ -391,7 +416,9 @@ namespace SDDM {
             }
         } else {
             const QString lastSession = stateConfig.Last.Session.get().trimmed();
-            if (!session.isValid() && !loadDefaultSession(session)) {
+            if (!lastSession.isEmpty() && loadNamedSession(lastSession, session)) {
+                qDebug() << "Using last session for autologin:" << lastSession;
+            } else if (!loadDefaultSession(session)) {
                 return false;
             }
         }
@@ -431,6 +458,19 @@ namespace SDDM {
     void Display::handleAutologinFailure() {
         qWarning() << "Autologin failed!";
         m_auth->setAutologin(false);
+
+        // Non-rootful display servers are deliberately not started before an
+        // autologin attempt.  Bring one up now so its started signal can launch
+        // the greeter.  Rootful X11 autologin runs after its server is ready.
+        if (m_displayServerType != X11DisplayServerType) {
+            m_started = false;
+            if (!m_displayServer->start()) {
+                qCritical() << "Failed to start display server after autologin failure";
+                emit displayServerFailed();
+            }
+            return;
+        }
+
         startSocketServerAndGreeter();
     }
 
@@ -445,7 +485,10 @@ namespace SDDM {
         // log message
         qDebug() << "Display server started.";
 
-        if ((daemonApp->first || mainConfig.Autologin.Relogin.get()) &&
+        // Rootful X11 must be running before its X11 user session can start.
+        // Unprivileged X11 and Wayland autologin is handled early in start().
+        if (m_displayServerType == X11DisplayServerType &&
+            (daemonApp->first || mainConfig.Autologin.Relogin.get()) &&
             !mainConfig.Autologin.User.get().trimmed().isEmpty()) {
             // reset first flag
             daemonApp->first = false;
