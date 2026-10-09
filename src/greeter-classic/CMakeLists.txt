@@ -17,6 +17,9 @@ remove_definitions(
 )
 
 find_package(Qt6 COMPONENTS Core Gui Widgets DBus Network Xml Svg Qml WaylandClient REQUIRED)
+if(NOT TARGET Qt6::WaylandClientPrivate)
+    find_package(Qt6 COMPONENTS WaylandClientPrivate REQUIRED)
+endif()
 find_package(LayerShellQt REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(DTK2WIDGET REQUIRED IMPORTED_TARGET dtk2widget)

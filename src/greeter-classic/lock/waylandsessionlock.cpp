@@ -366,7 +366,11 @@ void WaylandSessionLockSurface::applyConfigure() {
     ext_session_lock_surface_v1_ack_configure(
         m_surface, m_appliedConfigureSerial);
     if (!wasExposed) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+        window()->updateExposure();
+#else
         window()->sendRecursiveExposeEvent();
+#endif
     }
 }
 
