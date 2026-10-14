@@ -1,0 +1,50 @@
+# Maintainer: CharOfString <root@charofstring.cc>
+pkgname=gxdm-git
+pkgver=1.3.2
+pkgrel=1
+pkgdesc='GXDE Display Manager, an SDDM fork with the GXDE greeter'
+arch=('x86_64' 'aarch64')
+url="https://github.com/GXDE-OS/gxde-display-manager"
+license=('GPL-3.0-or-later' 'GPL-2.0-or-later' 'CC-BY-3.0')
+# 与 debian/control 相同：dbus、layer-shell-qt、xauth、xkb 数据与 X 服务器
+# As in debian/control: dbus, layer-shell-qt, xauth, the xkb data and an X server.
+depends=('dtk2widget-qt6-git' 'dtk6core-git' 'dtk6log-git' 'qt6-base' 'qt6-declarative' 'qt6-svg'
+         'qt6-wayland' 'layer-shell-qt' 'gsettings-qt6' 'glib2' 'pam' 'systemd-libs' 'dbus' 'libx11'
+         'libxau' 'libxcb' 'libxcursor' 'libxext' 'libxfixes' 'libxi' 'libxkbcommon' 'libxrandr' 'libxtst'
+         'xorg-xauth' 'xkeyboard-config' 'xorg-server' 'libgcc' 'libstdc++' 'glibc')
+makedepends=('git' 'cmake' 'ninja' 'pkgconf' 'qt6-tools' 'systemd' 'wayland-protocols')
+optdepends=('gxdm-emergency-mode-git: emergency display manager on tty8')
+provides=('gxdm' 'display-manager')
+conflicts=('gxdm' 'gxde-display-manager-git')
+backup=('etc/gxdm/OMG.conf' 'etc/pam.d/gxdm' 'etc/pam.d/gxdm-autologin' 'etc/pam.d/gxdm-greeter')
+source=()
+sha512sums=()
+
+# 直接使用 PKGBUILD 所在的 git 仓库作为源码 ・ Build from the git checkout this PKGBUILD lives in.
+_srcroot() {
+  git -C "$startdir" rev-parse --show-toplevel
+}
+
+build() {
+  # 与 debian/rules 相同；辅助程序与 Arch 的 sddm 一样放在 /usr/lib/gxdm，
+  # 不是 Debian 时 CMake 安装通用的（system-login）PAM 配置
+  # Same as debian/rules.  The helpers go to /usr/lib/gxdm as in Arch's sddm,
+  # and off Debian CMake installs the generic (system-login) PAM files.
+  cmake -B build -S "$(_srcroot)" -GNinja \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib/gxdm \
+    -DBUILD_WITH_QT6=ON \
+    -DBUILD_CLASSIC_GREETER=ON \
+    -DBUILD_MAN_PAGES=OFF \
+    -DINSTALL_PAM_CONFIGURATION=ON \
+    -DUID_MIN=1000 \
+    -DUID_MAX=60000
+  ninja -C build
+}
+
+package() {
+  DESTDIR="$pkgdir" ninja -C build install
+  # 与 debian/gxdm.install 相同 ・ Same as debian/gxdm.install.
+  install -Dm644 "$(_srcroot)/data/configs/OMG.conf" "$pkgdir/etc/gxdm/OMG.conf"
+}
