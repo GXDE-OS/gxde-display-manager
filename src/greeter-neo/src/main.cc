@@ -1,0 +1,312 @@
+/*
+ * Copyright (C) CharOfString <root@charofstring.cc>
+ * 
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include "utils/macros.h"
+
+#include <algorithm>
+#include <pwd.h>
+
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QGuiApplication>
+#include <QHash>
+#include <QQmlApplicationEngine>
+#include <QStringList>
+#include <QUrl>
+#include <QVariantList>
+#include <QVariantMap>
+
+namespace {
+
+using ReleaseData = QHash<QString, QString>;
+
+ReleaseData readReleaseData(const QString& path) {
+  QFile file(path);
+  if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    return {};
+  }
+
+  ReleaseData data;
+  QString section;
+
+  while (!file.atEnd()) {
+    QString line = QString::fromUtf8(file.readLine()).trimmed();
+    if (line.isEmpty() || line.startsWith('#')) {
+      continue;
+    }
+
+    if (line.startsWith('[') && line.endsWith(']')) {
+      section = line.mid(1, line.size() - 2).trimmed();
+      continue;
+    }
+
+    const qsizetype separator = line.indexOf('=');
+    if (separator <= 0) {
+      continue;
+    }
+
+    const QString key = line.left(separator).trimmed();
+    QString value = line.mid(separator + 1).trimmed();
+
+    if (value.size() >= 2 && ((value.front() == '"' && value.back() == '"') || (
+        value.front() == '\'' && value.back() == '\''))) {
+      value = value.mid(1, value.size() - 2);
+    }
+
+    data.insert(section.isEmpty() ? key : section + '/' + key, value);
+  }
+
+  return data;
+}
+
+struct GxdeReleaseInfo {
+  bool isGxde = false;
+  QString label;
+};
+
+QString localizedGxdeCodename(const QString& codename) {
+  if (codename.compare(GXDE15_STABLE_CODENAME,
+      Qt::CaseInsensitive) == 0) {
+    return QString::fromUtf8(GXDE15_STABLE_CODENAME_CN);
+  }
+
+  if (codename.compare(GXDE25_STABLE_CODENAME,
+      Qt::CaseInsensitive) == 0) {
+    return QString::fromUtf8(GXDE25_STABLE_CODENAME_CN);
+  }
+
+  if (codename.compare(GXDE25_UNSTABLE_CODENAME,
+      Qt::CaseInsensitive) == 0) {
+    return QString::fromUtf8(GXDE25_UNSTABLE_CODENAME_CN);
+  }
+
+  if (codename.compare(GXDE25_LOONGARCH_UNSTABLE_CODENAME,
+      Qt::CaseInsensitive) == 0) {
+    return QString::fromUtf8(GXDE25_LOONGARCH_UNSTABLE_CODENAME_CN);
+  }
+
+  return codename;
+}
+
+GxdeReleaseInfo detectGxdeRelease() {
+  const ReleaseData osRelease = readReleaseData("/etc/os-release");
+  GxdeReleaseInfo info;
+  info.isGxde = osRelease.value("ID").compare("GXDE",
+    Qt::CaseInsensitive) == 0;
+
+  if (!info.isGxde) {
+    return info;
+  }
+
+  const ReleaseData desktopVersion = readReleaseData(
+    "/usr/lib/deepin/desktop-version");
+  QString version = desktopVersion.value("Release/Version");
+  if (version.isEmpty()) {
+    version = osRelease.value("VERSION_ID");
+  }
+
+  const QString productType = desktopVersion.value("Release/Type[zh_CN]");
+  const QString milestone = localizedGxdeCodename(
+    desktopVersion.value("Addition/Milestone"));
+  QStringList labelParts;
+
+  for (const QString& part : {version, productType}) {
+    if (!part.isEmpty()) {
+      labelParts.append(part);
+    }
+  }
+
+  info.label = labelParts.join(' ');
+  if (!milestone.isEmpty()) {
+    info.label += QString::fromUtf8(GXDE_QUOTE_BEGIN_CN)
+      + milestone
+      + QString::fromUtf8(GXDE_QUOTE_END_CN);
+  }
+  return info;
+}
+
+struct UserIdRange {
+  quint64 minimum = 1000;
+  quint64 maximum = 60000;
+};
+
+UserIdRange detectUserIdRange() {
+  QFile file("/etc/login.defs");
+  UserIdRange range;
+  if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    return range;
+  }
+
+  while (!file.atEnd()) {
+    const QString line = QString::fromUtf8(file.readLine()).trimmed();
+    if (line.isEmpty() || line.startsWith('#')) {
+      continue;
+    }
+
+    const QStringList fields = line.simplified().split(' ');
+    if (fields.size() < 2) {
+      continue;
+    }
+
+    bool ok = false;
+    const quint64 value = fields.at(1).toULongLong(&ok);
+    if (!ok) {
+      continue;
+    }
+
+    if (fields.first() == "UID_MIN") {
+      range.minimum = value;
+    } else if (fields.first() == "UID_MAX") {
+      range.maximum = value;
+    }
+  }
+
+  return range;
+}
+
+bool isLoginShell(const QString& shell) {
+  return !shell.isEmpty()
+    && !shell.endsWith("/nologin")
+    && !shell.endsWith("/false");
+}
+
+ReleaseData userAccountData(const QString& username) {
+  ReleaseData data = readReleaseData(
+    "/var/lib/AccountsService/users/" + username);
+  const ReleaseData deepinData = readReleaseData(
+    "/var/lib/AccountsService/deepin/users/" + username);
+  for (auto it = deepinData.cbegin(); it != deepinData.cend(); ++it) {
+    data.insert(it.key(), it.value());
+  }
+  return data;
+}
+
+QString localFilePath(const QString& reference) {
+  if (!reference.startsWith("file:", Qt::CaseInsensitive)) {
+    return reference;
+  }
+  return QUrl(reference).toLocalFile();
+}
+
+QString readableAvatarPath(const QString& reference) {
+  const QFileInfo avatar(localFilePath(reference));
+  if (!avatar.isFile() || !avatar.isReadable()) {
+    return {};
+  }
+
+  const QFileInfo largeAvatar(
+    avatar.dir().filePath("bigger/" + avatar.fileName()));
+  if (largeAvatar.isFile() && largeAvatar.isReadable()) {
+    return largeAvatar.absoluteFilePath();
+  }
+  return avatar.absoluteFilePath();
+}
+
+QString userAvatar(const QString& username, const QString& homePath,
+    const ReleaseData& accountData) {
+  const QStringList candidates = {
+    accountData.value("User/Icon"),
+    "/var/lib/AccountsService/icons/" + username,
+    QDir(homePath).filePath(".face"),
+    QDir(homePath).filePath(".face.icon"),
+    "/var/lib/AccountsService/icons/default.png"
+  };
+
+  for (const QString& candidate : candidates) {
+    const QString path = readableAvatarPath(candidate);
+    if (!path.isEmpty()) {
+      return QUrl::fromLocalFile(path).toString();
+    }
+  }
+  return {};
+}
+
+QVariantList detectUsers() {
+  const UserIdRange uidRange = detectUserIdRange();
+  QVariantList users;
+
+  setpwent();
+  while (const passwd* entry = getpwent()) {
+    const quint64 uid = entry->pw_uid;
+    if (uid < uidRange.minimum || uid > uidRange.maximum) {
+      continue;
+    }
+
+    const QString username = QString::fromLocal8Bit(entry->pw_name);
+    const QString shell = QString::fromLocal8Bit(entry->pw_shell);
+    const QString homePath = QString::fromLocal8Bit(entry->pw_dir);
+    if (username.isEmpty() || !isLoginShell(shell)) {
+      continue;
+    }
+
+    const ReleaseData accountData = userAccountData(username);
+    if (accountData.value("User/SystemAccount").compare(
+        "true", Qt::CaseInsensitive) == 0) {
+      continue;
+    }
+
+    QString fullName = accountData.value("User/RealName");
+    if (fullName.isEmpty()) {
+      fullName = QString::fromLocal8Bit(entry->pw_gecos).section(',', 0, 0);
+    }
+    if (fullName.isEmpty()) {
+      fullName = username;
+    }
+
+    QVariantMap user;
+    user.insert("username", username);
+    user.insert("fullName", fullName);
+    user.insert("avatar", userAvatar(username, homePath, accountData));
+    user.insert("uid", uid);
+    users.append(user);
+  }
+  endpwent();
+
+  std::sort(users.begin(), users.end(), [](const QVariant& left,
+      const QVariant& right) {
+    return left.toMap().value("username").toString().localeAwareCompare(
+      right.toMap().value("username").toString()) < 0;
+  });
+
+  return users;
+}
+
+}
+
+int main(int argc, char* argv[]) {
+  qputenv("QT_IM_MODULE", QByteArrayLiteral("qtvirtualkeyboard"));
+  qputenv("QT_VIRTUALKEYBOARD_STYLE", QByteArrayLiteral("gxde"));
+  QGuiApplication app(argc, argv);
+
+  QQmlApplicationEngine engine;
+  const GxdeReleaseInfo gxdeRelease = detectGxdeRelease();
+  QVariantMap init_prop;
+  init_prop.insert("backgroundUri",
+    QUrl("qrc:/img/example-wallpaper-deepin.jpg"));
+  init_prop.insert("isGxdeOs", gxdeRelease.isGxde);
+  init_prop.insert("gxdeReleaseLabel", gxdeRelease.label);
+  init_prop.insert("userModel", detectUsers());
+  engine.setInitialProperties(init_prop);
+
+  QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
+      &app, []() {
+    QCoreApplication::exit(-1);
+  }, Qt::QueuedConnection);
+
+  engine.loadFromModule("Greeter", "MainWindow");
+  return app.exec();
+}

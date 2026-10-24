@@ -1,0 +1,23 @@
+<RCC>
+    <qresource prefix="/img">
+        <file alias="example-wallpaper.png">img/example-wallpaper.png</file>
+        <file alias="example-wallpaper-deepin.jpg">img/example-wallpaper-deepin.jpg</file>
+    </qresource>
+    <qresource prefix="/icons">
+        <file alias="power.svg">icons/power.svg</file>
+        <file alias="keyboard.svg">icons/keyboard.svg</file>
+        <file alias="gxde.png">icons/gxde.png</file>
+        <file alias="next.svg">icons/next.svg</file>
+        <file alias="prev.svg">icons/prev.svg</file>
+        <file alias="next-indicator.svg">icons/next-indicator.svg</file>
+    </qresource>
+    <qresource prefix="/QtQuick/VirtualKeyboard/content/styles/gxde">
+        <file alias="style.qml">vkb-style/style.qml</file>
+        <file alias="images/shift.svg">vkb-style/images/shift.svg</file>
+        <file alias="images/shift-active.svg">vkb-style/images/shift-active.svg</file>
+    </qresource>
+    <qresource prefix="/gxde-vkb">
+        <file alias="layouts/en_US/main.qml">vkb-style/layouts/en_US/main.qml</file>
+        <file alias="layouts/en_US/symbols.qml">vkb-style/layouts/en_US/symbols.qml</file>
+    </qresource>
+</RCC>
