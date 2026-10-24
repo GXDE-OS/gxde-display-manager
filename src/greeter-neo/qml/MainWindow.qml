@@ -26,6 +26,11 @@ Window {
   property bool isGxdeOs: false
   property string gxdeReleaseLabel: ""
   property var userModel: []
+  property var sessionModel: []
+  property int selectedSessionIndex: sessionModel.length > 0 ? 0 : -1
+  readonly property var selectedSession: selectedSessionIndex >= 0
+    && selectedSessionIndex < sessionModel.length
+      ? sessionModel[selectedSessionIndex] : null
   property real activeBackgroundScale: 1.08
   property real activeBackgroundBlur: 0.55
   property real loginProgress: clockView.positionedAtTop ? 1.0 : 0.0
@@ -50,6 +55,7 @@ Window {
   ]
 
   signal loginRequested()
+  signal sessionSelected(var session)
   signal userSelected(int index, var user)
   signal passwordSubmitted(int index, var user, string password)
   signal manualLoginRequested()
@@ -397,6 +403,21 @@ Window {
       }
 
       IconButton {
+        id: sessionButton
+
+        objectName: "sessionButton"
+        source: sessionMenu.iconFor(root.selectedSession)
+        tint: "transparent"
+        visible: root.sessionModel.length > 0
+        Accessible.name: qsTr("选择桌面会话：")
+          + (root.selectedSession ? root.selectedSession.name : "")
+        onClicked: {
+          powerMenu.close()
+          sessionMenu.opened ? sessionMenu.close() : sessionMenu.open()
+        }
+      }
+
+      IconButton {
         source: "qrc:/icons/keyboard.svg"
         tint: root.iconTint
         visible: keyboardLoader.status === Loader.Ready
@@ -409,7 +430,42 @@ Window {
 
         source: "qrc:/icons/power.svg"
         tint: root.iconTint
-        onClicked: powerMenu.opened ? powerMenu.close() : powerMenu.open()
+        onClicked: {
+          sessionMenu.close()
+          powerMenu.opened ? powerMenu.close() : powerMenu.open()
+        }
+      }
+    }
+  }
+
+  SessionMenu {
+    id: sessionMenu
+
+    readonly property point anchor: {
+      operationView.x
+      operationView.y
+      return sessionButton.mapToItem(parent, sessionButton.width, 0)
+    }
+
+    objectName: "sessionMenu"
+    parent: Overlay.overlay
+    z: 20
+    width: Math.min(implicitWidth, root.width - 24)
+    maximumHeight: Math.max(46, Math.min(320, anchor.y - 20))
+    x: Math.max(12, Math.round(anchor.x - width))
+    y: Math.round(anchor.y - height - 8)
+    backdrop: windowContent
+    sessions: root.sessionModel
+    selectedIndex: root.selectedSessionIndex
+    onSelected: (index) => {
+      root.selectedSessionIndex = index
+      root.sessionSelected(root.selectedSession)
+    }
+    onClosed: {
+      if (passwordCard.opened) {
+        passwordCard.forceActiveFocus()
+      } else {
+        keyCatcher.forceActiveFocus()
       }
     }
   }

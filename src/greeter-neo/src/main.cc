@@ -29,6 +29,7 @@
 #include <algorithm>
 
 #include "greeter-neo/src/power_backend.h"
+#include "greeter-neo/src/session_list.h"
 #include "greeter-neo/src/utils/macros.h"
 
 namespace {
@@ -306,6 +307,8 @@ int main(int argc, char* argv[]) {
   init_prop.insert("isGxdeOs", gxdeRelease.isGxde);
   init_prop.insert("gxdeReleaseLabel", gxdeRelease.label);
   init_prop.insert("userModel", detectUsers());
+  init_prop.insert("sessionModel", gxde::greeter::ReadSessions(
+                                       {"/usr/local/share", "/usr/share"}));
   engine.setInitialProperties(init_prop);
 
   QObject::connect(

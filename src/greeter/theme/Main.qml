@@ -74,7 +74,6 @@ Rectangle {
     Rectangle {
         anchors.fill: parent
         color: "transparent"
-        //visible: primaryScreen
 
         Component {
             id: userDelegate
@@ -102,7 +101,6 @@ Rectangle {
 
         Row {
             anchors.fill: parent
-            //visible: primaryScreen
 
             Rectangle {
                 width: parent.width / 2; height: parent.height
@@ -200,7 +198,6 @@ Rectangle {
             anchors.top: parent.top;
             anchors.horizontalCenter: parent.horizontalCenter
             width: parent.width; height: 40
-            //visible: primaryScreen
 
             Row {
                 anchors.left: parent.left

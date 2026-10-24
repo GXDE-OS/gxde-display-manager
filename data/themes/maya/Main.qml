@@ -1,7 +1,5 @@
 //
-// [maya] main.qml
 //
-// Main script for the SDDM theme
 //
 // (c) 2016 Sanjeev Premi (spremi@ymail.com)
 //
@@ -44,25 +42,13 @@ Rectangle {
 
   readonly property color defaultBg : primaryShade ? primaryShade : "#1e88e5"
 
-  //
-  // Indicates one unit of measure (in pixels)
-  //
   readonly property int spUnit: 64
 
-  //
-  // Symmetric (equal) padding on all sides
-  //
   readonly property int padSym : (spUnit / 8)
 
-  //
-  // Asymmetric padding in horizontal & vertical directions
-  //
   readonly property int padAsymH : (spUnit / 2)
   readonly property int padAsymV : (spUnit / 8)
 
-  //
-  // Font sizes
-  //
   readonly property int spFontNormal  : 24
   readonly property int spFontSmall   : 16
 
@@ -134,9 +120,6 @@ Rectangle {
     }
   }
 
-  //
-  // Status bar on top
-  //
   Rectangle {
     x       : 0
     y       : 0
@@ -155,9 +138,6 @@ Rectangle {
 
       layoutDirection : Qt.RightToLeft
 
-      //
-      // Current date & time
-      //
       SpClock {
         height  : parent.height
 
@@ -170,9 +150,6 @@ Rectangle {
   }
 
 
-  //
-  // Header
-  //
   Rectangle {
     x       : 0
     y       : spUnit
@@ -187,9 +164,6 @@ Rectangle {
       width   : (parent.width  - (padAsymH * 2))
       height  : (parent.height - (padAsymV * 2))
 
-      //
-      // Welcome Text
-      //
       Text {
         id      : maya_welcome
 
@@ -209,9 +183,6 @@ Rectangle {
     }
   }
 
-  //
-  // Toolbar
-  //
   Rectangle {
     x       : 0
     y       : (spUnit * 2)
@@ -230,9 +201,6 @@ Rectangle {
 
       layoutDirection : Qt.RightToLeft
 
-      //
-      // Layout selection
-      //
       LayoutBox {
         id      : maya_layout
 
@@ -270,9 +238,6 @@ Rectangle {
         verticalAlignment   : Text.AlignVCenter
       }
 
-      //
-      // Session selection
-      //
       ComboBox {
         id      : maya_session
 
@@ -315,9 +280,6 @@ Rectangle {
     }
   }
 
-  //
-  // Footer
-  //
   Rectangle {
     x       : 0
     y       : (parent.height - spUnit)
@@ -337,9 +299,6 @@ Rectangle {
 
       layoutDirection : Qt.RightToLeft
 
-      //
-      // Shutdown button
-      //
       SpButton {
         id      : maya_shutdown
 
@@ -363,9 +322,6 @@ Rectangle {
         onClicked: sddm.powerOff()
       }
 
-      //
-      // Reboot button
-      //
       SpButton {
         id      : maya_reboot
 
@@ -391,9 +347,6 @@ Rectangle {
     }
   }
 
-  //
-  // Login container
-  //
   Rectangle {
     x       : (parent.width  - (6 * spUnit)) / 2
     y       : (parent.height - (5 * spUnit)) / 2
@@ -553,9 +506,6 @@ Rectangle {
     }
   }
 
-  //
-  // Busy animation (just above footer)
-  //
   Rectangle {
     id      : maya_busy
 
@@ -605,9 +555,6 @@ Rectangle {
     }
   }
 
-  //
-  // Prompt container
-  //
   Rectangle {
     id      : prompt_bg
 

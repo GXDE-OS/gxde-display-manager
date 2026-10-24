@@ -1,7 +1,5 @@
 //
-// [maya] components/SpClock.qml
 //
-// Implements custom clock component
 //
 // (c) 2016 Sanjeev Premi (spremi@ymail.com)
 //

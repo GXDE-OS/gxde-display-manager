@@ -32,13 +32,11 @@ TestCase {
         verify(keys.indexOf("someInteger") >= 0);
     }
 
-    // Everything is a string
     function test_propertyAPI() {
         compare(config.doesnotexist, undefined);
         compare(config.someTrueBool, "yes");
         compare(!!config.someTrueBool, true);
         compare(config.someFalseBool, "false");
-        // "false" as a string is truthy!
         compare(!!config.someFalseBool, true);
         compare(config.someInteger, "042");
         compare(+config.someInteger, 42);
@@ -47,20 +45,16 @@ TestCase {
         compare(config.someString, "Pie/180");
     }
 
-    // Strings are converted to specific types
     function test_typedAPI() {
         compare(config.stringValue("doesnotexist"), "");
         compare(config.boolValue("someTrueBool"), true);
         compare(config.boolValue("someFalseBool"), false);
-        // "false" as a string is truthy!
         compare(!!config.someFalseBool, true);
         compare(config.stringValue("someInteger"), "042");
         compare(config.intValue("someInteger"), 42);
         compare(config.realValue("someRealNumber"), 1.5);
-        // conversion fails -> 0
         compare(config.intValue("someRealNumber"), 0);
         compare(config.stringValue("someString"), "Pie/180");
-        // conversion fails -> 0
         compare(config.intValue("someString"), 0);
         compare(config.realValue("someString"), 0);
     }

@@ -42,6 +42,8 @@ qt_add_resources(GREETER_RESOURCES
 
 qt_add_executable(gxde-greeter
   ${GREETER_RESOURCES}
+  src/session_list.cc
+  src/session_list.h
   src/main.cc
   src/power_backend.cc
   src/power_backend.h
@@ -63,6 +65,9 @@ set_source_files_properties(qml/components/DtkFrame.qml PROPERTIES
 set_source_files_properties(qml/components/PowerMenu.qml PROPERTIES
   QT_RESOURCE_ALIAS PowerMenu.qml)
 
+set_source_files_properties(qml/components/SessionMenu.qml PROPERTIES
+  QT_RESOURCE_ALIAS SessionMenu.qml)
+
 qt_add_qml_module(gxde-greeter
   URI Greeter
   VERSION 1.0
@@ -73,6 +78,7 @@ qt_add_qml_module(gxde-greeter
     qml/components/UserAvatar.qml
     qml/components/VirtualKeyboardPanel.qml
     qml/components/DtkFrame.qml
+    qml/components/SessionMenu.qml
     qml/components/PowerMenu.qml
 )
 
@@ -102,4 +108,21 @@ if(GREETER_BUILD_TESTS)
   target_include_directories(powerbackend-test PRIVATE ..)
   target_link_libraries(powerbackend-test PRIVATE Qt6::Network Qt6::Test)
   add_test(NAME powerbackend COMMAND powerbackend-test)
+  qt_add_executable(session-list-test
+    tests/session_list_test.cc
+    src/session_list.cc
+    src/session_list.h
+  )
+  target_include_directories(session-list-test PRIVATE ..)
+  target_link_libraries(session-list-test PRIVATE Qt6::Test)
+  add_test(NAME session-list COMMAND session-list-test)
+  get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
+  execute_process(COMMAND "${QT_QMAKE_EXECUTABLE}" -query QT_INSTALL_BINS
+    OUTPUT_VARIABLE QT_BIN_DIRECTORY OUTPUT_STRIP_TRAILING_WHITESPACE)
+  find_program(QML6_TEST_RUNNER qmltestrunner
+    PATHS "${QT_BIN_DIRECTORY}" NO_DEFAULT_PATH)
+  if(QML6_TEST_RUNNER)
+    add_test(NAME session-menu COMMAND "${QML6_TEST_RUNNER}"
+      -platform offscreen -input "${CMAKE_CURRENT_SOURCE_DIR}/tests/qml")
+  endif()
 endif()

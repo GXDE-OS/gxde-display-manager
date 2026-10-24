@@ -10,6 +10,18 @@
         <file alias="next.svg">icons/next.svg</file>
         <file alias="prev.svg">icons/prev.svg</file>
         <file alias="next-indicator.svg">icons/next-indicator.svg</file>
+        <file alias="menu-check.svg">icons/menu-check.svg</file>
+        <file alias="menu-check-dark.svg">icons/menu-check-dark.svg</file>
+        <file alias="sessions/enlightenment.svg">icons/sessions/enlightenment.svg</file>
+        <file alias="sessions/fluxbox.svg">icons/sessions/fluxbox.svg</file>
+        <file alias="sessions/gnome.svg">icons/sessions/gnome.svg</file>
+        <file alias="sessions/gxde.svg">icons/sessions/gxde.svg</file>
+        <file alias="sessions/lxde.svg">icons/sessions/lxde.svg</file>
+        <file alias="sessions/plasma.svg">icons/sessions/plasma.svg</file>
+        <file alias="sessions/ubuntu.svg">icons/sessions/ubuntu.svg</file>
+        <file alias="sessions/wayland.svg">icons/sessions/wayland.svg</file>
+        <file alias="sessions/x11.svg">icons/sessions/x11.svg</file>
+        <file alias="sessions/xfce.svg">icons/sessions/xfce.svg</file>
     </qresource>
     <qresource prefix="/QtQuick/VirtualKeyboard/content/styles/gxde">
         <file alias="style.qml">vkb-style/style.qml</file>

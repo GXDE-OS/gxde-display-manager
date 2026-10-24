@@ -70,7 +70,6 @@ Rectangle {
     Rectangle {
         anchors.fill: parent
         color: "transparent"
-        //visible: primaryScreen
 
         Clock {
             id: clock

@@ -62,7 +62,6 @@ Rectangle {
     Rectangle {
         anchors.fill: parent
         color: "transparent"
-        //visible: primaryScreen
 
         Rectangle {
             width: 416; height: 262

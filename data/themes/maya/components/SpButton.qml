@@ -1,7 +1,5 @@
 //
-// [maya] components/SpButton.qml
 //
-// Implements custom action button with label
 //
 // (c) 2016 Sanjeev Premi (spremi@ymail.com)
 //
@@ -84,9 +82,6 @@ Item {
   }
 
 
-  //
-  // States and associated visual attributes
-  //
   states: [
     State {
       name  : "disabled"
@@ -131,9 +126,6 @@ Item {
     }
   ]
 
-  //
-  // Behavior on state transitions
-  //
   transitions: [
     Transition {
       from  : ""
@@ -169,9 +161,6 @@ Item {
     }
   ]
 
-  //
-  // Area to react to mouse actions
-  //
   MouseArea {
     anchors.fill    : sp_button
 
