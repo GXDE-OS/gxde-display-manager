@@ -1,6 +1,6 @@
 /*
  * Copyright (C) CharOfString <root@charofstring.cc>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation, version 3.
@@ -14,9 +14,6 @@
  * this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "utils/macros.h"
-
-#include <algorithm>
 #include <pwd.h>
 
 #include <QDir>
@@ -29,6 +26,10 @@
 #include <QUrl>
 #include <QVariantList>
 #include <QVariantMap>
+#include <algorithm>
+
+#include "greeter-neo/src/power_backend.h"
+#include "greeter-neo/src/utils/macros.h"
 
 namespace {
 
@@ -62,8 +63,9 @@ ReleaseData readReleaseData(const QString& path) {
     const QString key = line.left(separator).trimmed();
     QString value = line.mid(separator + 1).trimmed();
 
-    if (value.size() >= 2 && ((value.front() == '"' && value.back() == '"') || (
-        value.front() == '\'' && value.back() == '\''))) {
+    if (value.size() >= 2 &&
+        ((value.front() == '"' && value.back() == '"') ||
+         (value.front() == '\'' && value.back() == '\''))) {
       value = value.mid(1, value.size() - 2);
     }
 
@@ -79,23 +81,20 @@ struct GxdeReleaseInfo {
 };
 
 QString localizedGxdeCodename(const QString& codename) {
-  if (codename.compare(GXDE15_STABLE_CODENAME,
-      Qt::CaseInsensitive) == 0) {
+  if (codename.compare(GXDE15_STABLE_CODENAME, Qt::CaseInsensitive) == 0) {
     return QString::fromUtf8(GXDE15_STABLE_CODENAME_CN);
   }
 
-  if (codename.compare(GXDE25_STABLE_CODENAME,
-      Qt::CaseInsensitive) == 0) {
+  if (codename.compare(GXDE25_STABLE_CODENAME, Qt::CaseInsensitive) == 0) {
     return QString::fromUtf8(GXDE25_STABLE_CODENAME_CN);
   }
 
-  if (codename.compare(GXDE25_UNSTABLE_CODENAME,
-      Qt::CaseInsensitive) == 0) {
+  if (codename.compare(GXDE25_UNSTABLE_CODENAME, Qt::CaseInsensitive) == 0) {
     return QString::fromUtf8(GXDE25_UNSTABLE_CODENAME_CN);
   }
 
   if (codename.compare(GXDE25_LOONGARCH_UNSTABLE_CODENAME,
-      Qt::CaseInsensitive) == 0) {
+                       Qt::CaseInsensitive) == 0) {
     return QString::fromUtf8(GXDE25_LOONGARCH_UNSTABLE_CODENAME_CN);
   }
 
@@ -105,23 +104,22 @@ QString localizedGxdeCodename(const QString& codename) {
 GxdeReleaseInfo detectGxdeRelease() {
   const ReleaseData osRelease = readReleaseData("/etc/os-release");
   GxdeReleaseInfo info;
-  info.isGxde = osRelease.value("ID").compare("GXDE",
-    Qt::CaseInsensitive) == 0;
+  info.isGxde = osRelease.value("ID").compare("GXDE", Qt::CaseInsensitive) == 0;
 
   if (!info.isGxde) {
     return info;
   }
 
-  const ReleaseData desktopVersion = readReleaseData(
-    "/usr/lib/deepin/desktop-version");
+  const ReleaseData desktopVersion =
+      readReleaseData("/usr/lib/deepin/desktop-version");
   QString version = desktopVersion.value("Release/Version");
   if (version.isEmpty()) {
     version = osRelease.value("VERSION_ID");
   }
 
   const QString productType = desktopVersion.value("Release/Type[zh_CN]");
-  const QString milestone = localizedGxdeCodename(
-    desktopVersion.value("Addition/Milestone"));
+  const QString milestone =
+      localizedGxdeCodename(desktopVersion.value("Addition/Milestone"));
   QStringList labelParts;
 
   for (const QString& part : {version, productType}) {
@@ -132,9 +130,8 @@ GxdeReleaseInfo detectGxdeRelease() {
 
   info.label = labelParts.join(' ');
   if (!milestone.isEmpty()) {
-    info.label += QString::fromUtf8(GXDE_QUOTE_BEGIN_CN)
-      + milestone
-      + QString::fromUtf8(GXDE_QUOTE_END_CN);
+    info.label += QString::fromUtf8(GXDE_QUOTE_BEGIN_CN) + milestone +
+                  QString::fromUtf8(GXDE_QUOTE_END_CN);
   }
   return info;
 }
@@ -179,16 +176,15 @@ UserIdRange detectUserIdRange() {
 }
 
 bool isLoginShell(const QString& shell) {
-  return !shell.isEmpty()
-    && !shell.endsWith("/nologin")
-    && !shell.endsWith("/false");
+  return !shell.isEmpty() && !shell.endsWith("/nologin") &&
+         !shell.endsWith("/false");
 }
 
 ReleaseData userAccountData(const QString& username) {
-  ReleaseData data = readReleaseData(
-    "/var/lib/AccountsService/users/" + username);
-  const ReleaseData deepinData = readReleaseData(
-    "/var/lib/AccountsService/deepin/users/" + username);
+  ReleaseData data =
+      readReleaseData("/var/lib/AccountsService/users/" + username);
+  const ReleaseData deepinData =
+      readReleaseData("/var/lib/AccountsService/deepin/users/" + username);
   for (auto it = deepinData.cbegin(); it != deepinData.cend(); ++it) {
     data.insert(it.key(), it.value());
   }
@@ -209,7 +205,7 @@ QString readableAvatarPath(const QString& reference) {
   }
 
   const QFileInfo largeAvatar(
-    avatar.dir().filePath("bigger/" + avatar.fileName()));
+      avatar.dir().filePath("bigger/" + avatar.fileName()));
   if (largeAvatar.isFile() && largeAvatar.isReadable()) {
     return largeAvatar.absoluteFilePath();
   }
@@ -217,14 +213,12 @@ QString readableAvatarPath(const QString& reference) {
 }
 
 QString userAvatar(const QString& username, const QString& homePath,
-    const ReleaseData& accountData) {
-  const QStringList candidates = {
-    accountData.value("User/Icon"),
-    "/var/lib/AccountsService/icons/" + username,
-    QDir(homePath).filePath(".face"),
-    QDir(homePath).filePath(".face.icon"),
-    "/var/lib/AccountsService/icons/default.png"
-  };
+                   const ReleaseData& accountData) {
+  const QStringList candidates = {accountData.value("User/Icon"),
+                                  "/var/lib/AccountsService/icons/" + username,
+                                  QDir(homePath).filePath(".face"),
+                                  QDir(homePath).filePath(".face.icon"),
+                                  "/var/lib/AccountsService/icons/default.png"};
 
   for (const QString& candidate : candidates) {
     const QString path = readableAvatarPath(candidate);
@@ -254,8 +248,8 @@ QVariantList detectUsers() {
     }
 
     const ReleaseData accountData = userAccountData(username);
-    if (accountData.value("User/SystemAccount").compare(
-        "true", Qt::CaseInsensitive) == 0) {
+    if (accountData.value("User/SystemAccount")
+            .compare("true", Qt::CaseInsensitive) == 0) {
       continue;
     }
 
@@ -276,11 +270,14 @@ QVariantList detectUsers() {
   }
   endpwent();
 
-  std::sort(users.begin(), users.end(), [](const QVariant& left,
-      const QVariant& right) {
-    return left.toMap().value("username").toString().localeAwareCompare(
-      right.toMap().value("username").toString()) < 0;
-  });
+  std::sort(users.begin(), users.end(),
+            [](const QVariant& left, const QVariant& right) {
+              return left.toMap()
+                         .value("username")
+                         .toString()
+                         .localeAwareCompare(
+                             right.toMap().value("username").toString()) < 0;
+            });
 
   return users;
 }
@@ -292,20 +289,28 @@ int main(int argc, char* argv[]) {
   qputenv("QT_VIRTUALKEYBOARD_STYLE", QByteArrayLiteral("gxde"));
   QGuiApplication app(argc, argv);
 
+  const QStringList arguments = app.arguments();
+  const int socket_index = arguments.indexOf(QStringLiteral("--socket"));
+  const QString socket_name =
+      socket_index >= 0 && socket_index + 1 < arguments.size() &&
+              !arguments.contains(QStringLiteral("--test-mode"))
+          ? arguments.at(socket_index + 1)
+          : QString();
+  gxde::greeter::PowerBackend power_backend(socket_name);
   QQmlApplicationEngine engine;
   const GxdeReleaseInfo gxdeRelease = detectGxdeRelease();
   QVariantMap init_prop;
+  init_prop.insert("powerBackend", QVariant::fromValue(&power_backend));
   init_prop.insert("backgroundUri",
-    QUrl("qrc:/img/example-wallpaper-deepin.jpg"));
+                   QUrl("qrc:/img/example-wallpaper-deepin.jpg"));
   init_prop.insert("isGxdeOs", gxdeRelease.isGxde);
   init_prop.insert("gxdeReleaseLabel", gxdeRelease.label);
   init_prop.insert("userModel", detectUsers());
   engine.setInitialProperties(init_prop);
 
-  QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
-      &app, []() {
-    QCoreApplication::exit(-1);
-  }, Qt::QueuedConnection);
+  QObject::connect(
+      &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
+      []() { QCoreApplication::exit(-1); }, Qt::QueuedConnection);
 
   engine.loadFromModule("Greeter", "MainWindow");
   return app.exec();

@@ -21,7 +21,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 6.5
   REQUIRED COMPONENTS
     Quick
-    ShaderTools
+    Network
 )
 
 qt_standard_project_setup(REQUIRES 6.5)
@@ -43,6 +43,8 @@ qt_add_resources(GREETER_RESOURCES
 qt_add_executable(gxde-greeter
   ${GREETER_RESOURCES}
   src/main.cc
+  src/power_backend.cc
+  src/power_backend.h
   src/utils/macros.h
 )
 
@@ -74,8 +76,11 @@ qt_add_qml_module(gxde-greeter
     qml/components/PowerMenu.qml
 )
 
+target_include_directories(gxde-greeter PRIVATE ..)
+
 target_link_libraries(gxde-greeter PRIVATE
   Qt6::Quick
+  Qt6::Network
 )
 
 include(GNUInstallDirs)
@@ -84,3 +89,17 @@ install(TARGETS gxde-greeter
   BUNDLE DESTINATION .
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+option(GREETER_BUILD_TESTS "Build greeter backend tests" OFF)
+if(GREETER_BUILD_TESTS)
+  enable_testing()
+  find_package(Qt6 REQUIRED COMPONENTS Test)
+  qt_add_executable(powerbackend-test
+    tests/power_backend_test.cc
+    src/power_backend.cc
+    src/power_backend.h
+  )
+  target_include_directories(powerbackend-test PRIVATE ..)
+  target_link_libraries(powerbackend-test PRIVATE Qt6::Network Qt6::Test)
+  add_test(NAME powerbackend COMMAND powerbackend-test)
+endif()

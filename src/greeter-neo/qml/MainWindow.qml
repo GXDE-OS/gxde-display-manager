@@ -31,7 +31,9 @@ Window {
   property real loginProgress: clockView.positionedAtTop ? 1.0 : 0.0
   property real dialogProgress: passwordCard.shown ? 1.0 : 0.0
   property bool authBackendAvailable: false
-  property var availablePowerActions: ["reboot", "shutdown", "suspend"]
+  property QtObject powerBackend: null
+  readonly property var availablePowerActions: powerBackend
+    ? powerBackend.availableActions : []
   property bool virtualKeyboardRequested: false
   readonly property real keyboardInset: virtualKeyboard.visible
     ? (virtualKeyboard.height + virtualKeyboard.screenMargin)
@@ -52,6 +54,45 @@ Window {
   signal passwordSubmitted(int index, var user, string password)
   signal manualLoginRequested()
   signal powerRequested(string action)
+  onPowerRequested: (action) => {
+    if (powerBackend) {
+      powerBackend.Request(action)
+    }
+  }
+
+  Connections {
+    target: root.powerBackend
+    function onRequestFailed(message) {
+      powerError.text = message
+      powerErrorPopup.open()
+    }
+  }
+
+  Popup {
+    id: powerErrorPopup
+    parent: Overlay.overlay
+    anchors.centerIn: parent
+    width: Math.min(420, root.width - 40)
+    padding: 20
+    modal: true
+    focus: true
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    background: DtkFrame { backdrop: windowContent }
+    contentItem: Column {
+      spacing: 16
+      Label {
+        id: powerError
+        width: parent.width
+        wrapMode: Text.Wrap
+        color: "white"
+      }
+      Button {
+        text: qsTr("关闭")
+        anchors.right: parent.right
+        onClicked: powerErrorPopup.close()
+      }
+    }
+  }
 
   width: 640
   height: 480

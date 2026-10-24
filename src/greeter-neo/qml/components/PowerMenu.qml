@@ -20,7 +20,7 @@ Popup {
 
   property bool light: false
   property Item backdrop: null
-  property var availableActions: ["reboot", "shutdown", "suspend"]
+  property var availableActions: []
   property int originCorner: Item.BottomRight
   property int currentIndex: -1
 
@@ -44,6 +44,9 @@ Popup {
 
   function isEnabled(index) {
     const entry = menu.actions[index]
+    if (!entry) {
+      return false
+    }
     return !entry.separator
       && menu.availableActions.indexOf(entry.action) !== -1
   }
