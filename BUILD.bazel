@@ -11,6 +11,7 @@ pkg_files(
         "//src/greeter:gxdm-greeter-qt6",
         # Default greeter
         "//src/greeter-classic:gxdm-greeter-classic",
+        "//src/greeter-neo:gxdm-greeter-neo",
         # In-session lock screen (PAM-direct, no dde-daemon)
         "//src/greeter-classic:gxdm-lock-classic",
     ],

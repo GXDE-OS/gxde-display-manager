@@ -4,6 +4,7 @@ Provides:
   gxdm_configure_file - CMake-style @VAR@ / ${VAR} template substitution.
   qt_moc             - run moc over headers -> moc_*.cpp (added to a target's srcs).
   qt_rcc             - compile a .qrc -> qrc_*.cpp.
+  qt_qml_module      - compile QML files into a qrc_*.cpp QML module.
   qt_dbus_adaptor    - qdbusxml2cpp adaptor (.h/.cpp) from a D-Bus XML.
   qt_dbus_interface  - qdbusxml2cpp interface/proxy (.h/.cpp) from a D-Bus XML.
   qt_lrelease        - compile a .ts -> .qm.
@@ -116,6 +117,36 @@ def qt_rcc(name, qrc, data, init_name):
         srcs = [qrc] + data,
         outs = [out],
         cmd = "%s --name %s $(location %s) -o $@" % (RCC, init_name, qrc),
+    )
+    return out
+
+def qt_qml_module(name, uri, version, qml_files, init_name):
+    """Compile QML files into qrc_<init_name>.cpp as module `uri`, laid out like
+    qt_add_qml_module (qrc:/qt/qml/<uri>/ with a qmldir) so that
+    QQmlApplicationEngine::loadFromModule finds them."""
+    prefix = "/qt/qml/" + uri.replace(".", "/")
+    bases = [_basename(f) for f in qml_files]
+    qmldir = ["module " + uri, "prefer :%s/" % prefix] + [
+        "%s %s %s" % (_stem(b), version, b)
+        for b in bases
+    ]
+    qrc = ['<RCC><qresource prefix="%s">' % prefix, "<file>qmldir</file>"] + [
+        "<file>%s</file>" % b
+        for b in bases
+    ] + ["</qresource></RCC>"]
+    out = "qrc_%s.cpp" % init_name
+    native.genrule(
+        name = name,
+        srcs = qml_files,
+        outs = [out],
+        cmd = " && ".join([
+            "d=$$(mktemp -d)",
+            "cp $(SRCS) $$d/",
+            "printf '%%s\\n' %s > $$d/qmldir" % " ".join(["'%s'" % l for l in qmldir]),
+            "printf '%%s\\n' %s > $$d/module.qrc" % " ".join(["'%s'" % l for l in qrc]),
+            "%s --name %s $$d/module.qrc -o $@" % (RCC, init_name),
+            "rm -rf $$d",
+        ]),
     )
     return out
 
