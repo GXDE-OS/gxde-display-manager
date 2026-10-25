@@ -54,18 +54,21 @@ qt_cc_library(
     deps = [":constants"],
 )
 
-# Wallpaper, cursor and scale setup shared by the classic and neo greeters.
+# Wallpaper, cursor, scale and OS defaults shared by the classic and neo
+# greeters.
 qt_cc_library(
     name = "greeter_appearance",
     srcs = [
         "GreeterAppearance.cpp",
         "GreeterCursor.cpp",
         "GreeterScale.cpp",
+        "SystemDefaults.cpp",
     ],
     hdrs = [
         "GreeterAppearance.h",
         "GreeterCursor.h",
         "GreeterScale.h",
+        "SystemDefaults.h",
     ],
     linkopts = [
         "-lX11",

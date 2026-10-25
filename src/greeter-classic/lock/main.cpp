@@ -42,7 +42,7 @@
 #include "lockworker.h"
 #include "sessionbasemodel.h"
 #include "propertygroup.h"
-#include "systemdefaults.h"
+#include "SystemDefaults.h"
 
 #include <QLabel>
 #include <QScreen>

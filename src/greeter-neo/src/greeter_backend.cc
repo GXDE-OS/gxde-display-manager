@@ -18,6 +18,8 @@
 
 #include <QByteArray>
 #include <QDataStream>
+#include <QDebug>
+#include <QFileInfo>
 #include <QIODevice>
 #include <QLocalSocket>
 #include <QString>
@@ -27,6 +29,7 @@
 
 #include "common/Messages.h"
 #include "common/Session.h"
+#include "common/SystemDefaults.h"
 
 namespace gxde::greeter {
 namespace {
@@ -70,6 +73,41 @@ bool GreeterBackend::IsConnected() const {
 }
 
 bool GreeterBackend::IsAuthenticating() const { return authenticating_; }
+
+QString GreeterBackend::InitialSession(const QString& remembered) const {
+  const QString desktop_file =
+      GxdmSystemDefaults::initialSessionDesktopFile(remembered);
+  const bool using_system_default =
+      remembered.isEmpty() && !desktop_file.isEmpty();
+  if (desktop_file.isEmpty()) return {};
+
+  const QString name = QFileInfo(desktop_file).completeBaseName();
+  for (const QVariant& candidate : sessions_) {
+    const QVariantMap session = candidate.toMap();
+    const QString file = session.value("file").toString();
+    if (QFileInfo(file).completeBaseName().compare(name, Qt::CaseInsensitive) !=
+        0) {
+      continue;
+    }
+    const QString id = session.value("id").toString();
+    if (using_system_default) {
+      qDebug() << "(Frontend) No remembered session; Defaulting to"
+               << desktop_file << id;
+    } else {
+      qDebug() << "(Frontend) Restoring last session:" << desktop_file << id;
+    }
+    return id;
+  }
+
+  if (using_system_default) {
+    qWarning() << "(Frontend) GXDE default session is unavailable:"
+               << desktop_file;
+  } else {
+    qWarning() << "(Frontend) Remembered session is no longer available:"
+               << desktop_file;
+  }
+  return {};
+}
 
 QString GreeterBackend::LastSession() const { return last_session_; }
 
@@ -213,7 +251,7 @@ void GreeterBackend::ReadMessages() {
       SetCapabilities(capabilities);
     } else if (static_cast<SDDM::DaemonMessages>(message) ==
                SDDM::DaemonMessages::LastSession) {
-      last_session_ = text;
+      last_session_ = InitialSession(text);
       emit LastSessionChanged();
     } else if (static_cast<SDDM::DaemonMessages>(message) ==
                SDDM::DaemonMessages::LoginFailed) {

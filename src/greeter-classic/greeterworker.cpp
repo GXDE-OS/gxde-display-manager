@@ -1,7 +1,7 @@
 #include "greeterworker.h"
 #include "GreeterAppearance.h"
 #include "sessionbasemodel.h"
-#include "systemdefaults.h"
+#include "SystemDefaults.h"
 #include "userinfo.h"
 
 #include "src/backend/sessions/sessions.h"

@@ -20,7 +20,10 @@ qt_cc_library(
         "src/greeter_backend.h",
         "src/screen_manager.h",
     ],
-    deps = ["//src/common"],
+    deps = [
+        "//src/common",
+        "//src/common:greeter_appearance",
+    ],
 )
 
 qt_cc_binary(

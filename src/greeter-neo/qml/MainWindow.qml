@@ -70,10 +70,9 @@ Item {
 
   function restoreSession() {
     if (sessionChosen || !greeterBackend) return
-    const remembered = greeterBackend.lastSession
-    const preferred = remembered || (isGxdeOs ? "deepin.desktop" : "")
+    const preferred = greeterBackend.lastSession
     for (let i = 0; i < sessionModel.length; ++i) {
-      if (sessionModel[i].file === preferred || sessionModel[i].id === preferred) {
+      if (sessionModel[i].id === preferred) {
         selectedSessionIndex = i
         return
       }

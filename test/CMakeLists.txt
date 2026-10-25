@@ -45,11 +45,11 @@ if(BUILD_CLASSIC_GREETER)
     pkg_check_modules(TEST_DTK2WIDGET REQUIRED IMPORTED_TARGET dtk2widget)
     add_executable(SystemDefaultsTest
         SystemDefaultsTest.cpp
-        ../src/greeter-classic/global_util/systemdefaults.cpp
-        ../src/greeter-classic/global_util/systemdefaults.h
+        ../src/common/SystemDefaults.cpp
+        ../src/common/SystemDefaults.h
     )
     target_include_directories(SystemDefaultsTest PRIVATE
-        ../src/greeter-classic/global_util
+        ../src/common
     )
     add_test(NAME SystemDefaults COMMAND SystemDefaultsTest)
     target_link_libraries(SystemDefaultsTest PRIVATE

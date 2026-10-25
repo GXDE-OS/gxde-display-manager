@@ -42,6 +42,8 @@ class GreeterBackendTest : public QObject {
  private slots:
   void Authentication();
   void AuthenticationDisconnect();
+  void RestoresLastSession_data();
+  void RestoresLastSession();
   void Standalone() {
     GreeterBackend backend{QString()};
     QSignalSpy errors(&backend, &GreeterBackend::RequestFailed);
@@ -186,7 +188,7 @@ void GreeterBackendTest::Authentication() {
       QTest::qWait(1);
     }
     QTRY_VERIFY(!backend.IsAuthenticating());
-    QCOMPARE(backend.LastSession(), QString("test.desktop"));
+    QCOMPARE(backend.LastSession(), QString("x11/test.desktop"));
   }
   QCOMPARE(failed.size(), 2);
   QCOMPARE(succeeded.size(), 1);
@@ -194,6 +196,39 @@ void GreeterBackendTest::Authentication() {
   peer->disconnectFromServer();
   QTRY_VERIFY(!backend.IsConnected());
   QCOMPARE(failed.size(), 2);
+}
+
+void GreeterBackendTest::RestoresLastSession_data() {
+  QTest::addColumn<QString>("remembered");
+  QTest::addColumn<QString>("expected");
+  QTest::newRow("file") << "gxde.desktop" << "x11/gxde.desktop";
+  QTest::newRow("name in other case") << "GXDE" << "x11/gxde.desktop";
+  QTest::newRow("gone") << "missing.desktop" << "";
+}
+
+void GreeterBackendTest::RestoresLastSession() {
+  QFETCH(QString, remembered);
+  QFETCH(QString, expected);
+  QLocalServer server;
+  QVERIFY(server.listen("gxde-session-test-" + QUuid::createUuid().toString()));
+  const QVariantList sessions = {QVariantMap{{"id", "x11/gxde.desktop"},
+                                             {"type", "x11"},
+                                             {"file", "gxde.desktop"}},
+                                 QVariantMap{{"id", "wayland/other.desktop"},
+                                             {"type", "wayland"},
+                                             {"file", "other.desktop"}}};
+  GreeterBackend backend(server.fullServerName(), sessions);
+  QSignalSpy changed(&backend, &GreeterBackend::LastSessionChanged);
+  QTRY_VERIFY(server.hasPendingConnections());
+  auto* peer = server.nextPendingConnection();
+  QByteArray data;
+  QDataStream output(&data, QIODevice::WriteOnly);
+  output << static_cast<quint32>(SDDM::DaemonMessages::LastSession)
+         << remembered;
+  peer->write(data);
+  peer->flush();
+  QTRY_COMPARE(changed.size(), 1);
+  QCOMPARE(backend.LastSession(), expected);
 }
 
 void GreeterBackendTest::AuthenticationDisconnect() {

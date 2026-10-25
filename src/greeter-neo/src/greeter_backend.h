@@ -64,6 +64,7 @@ class GreeterBackend : public QObject {
   void HandleDisconnect();
   void ReadMessages();
   void SetCapabilities(quint32 capabilities);
+  QString InitialSession(const QString& remembered) const;
   bool SendMessage(quint32 message);
 
   QLocalSocket socket_;

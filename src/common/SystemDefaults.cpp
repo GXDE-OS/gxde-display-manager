@@ -1,4 +1,4 @@
-#include "systemdefaults.h"
+#include "SystemDefaults.h"
 
 #include <QFile>
 #include <QSettings>
