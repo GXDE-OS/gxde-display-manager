@@ -22,6 +22,7 @@
 #include <QGuiApplication>
 #include <QHash>
 #include <QQmlApplicationEngine>
+#include <QQmlComponent>
 #include <QStringList>
 #include <QUrl>
 #include <QVariantList>
@@ -32,6 +33,7 @@
 #include "common/GreeterCursor.h"
 #include "common/GreeterScale.h"
 #include "greeter-neo/src/greeter_backend.h"
+#include "greeter-neo/src/screen_manager.h"
 #include "greeter-neo/src/session_list.h"
 #include "greeter-neo/src/utils/macros.h"
 
@@ -364,6 +366,7 @@ int main(int argc, char* argv[]) {
                      }
                    });
   QQmlApplicationEngine engine;
+  gxde::greeter::ScreenManager screen_manager(socket_name.isEmpty());
   const GxdeReleaseInfo gxde_release = detectGxdeRelease();
   const QStringList backgrounds = option_values("--background");
   const QString background_option = GxdmGreeterAppearance::readableImage(
@@ -371,7 +374,7 @@ int main(int argc, char* argv[]) {
   const QVariantList users = detectUsers();
   QVariantMap init_prop;
   init_prop.insert("greeterBackend", QVariant::fromValue(&greeter_backend));
-  init_prop.insert("previewMode", socket_name.isEmpty());
+  init_prop.insert("screenManager", QVariant::fromValue(&screen_manager));
   init_prop.insert("backgroundUri",
                    background_option.isEmpty()
                        ? greeterBackground(users)
@@ -387,5 +390,11 @@ int main(int argc, char* argv[]) {
       []() { QCoreApplication::exit(-1); }, Qt::QueuedConnection);
 
   engine.loadFromModule("Greeter", "MainWindow");
+  if (!engine.rootObjects().isEmpty()) {
+    screen_manager.Start(engine.rootObjects()
+                             .constFirst()
+                             ->property("screenWindow")
+                             .value<QQmlComponent*>());
+  }
   return app.exec();
 }

@@ -17,7 +17,7 @@ import QtQuick.Controls
 import QtQuick.Effects
 import QtQuick.Window
 
-Window {
+Item {
   id: root
 
   property url backgroundUri: ""
@@ -35,8 +35,8 @@ Window {
   property real activeBackgroundBlur: 0.55
   property real loginProgress: clockView.positionedAtTop ? 1.0 : 0.0
   property real dialogProgress: passwordCard.shown ? 1.0 : 0.0
-  property bool previewMode: true
   property QtObject greeterBackend: null
+  property QtObject screenManager: null
   property bool sessionChosen: false
   property bool loginSucceeded: false
   readonly property var availablePowerActions: greeterBackend
@@ -81,6 +81,9 @@ Window {
   }
 
   Component.onCompleted: {
+    if (screenManager) {
+      screenManager.CancelForwarded.connect(root.closeTopPopup)
+    }
     if (!greeterBackend) return
     greeterBackend.RequestFailed.connect(function(message) {
       powerError.text = message
@@ -101,37 +104,64 @@ Window {
     restoreSession()
   }
 
-  Popup {
-    id: powerErrorPopup
-    parent: Overlay.overlay
-    anchors.centerIn: parent
-    width: Math.min(420, root.width - 40)
-    padding: 20
-    modal: true
-    focus: true
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-    background: DtkFrame { backdrop: windowContent }
-    contentItem: Column {
-      spacing: 16
-      Label {
-        id: powerError
-        width: parent.width
-        wrapMode: Text.Wrap
-        color: "white"
-      }
-      Button {
-        text: qsTr("关闭")
-        anchors.right: parent.right
-        onClicked: powerErrorPopup.close()
+  function moveScene() {
+    const target = screenManager ? screenManager.currentWindow : null
+    const previous = scene.Window.window
+    if (!target || target === previous) return
+    const focused = previous ? previous.activeFocusItem : null
+    scene.parent = target.contentItem
+    
+    target.raise()
+    target.requestActivate()
+    if (previous) foregroundFadeIn.restart()
+    if (focused && focused !== previous.contentItem) {
+      focused.forceActiveFocus()
+    } else if (passwordCard.opened) {
+      passwordCard.forceActiveFocus()
+    } else {
+      keyCatcher.forceActiveFocus()
+    }
+  }
+
+  Connections {
+    target: root.screenManager
+    function onCurrentWindowChanged() {
+      root.moveScene()
+    }
+  }
+
+  function closeTopPopup() {
+    for (const popup of [powerErrorPopup, sessionMenu, powerMenu,
+        passwordCard]) {
+      if (popup.opened && (popup.closePolicy & Popup.CloseOnEscape)) {
+        popup.close()
+        return
       }
     }
   }
 
-  width: 640
-  height: 480
-  visibility: previewMode ? Window.Windowed : Window.FullScreen
-  title: "GXDM Greeter"
-  color: "#101010"
+  readonly property Component screenWindow: Component {
+    Window {
+      id: screenWindow
+
+      readonly property bool hostsScene: root.screenManager
+        && root.screenManager.currentWindow === screenWindow
+
+      width: 640
+      height: 480
+      title: "GXDM Greeter"
+      color: "#101010"
+
+      GreeterBackground {
+        anchors.fill: parent
+        visible: !screenWindow.hostsScene
+        source: root.backgroundUri
+        progress: root.loginProgress
+        activeScale: root.activeBackgroundScale
+        activeBlur: root.activeBackgroundBlur
+      }
+    }
+  }
 
   Behavior on dialogProgress {
     NumberAnimation {
@@ -192,538 +222,598 @@ Window {
   }
 
   Item {
-    id: windowContent
+    id: scene
 
     anchors.fill: parent
 
+    Popup {
+      id: powerErrorPopup
+      parent: scene
+      anchors.centerIn: parent
+      width: Math.min(420, scene.width - 40)
+      padding: 20
+      modal: true
+      focus: true
+      closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+      background: DtkFrame { backdrop: windowContent }
+      contentItem: Column {
+        spacing: 16
+        Label {
+          id: powerError
+          width: parent.width
+          wrapMode: Text.Wrap
+          color: "white"
+        }
+        Button {
+          text: qsTr("关闭")
+          anchors.right: parent.right
+          onClicked: powerErrorPopup.close()
+        }
+      }
+    }
+
     Item {
-      id: backgroundLayer
+      id: windowContent
 
       anchors.fill: parent
-      scale: 1.0 + (root.activeBackgroundScale - 1.0) * root.loginProgress
+
+      GreeterBackground {
+        anchors.fill: parent
+        source: root.backgroundUri
+        progress: root.loginProgress
+        activeScale: root.activeBackgroundScale
+        activeBlur: root.activeBackgroundBlur
+      }
 
       Item {
-        id: backgroundSource
+        id: foreground
 
         anchors.fill: parent
 
-        Image {
-          anchors.fill: parent
-          source: root.backgroundUri
-          fillMode: Image.PreserveAspectCrop
-          asynchronous: true
-          cache: false
-          smooth: true
-          visible: root.backgroundUri.toString() !== ""
+        NumberAnimation on opacity {
+          id: foregroundFadeIn
+
+          running: false
+          from: 0.0
+          to: 1.0
+          duration: 150
+          easing.type: Easing.OutCubic
         }
 
         Rectangle {
           anchors.fill: parent
-          visible: root.backgroundUri.toString() === ""
+          color: "transparent"
           gradient: Gradient {
-            GradientStop { position: 0; color: "#e9def8" }
-            GradientStop { position: 1; color: "#cfdff2" }
+            GradientStop { position: 0.0; color: "#00000000" }
+            GradientStop { position: 0.55; color: "#00000000" }
+            GradientStop { position: 1.0; color: "#36000000" }
+          }
+        }
+
+        Item {
+          id: sceneContent
+
+          anchors.fill: parent
+          opacity: 1.0 - 0.7 * root.dialogProgress
+          layer.enabled: root.dialogProgress > 0
+          layer.effect: MultiEffect {
+            blurEnabled: true
+            blurMax: 32
+            blur: 0.8 * root.dialogProgress
+            autoPaddingEnabled: false
+          }
+
+          Item {
+            id: clockView
+
+            property bool positionedAtTop: false
+
+            x: (parent.width - width) / 2
+            y: positionedAtTop ? 72 : (parent.height - height) / 2
+            width: Math.max(timeLabel.width, promptLabel.width)
+            height: timeLabel.inkHeight + 8 + promptLabel.inkHeight
+
+            Behavior on y {
+              NumberAnimation {
+                duration: 250
+                easing.type: Easing.OutExpo
+              }
+            }
+
+            ShadowText {
+              id: timeLabel
+
+              anchors.horizontalCenter: parent.horizontalCenter
+              y: -inkTop
+              text: Qt.formatTime(root.now, "hh:mm")
+              pixelSize: 48
+              weight: Font.Black
+              shadowOpacity: 0.24
+            }
+
+            ShadowText {
+              id: promptLabel
+
+              anchors.horizontalCenter: parent.horizontalCenter
+              y: timeLabel.inkHeight + 8 - inkTop
+              text: dateLabel(root.now)
+              pixelSize: 16
+              weight: Font.Light
+              shadowOpacity: 0.22
+            }
+          }
+
+          UserSelecter {
+            id: userSelecter
+
+            anchors.centerIn: parent
+            anchors.verticalCenterOffset: -Math.min(root.keyboardInset / 2,
+              Math.max(0, (parent.height - height) / 2
+                - (clockView.y + clockView.height + 24)))
+            width: Math.min(implicitWidth, Math.max(0, parent.width - 48))
+            model: root.userModel
+            foregroundColor: "white"
+            visible: clockView.positionedAtTop || root.loginProgress > 0
+            enabled: clockView.positionedAtTop
+            opacity: root.loginProgress
+            revealed: clockView.positionedAtTop
+            onUserConfirmed: (index, user) => {
+              root.userSelected(index, user)
+              root.openPasswordDialog(index, user)
+            }
+            onNotListedRequested: {
+              root.manualLoginRequested()
+              root.openManualLoginDialog()
+            }
+          }
+        }
+
+        Rectangle {
+          id: dialogScrim
+
+          anchors.fill: parent
+          color: "#33000000"
+          opacity: root.dialogProgress
+          visible: opacity > 0
+
+          MouseArea {
+            anchors.fill: parent
+            enabled: passwordCard.shown && !passwordCard.busy
+            hoverEnabled: true
+            acceptedButtons: Qt.AllButtons
+            onPressed: passwordCard.close()
+            onWheel: (wheel) => wheel.accepted = true
+          }
+        }
+
+        Item {
+          id: gxdeInfoView
+
+          property bool meetsAdditionalVisibilityConditions: true
+          property real revealProgress: clockView.positionedAtTop ? 1.0 : 0.0
+          readonly property real bottomMargin: 12
+          readonly property real hiddenY: parent.height - height / 2
+          readonly property real shownY: parent.height - height - bottomMargin
+          readonly property real logoRightInkPadding: gxdeLogo.width * 5 / 150
+          readonly property real versionLeftMargin: 5 - logoRightInkPadding
+          readonly property rect versionInkBounds:
+            versionMetrics.tightBoundingRect(gxdeVersion.text)
+          readonly property real versionInkTop:
+            gxdeVersion.baselineOffset + versionInkBounds.y
+
+          anchors.left: parent.left
+          anchors.leftMargin: 12
+          visible: root.isGxdeOs
+            && root.gxdeReleaseLabel.length > 0
+            && (clockView.positionedAtTop || revealProgress > 0)
+            && meetsAdditionalVisibilityConditions
+          opacity: revealProgress
+          y: hiddenY + (shownY - hiddenY) * revealProgress - root.keyboardInset
+          width: gxdeLogo.width + versionLeftMargin + gxdeVersion.implicitWidth
+          height: gxdeLogo.height
+
+          Behavior on revealProgress {
+            NumberAnimation {
+              duration: 140
+              easing.type: Easing.OutCubic
+            }
+          }
+
+          FontMetrics {
+            id: versionMetrics
+            font: gxdeVersion.font
+          }
+
+          Image {
+            id: gxdeLogo
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+
+            width: Math.round(height * 150 / 35)
+            height: 32
+            source: "qrc:/icons/gxde.png"
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            mipmap: false
+          }
+
+          Text {
+            id: gxdeVersion
+            anchors.left: gxdeLogo.right
+            anchors.leftMargin: gxdeInfoView.versionLeftMargin
+            y: -gxdeInfoView.versionInkTop
+            text: root.gxdeReleaseLabel
+            color: "#d0d0d0"
+            font.family: "Source Han Sans"
+            font.pixelSize: 10
+            font.weight: Font.Light
+            renderType: Text.NativeRendering
+          }
+        }
+
+        Row {
+          id: operationView
+
+          property real revealProgress: clockView.positionedAtTop ? 1.0 : 0.0
+          readonly property real bottomMargin: 12
+          readonly property real hiddenY: parent.height - height / 2
+          readonly property real shownY: parent.height - height - bottomMargin
+
+          anchors.right: parent.right
+          anchors.rightMargin: 12
+          visible: clockView.positionedAtTop || revealProgress > 0
+          opacity: revealProgress
+          y: hiddenY + (shownY - hiddenY) * revealProgress - root.keyboardInset
+          spacing: 12
+
+          Behavior on revealProgress {
+            NumberAnimation {
+              duration: 140
+              easing.type: Easing.OutCubic
+            }
+          }
+
+          IconButton {
+            id: sessionButton
+
+            objectName: "sessionButton"
+            source: sessionMenu.iconFor(root.selectedSession)
+            tint: "transparent"
+            visible: root.sessionModel.length > 0
+            Accessible.name: qsTr("选择桌面会话：")
+              + (root.selectedSession ? root.selectedSession.name : "")
+            onClicked: {
+              powerMenu.close()
+              sessionMenu.opened ? sessionMenu.close() : sessionMenu.open()
+            }
+          }
+
+          IconButton {
+            source: "qrc:/icons/keyboard.svg"
+            tint: root.iconTint
+            visible: keyboardLoader.status === Loader.Ready
+            onClicked: root.virtualKeyboardRequested
+              = !root.virtualKeyboardRequested
+          }
+
+          IconButton {
+            id: powerButton
+
+            source: "qrc:/icons/power.svg"
+            tint: root.iconTint
+            onClicked: {
+              sessionMenu.close()
+              powerMenu.opened ? powerMenu.close() : powerMenu.open()
+            }
           }
         }
       }
+    }
 
-      MultiEffect {
-        anchors.fill: backgroundSource
-        source: backgroundSource
-        visible: root.loginProgress > 0
-        blurEnabled: true
-        blurMax: 32
-        blur: root.activeBackgroundBlur * root.loginProgress
-        autoPaddingEnabled: false
+    SessionMenu {
+      id: sessionMenu
+
+      readonly property point anchor: {
+        operationView.x
+        operationView.y
+        return sessionButton.mapToItem(parent, sessionButton.width, 0)
+      }
+
+      objectName: "sessionMenu"
+      parent: scene
+      z: 20
+      width: Math.min(implicitWidth, scene.width - 24)
+      maximumHeight: Math.max(46, Math.min(320, anchor.y - 20))
+      x: Math.max(12, Math.round(anchor.x - width))
+      y: Math.round(anchor.y - height - 8)
+      backdrop: windowContent
+      sessions: root.sessionModel
+      selectedIndex: root.selectedSessionIndex
+      onSelected: (index) => {
+        root.sessionChosen = true
+        root.selectedSessionIndex = index
+        root.sessionSelected(root.selectedSession)
+      }
+      onClosed: {
+        if (passwordCard.opened) {
+          passwordCard.forceActiveFocus()
+        } else {
+          keyCatcher.forceActiveFocus()
+        }
       }
     }
 
-    Rectangle {
-      anchors.fill: parent
-      color: "transparent"
-      gradient: Gradient {
-        GradientStop { position: 0.0; color: "#00000000" }
-        GradientStop { position: 0.55; color: "#00000000" }
-        GradientStop { position: 1.0; color: "#36000000" }
+    PowerMenu {
+      id: powerMenu
+
+      readonly property point anchor: {
+        operationView.x
+        operationView.y
+        return powerButton.mapToItem(parent, powerButton.width, 0)
+      }
+
+      parent: scene
+      z: 20
+      x: Math.round(anchor.x - width)
+      y: Math.round(anchor.y - height - 8)
+      backdrop: windowContent
+      availableActions: root.availablePowerActions
+      originCorner: Item.BottomRight
+      onTriggered: (action) => root.powerRequested(action)
+      onClosed: {
+        if (passwordCard.opened) {
+          passwordCard.forceActiveFocus()
+        } else {
+          keyCatcher.forceActiveFocus()
+        }
       }
     }
 
     Item {
-      id: sceneContent
+      id: keyCatcher
 
       anchors.fill: parent
-      opacity: 1.0 - 0.7 * root.dialogProgress
-      layer.enabled: root.dialogProgress > 0
-      layer.effect: MultiEffect {
-        blurEnabled: true
-        blurMax: 32
-        blur: 0.8 * root.dialogProgress
-        autoPaddingEnabled: false
+      focus: true
+
+      Component.onCompleted: forceActiveFocus()
+
+      Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Escape) {
+          clockView.positionedAtTop = false
+          root.virtualKeyboardRequested = false
+        } else {
+          root.requestLogin()
+        }
+        event.accepted = true
+      }
+    }
+
+    TapHandler {
+      acceptedButtons: Qt.AllButtons
+      onTapped: root.requestLogin()
+    }
+
+    PasswordCard {
+      id: passwordCard
+
+      property int userIndex: -1
+      property var user: null
+
+      parent: scene
+      x: Math.round((parent.width - width) / 2 + shakeOffset)
+      y: Math.round((parent.height - root.keyboardInset - height) / 2)
+      backdrop: windowContent
+      onSubmitted: (userName, password) => {
+        root.passwordSubmitted(userIndex, askUserName
+          ? { "username": userName, "fullName": userName } : user, password)
+        busy = true
+        if (!root.greeterBackend) {
+          root.showPasswordError(qsTr("登录服务不可用。"))
+          return
+        }
+        root.greeterBackend.Login(askUserName ? userName : user.username,
+          password, root.selectedSession ? root.selectedSession.id : "")
+      }
+      onClosed: {
+        keyCatcher.forceActiveFocus()
+      }
+    }
+
+    Popup {
+      id: virtualKeyboard
+
+      property real slide: 0
+
+      readonly property real screenMargin: 12
+
+      parent: scene
+      z: 10
+      width: Math.min(parent.width - 24, 960)
+      x: Math.round((parent.width - width) / 2)
+      y: parent.height - (height + screenMargin) * slide
+      padding: 8
+      modal: false
+      dim: false
+      focus: false
+      closePolicy: Popup.NoAutoClose
+      visible: root.virtualKeyboardRequested && clockView.positionedAtTop
+        && keyboardLoader.status === Loader.Ready
+
+      background: DtkFrame {
+        backdrop: windowContent
+        trackedGeometry: [virtualKeyboard.x, virtualKeyboard.y,
+          virtualKeyboard.visible]
       }
 
-      Item {
-        id: clockView
-
-        property bool positionedAtTop: false
-
-        x: (parent.width - width) / 2
-        y: positionedAtTop ? 72 : (parent.height - height) / 2
-        width: Math.max(timeLabel.width, promptLabel.width)
-        height: timeLabel.inkHeight + 8 + promptLabel.inkHeight
-
-        Behavior on y {
-          NumberAnimation {
-            duration: 250
-            easing.type: Easing.OutExpo
-          }
-        }
-
-        ShadowText {
-          id: timeLabel
-
-          anchors.horizontalCenter: parent.horizontalCenter
-          y: -inkTop
-          text: Qt.formatTime(root.now, "hh:mm")
-          pixelSize: 48
-          weight: Font.Black
-          shadowOpacity: 0.24
-        }
-
-        ShadowText {
-          id: promptLabel
-
-          anchors.horizontalCenter: parent.horizontalCenter
-          y: timeLabel.inkHeight + 8 - inkTop
-          text: dateLabel(root.now)
-          pixelSize: 16
-          weight: Font.Light
-          shadowOpacity: 0.22
+      enter: Transition {
+        NumberAnimation {
+          property: "slide"
+          from: 0.0
+          to: 1.0
+          duration: 220
+          easing.type: Easing.OutCubic
         }
       }
 
-      UserSelecter {
-        id: userSelecter
-
-        anchors.centerIn: parent
-        anchors.verticalCenterOffset: -Math.min(root.keyboardInset / 2,
-          Math.max(0, (parent.height - height) / 2
-            - (clockView.y + clockView.height + 24)))
-        width: Math.min(implicitWidth, Math.max(0, parent.width - 48))
-        model: root.userModel
-        foregroundColor: "white"
-        visible: clockView.positionedAtTop || root.loginProgress > 0
-        enabled: clockView.positionedAtTop
-        opacity: root.loginProgress
-        revealed: clockView.positionedAtTop
-        onUserConfirmed: (index, user) => {
-          root.userSelected(index, user)
-          root.openPasswordDialog(index, user)
+      exit: Transition {
+        NumberAnimation {
+          property: "slide"
+          to: 0.0
+          duration: 180
+          easing.type: Easing.InCubic
         }
-        onNotListedRequested: {
-          root.manualLoginRequested()
-          root.openManualLoginDialog()
+      }
+
+      contentItem: Item {
+        implicitHeight: keyboardLoader.item ? keyboardLoader.item.height : 0
+
+        Loader {
+          id: keyboardLoader
+
+          width: parent.width
+          asynchronous: true
+          source: "VirtualKeyboardPanel.qml"
         }
       }
     }
 
-    Rectangle {
-      id: dialogScrim
+    Item {
+      id: authFailureGlow
 
+      readonly property color glowColor: "#be543c"
+      readonly property real glowSize: Math.min(width, height) * 0.14
+
+      function flash() {
+        flashAnimation.restart()
+      }
+
+      parent: scene.Overlay.overlay
       anchors.fill: parent
-      color: "#33000000"
-      opacity: root.dialogProgress
+      z: 100
+      opacity: 0
       visible: opacity > 0
 
-      MouseArea {
-        anchors.fill: parent
-        enabled: passwordCard.shown && !passwordCard.busy
-        hoverEnabled: true
-        acceptedButtons: Qt.AllButtons
-        onPressed: passwordCard.close()
-        onWheel: (wheel) => wheel.accepted = true
+      SequentialAnimation {
+        id: flashAnimation
+
+        NumberAnimation {
+          target: authFailureGlow
+          property: "opacity"
+          to: 1.0
+          duration: 160
+          easing.type: Easing.OutCubic
+        }
+        PauseAnimation {
+          duration: 700
+        }
+        NumberAnimation {
+          target: authFailureGlow
+          property: "opacity"
+          to: 0.0
+          duration: 900
+          easing.type: Easing.InOutQuad
+        }
+      }
+
+      component EdgeGlow: Rectangle {
+        required property real edgeRotation
+        rotation: edgeRotation
+        gradient: Gradient {
+          GradientStop {
+            position: 0.0
+            color: Qt.rgba(authFailureGlow.glowColor.r,
+              authFailureGlow.glowColor.g, authFailureGlow.glowColor.b, 0.6)
+          }
+          GradientStop {
+            position: 0.35
+            color: Qt.rgba(authFailureGlow.glowColor.r,
+              authFailureGlow.glowColor.g, authFailureGlow.glowColor.b, 0.22)
+          }
+          GradientStop {
+            position: 1.0
+            color: Qt.rgba(authFailureGlow.glowColor.r,
+              authFailureGlow.glowColor.g, authFailureGlow.glowColor.b, 0.0)
+          }
+        }
+      }
+
+      EdgeGlow {
+        edgeRotation: 0
+        x: 0
+        y: 0
+        width: parent.width
+        height: parent.glowSize
+      }
+
+      EdgeGlow {
+        edgeRotation: 180
+        x: 0
+        y: parent.height - height
+        width: parent.width
+        height: parent.glowSize
+      }
+
+      EdgeGlow {
+        edgeRotation: -90
+        x: (parent.glowSize - parent.height) / 2
+        y: (parent.height - parent.glowSize) / 2
+        width: parent.height
+        height: parent.glowSize
+      }
+
+      EdgeGlow {
+        edgeRotation: 90
+        x: parent.width - (parent.glowSize + parent.height) / 2
+        y: (parent.height - parent.glowSize) / 2
+        width: parent.height
+        height: parent.glowSize
       }
     }
+  }
+
+  component GreeterBackground: Item {
+    id: greeterBackground
+
+    property url source
+    property real progress: 0
+    property real activeScale: 1.0
+    property real activeBlur: 0.0
+
+    scale: 1.0 + (activeScale - 1.0) * progress
 
     Item {
-      id: gxdeInfoView
+      id: backgroundSource
 
-      property bool meetsAdditionalVisibilityConditions: true
-      property real revealProgress: clockView.positionedAtTop ? 1.0 : 0.0
-      readonly property real bottomMargin: 12
-      readonly property real hiddenY: parent.height - height / 2
-      readonly property real shownY: parent.height - height - bottomMargin
-      readonly property real logoRightInkPadding: gxdeLogo.width * 5 / 150
-      readonly property real versionLeftMargin: 5 - logoRightInkPadding
-      readonly property rect versionInkBounds:
-        versionMetrics.tightBoundingRect(gxdeVersion.text)
-      readonly property real versionInkTop:
-        gxdeVersion.baselineOffset + versionInkBounds.y
-
-      anchors.left: parent.left
-      anchors.leftMargin: 12
-      visible: root.isGxdeOs
-        && root.gxdeReleaseLabel.length > 0
-        && (clockView.positionedAtTop || revealProgress > 0)
-        && meetsAdditionalVisibilityConditions
-      opacity: revealProgress
-      y: hiddenY + (shownY - hiddenY) * revealProgress - root.keyboardInset
-      width: gxdeLogo.width + versionLeftMargin + gxdeVersion.implicitWidth
-      height: gxdeLogo.height
-
-      Behavior on revealProgress {
-        NumberAnimation {
-          duration: 140
-          easing.type: Easing.OutCubic
-        }
-      }
-
-      FontMetrics {
-        id: versionMetrics
-        font: gxdeVersion.font
-      }
+      anchors.fill: parent
 
       Image {
-        id: gxdeLogo
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-
-        width: Math.round(height * 150 / 35)
-        height: 32
-        source: "qrc:/icons/gxde.png"
-        fillMode: Image.PreserveAspectFit
-        smooth: true
-        mipmap: false
-      }
-
-      Text {
-        id: gxdeVersion
-        anchors.left: gxdeLogo.right
-        anchors.leftMargin: gxdeInfoView.versionLeftMargin
-        y: -gxdeInfoView.versionInkTop
-        text: root.gxdeReleaseLabel
-        color: "#d0d0d0"
-        font.family: "Source Han Sans"
-        font.pixelSize: 10
-        font.weight: Font.Light
-        renderType: Text.NativeRendering
-      }
-    }
-
-    Row {
-      id: operationView
-
-      property real revealProgress: clockView.positionedAtTop ? 1.0 : 0.0
-      readonly property real bottomMargin: 12
-      readonly property real hiddenY: parent.height - height / 2
-      readonly property real shownY: parent.height - height - bottomMargin
-
-      anchors.right: parent.right
-      anchors.rightMargin: 12
-      visible: clockView.positionedAtTop || revealProgress > 0
-      opacity: revealProgress
-      y: hiddenY + (shownY - hiddenY) * revealProgress - root.keyboardInset
-      spacing: 12
-
-      Behavior on revealProgress {
-        NumberAnimation {
-          duration: 140
-          easing.type: Easing.OutCubic
-        }
-      }
-
-      IconButton {
-        id: sessionButton
-
-        objectName: "sessionButton"
-        source: sessionMenu.iconFor(root.selectedSession)
-        tint: "transparent"
-        visible: root.sessionModel.length > 0
-        Accessible.name: qsTr("选择桌面会话：")
-          + (root.selectedSession ? root.selectedSession.name : "")
-        onClicked: {
-          powerMenu.close()
-          sessionMenu.opened ? sessionMenu.close() : sessionMenu.open()
-        }
-      }
-
-      IconButton {
-        source: "qrc:/icons/keyboard.svg"
-        tint: root.iconTint
-        visible: keyboardLoader.status === Loader.Ready
-        onClicked: root.virtualKeyboardRequested
-          = !root.virtualKeyboardRequested
-      }
-
-      IconButton {
-        id: powerButton
-
-        source: "qrc:/icons/power.svg"
-        tint: root.iconTint
-        onClicked: {
-          sessionMenu.close()
-          powerMenu.opened ? powerMenu.close() : powerMenu.open()
-        }
-      }
-    }
-  }
-
-  SessionMenu {
-    id: sessionMenu
-
-    readonly property point anchor: {
-      operationView.x
-      operationView.y
-      return sessionButton.mapToItem(parent, sessionButton.width, 0)
-    }
-
-    objectName: "sessionMenu"
-    parent: Overlay.overlay
-    z: 20
-    width: Math.min(implicitWidth, root.width - 24)
-    maximumHeight: Math.max(46, Math.min(320, anchor.y - 20))
-    x: Math.max(12, Math.round(anchor.x - width))
-    y: Math.round(anchor.y - height - 8)
-    backdrop: windowContent
-    sessions: root.sessionModel
-    selectedIndex: root.selectedSessionIndex
-    onSelected: (index) => {
-      root.sessionChosen = true
-      root.selectedSessionIndex = index
-      root.sessionSelected(root.selectedSession)
-    }
-    onClosed: {
-      if (passwordCard.opened) {
-        passwordCard.forceActiveFocus()
-      } else {
-        keyCatcher.forceActiveFocus()
-      }
-    }
-  }
-
-  PowerMenu {
-    id: powerMenu
-
-    readonly property point anchor: {
-      operationView.x
-      operationView.y
-      return powerButton.mapToItem(parent, powerButton.width, 0)
-    }
-
-    parent: Overlay.overlay
-    z: 20
-    x: Math.round(anchor.x - width)
-    y: Math.round(anchor.y - height - 8)
-    backdrop: windowContent
-    availableActions: root.availablePowerActions
-    originCorner: Item.BottomRight
-    onTriggered: (action) => root.powerRequested(action)
-    onClosed: {
-      if (passwordCard.opened) {
-        passwordCard.forceActiveFocus()
-      } else {
-        keyCatcher.forceActiveFocus()
-      }
-    }
-  }
-
-  Item {
-    id: keyCatcher
-
-    anchors.fill: parent
-    focus: true
-
-    Component.onCompleted: forceActiveFocus()
-
-    Keys.onPressed: (event) => {
-      if (event.key === Qt.Key_Escape) {
-        clockView.positionedAtTop = false
-        root.virtualKeyboardRequested = false
-      } else {
-        root.requestLogin()
-      }
-      event.accepted = true
-    }
-  }
-
-  TapHandler {
-    acceptedButtons: Qt.AllButtons
-    onTapped: root.requestLogin()
-  }
-
-  PasswordCard {
-    id: passwordCard
-
-    property int userIndex: -1
-    property var user: null
-
-    parent: Overlay.overlay
-    x: Math.round((parent.width - width) / 2 + shakeOffset)
-    y: Math.round((parent.height - root.keyboardInset - height) / 2)
-    backdrop: windowContent
-    onSubmitted: (userName, password) => {
-      root.passwordSubmitted(userIndex, askUserName
-        ? { "username": userName, "fullName": userName } : user, password)
-      busy = true
-      if (!root.greeterBackend) {
-        root.showPasswordError(qsTr("登录服务不可用。"))
-        return
-      }
-      root.greeterBackend.Login(askUserName ? userName : user.username,
-        password, root.selectedSession ? root.selectedSession.id : "")
-    }
-    onClosed: {
-      keyCatcher.forceActiveFocus()
-    }
-  }
-
-  Popup {
-    id: virtualKeyboard
-
-    property real slide: 0
-
-    readonly property real screenMargin: 12
-
-    parent: Overlay.overlay
-    z: 10
-    width: Math.min(parent.width - 24, 960)
-    x: Math.round((parent.width - width) / 2)
-    y: parent.height - (height + screenMargin) * slide
-    padding: 8
-    modal: false
-    dim: false
-    focus: false
-    closePolicy: Popup.NoAutoClose
-    visible: root.virtualKeyboardRequested && clockView.positionedAtTop
-      && keyboardLoader.status === Loader.Ready
-
-    background: DtkFrame {
-      backdrop: windowContent
-      trackedGeometry: [virtualKeyboard.x, virtualKeyboard.y,
-        virtualKeyboard.visible]
-    }
-
-    enter: Transition {
-      NumberAnimation {
-        property: "slide"
-        from: 0.0
-        to: 1.0
-        duration: 220
-        easing.type: Easing.OutCubic
-      }
-    }
-
-    exit: Transition {
-      NumberAnimation {
-        property: "slide"
-        to: 0.0
-        duration: 180
-        easing.type: Easing.InCubic
-      }
-    }
-
-    contentItem: Item {
-      implicitHeight: keyboardLoader.item ? keyboardLoader.item.height : 0
-
-      Loader {
-        id: keyboardLoader
-
-        width: parent.width
+        anchors.fill: parent
+        source: greeterBackground.source
+        fillMode: Image.PreserveAspectCrop
         asynchronous: true
-        source: "VirtualKeyboardPanel.qml"
+        cache: false
+        smooth: true
+        visible: greeterBackground.source.toString() !== ""
       }
-    }
-  }
 
-  Item {
-    id: authFailureGlow
-
-    readonly property color glowColor: "#be543c"
-    readonly property real glowSize: Math.min(width, height) * 0.14
-
-    function flash() {
-      flashAnimation.restart()
-    }
-
-    parent: Overlay.overlay
-    anchors.fill: parent
-    z: 100
-    opacity: 0
-    visible: opacity > 0
-
-    SequentialAnimation {
-      id: flashAnimation
-
-      NumberAnimation {
-        target: authFailureGlow
-        property: "opacity"
-        to: 1.0
-        duration: 160
-        easing.type: Easing.OutCubic
-      }
-      PauseAnimation {
-        duration: 700
-      }
-      NumberAnimation {
-        target: authFailureGlow
-        property: "opacity"
-        to: 0.0
-        duration: 900
-        easing.type: Easing.InOutQuad
-      }
-    }
-
-    component EdgeGlow: Rectangle {
-      required property real edgeRotation
-      rotation: edgeRotation
-      gradient: Gradient {
-        GradientStop {
-          position: 0.0
-          color: Qt.rgba(authFailureGlow.glowColor.r,
-            authFailureGlow.glowColor.g, authFailureGlow.glowColor.b, 0.6)
-        }
-        GradientStop {
-          position: 0.35
-          color: Qt.rgba(authFailureGlow.glowColor.r,
-            authFailureGlow.glowColor.g, authFailureGlow.glowColor.b, 0.22)
-        }
-        GradientStop {
-          position: 1.0
-          color: Qt.rgba(authFailureGlow.glowColor.r,
-            authFailureGlow.glowColor.g, authFailureGlow.glowColor.b, 0.0)
+      Rectangle {
+        anchors.fill: parent
+        visible: greeterBackground.source.toString() === ""
+        gradient: Gradient {
+          GradientStop { position: 0; color: "#e9def8" }
+          GradientStop { position: 1; color: "#cfdff2" }
         }
       }
     }
 
-    EdgeGlow {
-      edgeRotation: 0
-      x: 0
-      y: 0
-      width: parent.width
-      height: parent.glowSize
-    }
-
-    EdgeGlow {
-      edgeRotation: 180
-      x: 0
-      y: parent.height - height
-      width: parent.width
-      height: parent.glowSize
-    }
-
-    EdgeGlow {
-      edgeRotation: -90
-      x: (parent.glowSize - parent.height) / 2
-      y: (parent.height - parent.glowSize) / 2
-      width: parent.height
-      height: parent.glowSize
-    }
-
-    EdgeGlow {
-      edgeRotation: 90
-      x: parent.width - (parent.glowSize + parent.height) / 2
-      y: (parent.height - parent.glowSize) / 2
-      width: parent.height
-      height: parent.glowSize
+    MultiEffect {
+      anchors.fill: backgroundSource
+      source: backgroundSource
+      visible: greeterBackground.progress > 0
+      blurEnabled: true
+      blurMax: 32
+      blur: greeterBackground.activeBlur * greeterBackground.progress
+      autoPaddingEnabled: false
     }
   }
 

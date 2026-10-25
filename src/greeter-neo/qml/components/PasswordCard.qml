@@ -36,6 +36,7 @@ Popup {
   readonly property int frameRadius: 8
   readonly property int itemRadius: 6
   property bool shown: false
+  property bool moving: false
   property real shakeOffset: 0
   signal submitted(string userName, string password)
 
@@ -78,6 +79,8 @@ Popup {
   closePolicy: busy ? Popup.NoAutoClose : Popup.CloseOnEscape
 
   onAboutToShow: {
+    card.moving = card.shown
+    if (card.moving) return
     card.shown = true
     userNameField.clear()
     passwordField.clear()
@@ -86,7 +89,9 @@ Popup {
   }
   onAboutToHide: card.shown = false
   onOpened: {
-    if (card.askUserName) {
+    if (card.moving) {
+      card.moving = false
+    } else if (card.askUserName) {
       userNameField.forceActiveFocus()
     } else {
       passwordField.forceActiveFocus()

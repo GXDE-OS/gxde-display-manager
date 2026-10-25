@@ -45,6 +45,8 @@ qt_add_executable(gxde-greeter
   src/main.cc
   src/greeter_backend.cc
   src/greeter_backend.h
+  src/screen_manager.cc
+  src/screen_manager.h
   src/utils/macros.h
   # Wallpaper and cursor setup, shared with gxdm-greeter-classic.
   ../common/GreeterAppearance.cpp
@@ -128,6 +130,15 @@ if(GREETER_BUILD_TESTS)
   target_include_directories(session-list-test PRIVATE ..)
   target_link_libraries(session-list-test PRIVATE Qt6::Test)
   add_test(NAME session-list COMMAND session-list-test)
+  qt_add_executable(screen-manager-test
+    tests/screen_manager_test.cc
+    src/screen_manager.cc
+    src/screen_manager.h
+  )
+  target_include_directories(screen-manager-test PRIVATE ..)
+  target_link_libraries(screen-manager-test PRIVATE
+    Qt6::Quick Qt6::Test)
+  add_test(NAME screen-manager COMMAND screen-manager-test)
   qt_add_executable(greeter-qml-test tests/qml_test.cc ${GREETER_RESOURCES})
   target_link_libraries(greeter-qml-test PRIVATE Qt6::QuickTest)
   target_compile_definitions(greeter-qml-test PRIVATE
