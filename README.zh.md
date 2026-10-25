@@ -164,6 +164,20 @@ GXDM通过会话总线提供锁屏快捷键和全局Greeter外观设置。应用
 | `LockWallpaperOverride() -> string` | 返回当前用户持久化的锁屏壁纸override。 |
 | `SetGreeterDisplayServer(string displayServer) -> bool` | 持久化Greeter显示服务器。有效值为`wayland`、`x11`和`x11-user`。 |
 | `GreeterDisplayServer() -> string` | 返回当前持久化的Greeter显示服务器。 |
+| `SetNeoGreeterEnabled(bool enabled) -> bool` | 是否启用新版 QML greeter，默认 true；false 切回经典版。 |
+| `NeoGreeterEnabled() -> bool` | 返回已保存的新版 greeter 开关。 |
+
+新版 greeter 开关（系统总线）：
+
+```sh
+busctl call top.gxde.DisplayManager /top/gxde/DisplayManager \
+  top.gxde.DisplayManager.System SetNeoGreeterEnabled b false
+busctl call top.gxde.DisplayManager /top/gxde/DisplayManager \
+  top.gxde.DisplayManager.System NeoGreeterEnabled
+```
+
+开关保存为 `gxdm.conf` 的 `[General] EnableNeoGreeter`，下次启动 greeter 生效。传入 `true` 可重新启用。成功保存后发出 `NeoGreeterEnabledChanged(bool)` 信号。新版程序缺失时回退经典版。可用 `gxdm-greeter-neo --test-mode` 预览。虚拟键盘需要同时安装 Qt Virtual Keyboard 的 QML 模块和输入法插件。
+
 
 **注意：**Greeter只使用一份全局壁纸。锁屏壁纸优先级为：当前用户的`LockWallpaperOverride`、当前用户的Deepin `GreeterBackground`、GSettings桌面壁纸、全局Greeter壁纸/默认壁纸。所有壁纸设置在持久化成功后立即刷新当前Greeter或锁屏。自定义图片和override必须是可识别的图像且不大于128 MiB；全局Greeter壁纸复制到`~gxdm`。用户锁屏override会保存两份：`~/.local/share/gxdm/lock-wallpaper-override`供会话内锁屏使用，`~gxdm/lock-wallpaper-override-<uid>`供Greeter使用（即使用户主目录不可进入，例如权限为`0700`，Greeter也能读取），均不依赖原始图片继续存在。`SetGreeterDisplayServer`会在下次创建Greeter显示时生效。
 

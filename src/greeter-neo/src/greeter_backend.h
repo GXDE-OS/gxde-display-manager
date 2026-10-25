@@ -14,33 +14,54 @@
  * this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef GXDE_DISPLAY_MANAGER_GREETER_NEO_SRC_POWER_BACKEND_H_
-#define GXDE_DISPLAY_MANAGER_GREETER_NEO_SRC_POWER_BACKEND_H_
+#ifndef GXDE_DISPLAY_MANAGER_GREETER_NEO_SRC_GREETER_BACKEND_H_
+#define GXDE_DISPLAY_MANAGER_GREETER_NEO_SRC_GREETER_BACKEND_H_
 
 #include <QDataStream>
 #include <QLocalSocket>
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QVariantList>
 #include <QtGlobal>
 
 namespace gxde::greeter {
 
-class PowerBackend : public QObject {
+class GreeterBackend : public QObject {
   Q_OBJECT
   Q_PROPERTY(QStringList availableActions READ AvailableActions NOTIFY
                  AvailableActionsChanged)
 
+  Q_PROPERTY(bool connected READ IsConnected NOTIFY ConnectedChanged)
+  Q_PROPERTY(
+      bool authenticating READ IsAuthenticating NOTIFY AuthenticatingChanged)
+  Q_PROPERTY(QString lastSession READ LastSession NOTIFY LastSessionChanged)
+
  public:
-  explicit PowerBackend(const QString& socket_name, QObject* parent = nullptr);
+  explicit GreeterBackend(const QString& socket_name,
+                          const QVariantList& sessions = {},
+                          QObject* parent = nullptr);
+  bool IsConnected() const;
+  bool IsAuthenticating() const;
+  QString LastSession() const;
+  Q_INVOKABLE void Login(const QString& username, const QString& password,
+                         const QString& session_id);
   QStringList AvailableActions() const;
   Q_INVOKABLE void Request(const QString& action);
 
  signals:
+  void ConnectedChanged();
+  void AuthenticatingChanged();
+  void LastSessionChanged();
+  void LoginFailed(const QString& message);
+  void LoginSucceeded();
+  void InformationMessage(const QString& message);
   void AvailableActionsChanged();
   void RequestFailed(const QString& message);
 
  private:
+  void SetAuthenticating(bool authenticating);
+  void HandleDisconnect();
   void ReadMessages();
   void SetCapabilities(quint32 capabilities);
   bool SendMessage(quint32 message);
@@ -48,6 +69,10 @@ class PowerBackend : public QObject {
   QLocalSocket socket_;
   QDataStream input_;
   quint32 capabilities_ = 0;
+  QVariantList sessions_;
+  QString last_session_;
+  bool authenticating_ = false;
+  bool login_succeeded_ = false;
 };
 
 }

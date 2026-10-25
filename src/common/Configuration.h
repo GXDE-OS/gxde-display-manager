@@ -37,6 +37,7 @@ namespace SDDM {
         enum NumState { NUM_NONE, NUM_SET_ON, NUM_SET_OFF };
 
         //  Name                   Type         Default value                                   Description
+        Entry(EnableNeoGreeter, bool, true, _S("Use the new QML greeter. Takes effect on the next greeter start."));
         Entry(DisplayServer,       QString,     _S("wayland"),                                  _S("Which display server should be used.\n"
                                                                                                    "Valid values are: x11, x11-user, wayland. Wayland support is experimental"));
         Entry(HaltCommand,         QString,     _S(HALT_COMMAND),                               _S("Halt command"));

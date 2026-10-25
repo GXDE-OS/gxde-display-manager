@@ -98,3 +98,14 @@ if(BUILD_CLASSIC_GREETER)
         Qt${QT_MAJOR_VERSION}::Test
     )
 endif()
+
+add_executable(GreeterSettingsTest
+    greeter_settings_test.cc
+    ../src/daemon/greeter_settings.cc
+    ../src/common/ConfigReader.cpp
+)
+target_include_directories(GreeterSettingsTest PRIVATE
+    ../src/daemon ${CMAKE_CURRENT_BINARY_DIR}/../src/common)
+target_link_libraries(GreeterSettingsTest PRIVATE
+    Qt${QT_MAJOR_VERSION}::Core Qt${QT_MAJOR_VERSION}::Test)
+add_test(NAME GreeterSettings COMMAND GreeterSettingsTest)

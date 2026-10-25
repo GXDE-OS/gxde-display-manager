@@ -164,6 +164,20 @@ GXDM exposes lock-shortcut and global greeter appearance controls on the session
 | `LockWallpaperOverride() -> string` | Returns the current user's persisted lock-screen wallpaper override. |
 | `SetGreeterDisplayServer(string displayServer) -> bool` | Persists the greeter display server. Valid values are `wayland`, `x11`, and `x11-user`. |
 | `GreeterDisplayServer() -> string` | Returns the persisted greeter display server. |
+| `SetNeoGreeterEnabled(bool enabled) -> bool` | Enables the new QML greeter (default: true); false selects the classic greeter. |
+| `NeoGreeterEnabled() -> bool` | Returns the persisted greeter selection. |
+
+New greeter switch on the system bus:
+
+```sh
+busctl call top.gxde.DisplayManager /top/gxde/DisplayManager \
+  top.gxde.DisplayManager.System SetNeoGreeterEnabled b false
+busctl call top.gxde.DisplayManager /top/gxde/DisplayManager \
+  top.gxde.DisplayManager.System NeoGreeterEnabled
+```
+
+The switch is stored as `[General] EnableNeoGreeter` in `gxdm.conf` and takes effect on the next greeter start. Pass `true` to re-enable it. The daemon emits `NeoGreeterEnabledChanged(bool)` after saving successfully. Missing new greeter binaries fall back to the classic greeter. Preview with `gxdm-greeter-neo --test-mode`. Qt Virtual Keyboard requires both its QML module and input context plugin.
+
 
 **Note:** the greeter uses one global wallpaper. The lock screen uses this priority order: the current user's `LockWallpaperOverride`, the current user's Deepin `GreeterBackground`, GSettings desktop backgrounds, then the global greeter wallpaper/default. Every wallpaper setting refreshes the active greeter or lock screen immediately after it is persisted. Custom wallpapers and overrides must be recognized images no larger than 128 MiB. The global greeter wallpaper is copied under `~gxdm`. The user lock override is copied twice: `~/.local/share/gxdm/lock-wallpaper-override` for the in-session locker and `~gxdm/lock-wallpaper-override-<uid>` for the greeter (which can still read it when the user's home directory is not traversable, e.g. mode `0700`); neither depends on the original image remaining available. `SetGreeterDisplayServer` takes effect the next time the greeter display is created.
 

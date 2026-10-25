@@ -19,11 +19,12 @@ option(ENABLE_JOURNALD "Enable logging to journald" ON)
 option(NO_SYSTEMD "Disable systemd support" OFF)
 option(USE_ELOGIND "Use elogind instead of logind" OFF)
 option(BUILD_WITH_QT6 "Build with Qt 6" ON)
+option(BUILD_NEO_GREETER "Build the new QML greeter" ON)
 option(BUILD_CLASSIC_GREETER "Build the GXDE greeter and lock screen" ON)
 option(INSTALL_PAM_CONFIGURATION "Install PAM configuration files" ON)
 
-if(BUILD_CLASSIC_GREETER AND NOT BUILD_WITH_QT6)
-    message(FATAL_ERROR "BUILD_CLASSIC_GREETER requires BUILD_WITH_QT6=ON")
+if((BUILD_CLASSIC_GREETER OR BUILD_NEO_GREETER) AND NOT BUILD_WITH_QT6)
+    message(FATAL_ERROR "The GXDE greeters require BUILD_WITH_QT6=ON")
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -235,12 +236,12 @@ if(NOT DEFINED UID_MAX)
 endif()
 
 # Add subdirectories
+enable_testing()
 add_subdirectory(components)
 add_subdirectory(data)
 add_subdirectory(services)
 add_subdirectory(src)
 
-enable_testing()
 add_subdirectory(test)
 
 # Display feature summary

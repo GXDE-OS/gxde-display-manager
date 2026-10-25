@@ -18,6 +18,7 @@
 ***************************************************************************/
 
 #include "Greeter.h"
+#include "greeter_settings.h"
 
 #include "Configuration.h"
 #include "Constants.h"
@@ -83,9 +84,9 @@ namespace SDDM {
 
     QString Greeter::greeterPathForQt(int qtVersion)
     {
-        Q_UNUSED(qtVersion)
-        // Use classic greeter frontend.
-        return QStringLiteral(BIN_INSTALL_DIR "/gxdm-greeter-classic");
+        mainConfig.load();
+        return gxde::GreeterExecutable(mainConfig.EnableNeoGreeter.get(),
+            QStringLiteral(BIN_INSTALL_DIR), qtVersion);
     }
 
     bool Greeter::start() {
@@ -124,6 +125,18 @@ namespace SDDM {
         // greeter command
         QStringList args;
         args << QLatin1String("--socket") << m_socket;
+        if (greeterPath.endsWith(QStringLiteral("/gxdm-greeter-neo"))) {
+            for (const QString& directory : mainConfig.X11.SessionDir.get()) {
+                args << QStringLiteral("--x11-session-dir") << directory;
+            }
+            for (const QString& directory : mainConfig.Wayland.SessionDir.get()) {
+                args << QStringLiteral("--wayland-session-dir") << directory;
+            }
+            const QString wallpaper = stateConfig.Greeter.Wallpaper.get();
+            if (!wallpaper.isEmpty()) {
+                args << QStringLiteral("--background") << wallpaper;
+            }
+        }
 
         if (!m_themePath.isEmpty())
              args << QLatin1String("--theme") << m_themePath;

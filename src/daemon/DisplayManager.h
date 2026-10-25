@@ -46,12 +46,16 @@ namespace SDDM {
         bool SetGreeterDisplayServer(const QString& displayServer);
         QString GreeterDisplayServer() const;
 
+        bool SetNeoGreeterEnabled(bool enabled);
+        bool NeoGreeterEnabled() const;
+
         void PowerOff();
         void Reboot();
         void Suspend();
         void Hibernate();
 
     signals:
+        void NeoGreeterEnabledChanged(bool enabled);
         void WallpaperChanged(const QString &wallpaper);
         void LockWallpaperOverrideChanged(uint uid, const QString &wallpaper);
     };

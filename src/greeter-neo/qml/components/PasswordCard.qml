@@ -39,6 +39,10 @@ Popup {
   property real shakeOffset: 0
   signal submitted(string userName, string password)
 
+  function clearPassword() {
+    passwordField.clear()
+  }
+
   function showError(message) {
     card.errorText = message
     card.busy = false
@@ -71,7 +75,7 @@ Popup {
   focus: true
   margins: 12
   transformOrigin: Popup.Center
-  closePolicy: Popup.CloseOnEscape
+  closePolicy: busy ? Popup.NoAutoClose : Popup.CloseOnEscape
 
   onAboutToShow: {
     card.shown = true

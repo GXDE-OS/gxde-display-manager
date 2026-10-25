@@ -14,7 +14,7 @@
  * this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "greeter-neo/src/power_backend.h"
+#include "greeter-neo/src/greeter_backend.h"
 
 #include <QByteArray>
 #include <QDataStream>
@@ -22,9 +22,11 @@
 #include <QLocalSocket>
 #include <QString>
 #include <QStringList>
+#include <QVariantMap>
 #include <QtGlobal>
 
 #include "common/Messages.h"
+#include "common/Session.h"
 
 namespace gxde::greeter {
 namespace {
@@ -42,17 +44,20 @@ constexpr PowerAction kActions[] = {
 
 }
 
-PowerBackend::PowerBackend(const QString& socket_name, QObject* parent)
-    : QObject(parent), input_(&socket_) {
+GreeterBackend::GreeterBackend(const QString& socket_name,
+                               const QVariantList& sessions, QObject* parent)
+    : QObject(parent), input_(&socket_), sessions_(sessions) {
   connect(&socket_, &QLocalSocket::connected, this, [this] {
+    emit ConnectedChanged();
     SendMessage(static_cast<quint32>(SDDM::GreeterMessages::Connect));
   });
   connect(&socket_, &QLocalSocket::readyRead, this,
-          &PowerBackend::ReadMessages);
+          &GreeterBackend::ReadMessages);
   connect(&socket_, &QLocalSocket::disconnected, this,
-          [this] { SetCapabilities(0); });
+          &GreeterBackend::HandleDisconnect);
   connect(&socket_, &QLocalSocket::errorOccurred, this, [this] {
-    SetCapabilities(0);
+    HandleDisconnect();
+    if (login_succeeded_) return;
     emit RequestFailed(tr("电源服务连接失败：%1").arg(socket_.errorString()));
   });
   if (!socket_name.isEmpty()) {
@@ -60,7 +65,71 @@ PowerBackend::PowerBackend(const QString& socket_name, QObject* parent)
   }
 }
 
-QStringList PowerBackend::AvailableActions() const {
+bool GreeterBackend::IsConnected() const {
+  return socket_.state() == QLocalSocket::ConnectedState;
+}
+
+bool GreeterBackend::IsAuthenticating() const { return authenticating_; }
+
+QString GreeterBackend::LastSession() const { return last_session_; }
+
+void GreeterBackend::SetAuthenticating(bool authenticating) {
+  if (authenticating_ == authenticating) return;
+  authenticating_ = authenticating;
+  emit AuthenticatingChanged();
+}
+
+void GreeterBackend::HandleDisconnect() {
+  SetCapabilities(0);
+  emit ConnectedChanged();
+  if (authenticating_ && !login_succeeded_) {
+    SetAuthenticating(false);
+    emit LoginFailed(tr("登录服务连接已断开，请稍后重试。"));
+  }
+}
+
+void GreeterBackend::Login(const QString& username, const QString& password,
+                           const QString& session_id) {
+  if (authenticating_ || login_succeeded_) return;
+  if (!IsConnected()) {
+    emit LoginFailed(tr("登录服务不可用。"));
+    return;
+  }
+  if (username.trimmed().isEmpty()) {
+    emit LoginFailed(tr("请输入用户名。"));
+    return;
+  }
+  QVariantMap session;
+  for (const auto& candidate : sessions_) {
+    if (candidate.toMap().value("id").toString() == session_id) {
+      session = candidate.toMap();
+      break;
+    }
+  }
+  const QString type = session.value("type").toString();
+  const QString file = session.value("file").toString();
+  if ((type != "x11" && type != "wayland") || file.isEmpty()) {
+    emit LoginFailed(tr("请选择可用的桌面会话。"));
+    return;
+  }
+  QByteArray data;
+  QDataStream output(&data, QIODevice::WriteOnly);
+  output << static_cast<quint32>(SDDM::GreeterMessages::Login) << username
+         << password
+         << static_cast<quint32>(type == "wayland"
+                                     ? SDDM::Session::WaylandSession
+                                     : SDDM::Session::X11Session)
+         << file;
+  SetAuthenticating(true);
+  if (socket_.write(data) != data.size()) {
+    SetAuthenticating(false);
+    emit LoginFailed(tr("无法发送登录请求。"));
+  }
+  data.fill('\0');
+  socket_.flush();
+}
+
+QStringList GreeterBackend::AvailableActions() const {
   QStringList available;
   for (const auto& action : kActions) {
     if (capabilities_ & action.capability) {
@@ -70,7 +139,7 @@ QStringList PowerBackend::AvailableActions() const {
   return available;
 }
 
-void PowerBackend::SetCapabilities(quint32 capabilities) {
+void GreeterBackend::SetCapabilities(quint32 capabilities) {
   if (capabilities_ == capabilities) {
     return;
   }
@@ -78,7 +147,7 @@ void PowerBackend::SetCapabilities(quint32 capabilities) {
   emit AvailableActionsChanged();
 }
 
-bool PowerBackend::SendMessage(quint32 message) {
+bool GreeterBackend::SendMessage(quint32 message) {
   QByteArray data;
   QDataStream output(&data, QIODevice::WriteOnly);
   output << message;
@@ -91,7 +160,7 @@ bool PowerBackend::SendMessage(quint32 message) {
   return true;
 }
 
-void PowerBackend::Request(const QString& name) {
+void GreeterBackend::Request(const QString& name) {
   for (const auto& action : kActions) {
     if (name != QLatin1String(action.name)) {
       continue;
@@ -106,7 +175,7 @@ void PowerBackend::Request(const QString& name) {
   emit RequestFailed(tr("未知的电源操作。"));
 }
 
-void PowerBackend::ReadMessages() {
+void GreeterBackend::ReadMessages() {
   while (socket_.bytesAvailable() > 0) {
     input_.startTransaction();
     quint32 message = 0;
@@ -142,6 +211,22 @@ void PowerBackend::ReadMessages() {
     if (static_cast<SDDM::DaemonMessages>(message) ==
         SDDM::DaemonMessages::Capabilities) {
       SetCapabilities(capabilities);
+    } else if (static_cast<SDDM::DaemonMessages>(message) ==
+               SDDM::DaemonMessages::LastSession) {
+      last_session_ = text;
+      emit LastSessionChanged();
+    } else if (static_cast<SDDM::DaemonMessages>(message) ==
+               SDDM::DaemonMessages::LoginFailed) {
+      SetAuthenticating(false);
+      emit LoginFailed(tr("用户名或密码错误，或会话启动失败。"));
+    } else if (static_cast<SDDM::DaemonMessages>(message) ==
+               SDDM::DaemonMessages::LoginSucceeded) {
+      login_succeeded_ = true;
+      SetAuthenticating(false);
+      emit LoginSucceeded();
+    } else if (static_cast<SDDM::DaemonMessages>(message) ==
+               SDDM::DaemonMessages::InformationMessage) {
+      emit InformationMessage(text);
     }
   }
 }

@@ -421,4 +421,13 @@ QString GxdeDisplayManagerService::GreeterDisplayServer() const {
   return querySystemDisplayManager(QStringLiteral("GreeterDisplayServer"));
 }
 
+bool GxdeDisplayManagerService::SetNeoGreeterEnabled(bool enabled) {
+  return callSystemDisplayManager(QStringLiteral("SetNeoGreeterEnabled"),
+                                  {enabled});
+}
+
+bool GxdeDisplayManagerService::NeoGreeterEnabled() const {
+  return callSystemDisplayManager(QStringLiteral("NeoGreeterEnabled"));
+}
+
 void GxdeDisplayManagerService::Show() { m_manager->showLock(); }

@@ -35,10 +35,12 @@ Window {
   property real activeBackgroundBlur: 0.55
   property real loginProgress: clockView.positionedAtTop ? 1.0 : 0.0
   property real dialogProgress: passwordCard.shown ? 1.0 : 0.0
-  property bool authBackendAvailable: false
-  property QtObject powerBackend: null
-  readonly property var availablePowerActions: powerBackend
-    ? powerBackend.availableActions : []
+  property bool previewMode: true
+  property QtObject greeterBackend: null
+  property bool sessionChosen: false
+  property bool loginSucceeded: false
+  readonly property var availablePowerActions: greeterBackend
+    ? greeterBackend.availableActions : []
   property bool virtualKeyboardRequested: false
   readonly property real keyboardInset: virtualKeyboard.visible
     ? (virtualKeyboard.height + virtualKeyboard.screenMargin)
@@ -61,17 +63,42 @@ Window {
   signal manualLoginRequested()
   signal powerRequested(string action)
   onPowerRequested: (action) => {
-    if (powerBackend) {
-      powerBackend.Request(action)
+    if (greeterBackend) {
+      greeterBackend.Request(action)
     }
   }
 
-  Connections {
-    target: root.powerBackend
-    function onRequestFailed(message) {
+  function restoreSession() {
+    if (sessionChosen || !greeterBackend) return
+    const remembered = greeterBackend.lastSession
+    const preferred = remembered || (isGxdeOs ? "deepin.desktop" : "")
+    for (let i = 0; i < sessionModel.length; ++i) {
+      if (sessionModel[i].file === preferred || sessionModel[i].id === preferred) {
+        selectedSessionIndex = i
+        return
+      }
+    }
+  }
+
+  Component.onCompleted: {
+    if (!greeterBackend) return
+    greeterBackend.RequestFailed.connect(function(message) {
       powerError.text = message
       powerErrorPopup.open()
-    }
+    })
+    greeterBackend.LoginFailed.connect(function(message) {
+      root.showPasswordError(message)
+    })
+    greeterBackend.InformationMessage.connect(function(message) {
+      passwordCard.errorText = message
+    })
+    greeterBackend.LoginSucceeded.connect(function() {
+      root.loginSucceeded = true
+      passwordCard.clearPassword()
+      root.virtualKeyboardRequested = false
+    })
+    greeterBackend.LastSessionChanged.connect(root.restoreSession)
+    restoreSession()
   }
 
   Popup {
@@ -102,7 +129,7 @@ Window {
 
   width: 640
   height: 480
-  visible: true
+  visibility: previewMode ? Window.Windowed : Window.FullScreen
   title: "GXDM Greeter"
   color: "#101010"
 
@@ -128,6 +155,7 @@ Window {
   }
 
   function openPasswordDialog(index, user) {
+    if (passwordCard.busy || loginSucceeded) return
     passwordCard.askUserName = false
     passwordCard.userIndex = index
     passwordCard.user = user
@@ -137,6 +165,7 @@ Window {
   }
 
   function openManualLoginDialog() {
+    if (passwordCard.busy || loginSucceeded) return
     passwordCard.askUserName = true
     passwordCard.userIndex = -1
     passwordCard.user = null
@@ -307,7 +336,7 @@ Window {
 
       MouseArea {
         anchors.fill: parent
-        enabled: passwordCard.shown
+        enabled: passwordCard.shown && !passwordCard.busy
         hoverEnabled: true
         acceptedButtons: Qt.AllButtons
         onPressed: passwordCard.close()
@@ -458,6 +487,7 @@ Window {
     sessions: root.sessionModel
     selectedIndex: root.selectedSessionIndex
     onSelected: (index) => {
+      root.sessionChosen = true
       root.selectedSessionIndex = index
       root.sessionSelected(root.selectedSession)
     }
@@ -533,13 +563,15 @@ Window {
     onSubmitted: (userName, password) => {
       root.passwordSubmitted(userIndex, askUserName
         ? { "username": userName, "fullName": userName } : user, password)
-      if (!root.authBackendAvailable) {
-        busy = true
-        fakeAuthTimer.restart()
+      busy = true
+      if (!root.greeterBackend) {
+        root.showPasswordError(qsTr("登录服务不可用。"))
+        return
       }
+      root.greeterBackend.Login(askUserName ? userName : user.username,
+        password, root.selectedSession ? root.selectedSession.id : "")
     }
     onClosed: {
-      fakeAuthTimer.stop()
       keyCatcher.forceActiveFocus()
     }
   }
@@ -600,13 +632,6 @@ Window {
         source: "VirtualKeyboardPanel.qml"
       }
     }
-  }
-
-  Timer {
-    id: fakeAuthTimer
-
-    interval: 400
-    onTriggered: root.showPasswordError("")
   }
 
   Item {

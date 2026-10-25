@@ -7,3 +7,7 @@ add_subdirectory(helper)
 if(BUILD_CLASSIC_GREETER)
     add_subdirectory(greeter-classic)
 endif()
+
+if(BUILD_NEO_GREETER)
+    add_subdirectory(greeter-neo)
+endif()

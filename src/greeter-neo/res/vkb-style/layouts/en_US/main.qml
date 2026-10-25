@@ -26,6 +26,7 @@ KeyboardLayout {
 
   KeyboardRow {
     Key {
+      objectName: "virtualKeyboardKeyQ"
       key: Qt.Key_Q
       text: "q"
     }

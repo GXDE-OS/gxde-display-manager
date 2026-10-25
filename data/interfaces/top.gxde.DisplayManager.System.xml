@@ -39,6 +39,16 @@
         <method name="GreeterDisplayServer">
             <arg type="s" name="displayServer" direction="out"/>
         </method>
+        <method name="SetNeoGreeterEnabled">
+            <arg type="b" name="enabled" direction="in"/>
+            <arg type="b" name="success" direction="out"/>
+        </method>
+        <method name="NeoGreeterEnabled">
+            <arg type="b" name="enabled" direction="out"/>
+        </method>
+        <signal name="NeoGreeterEnabledChanged">
+            <arg type="b" name="enabled"/>
+        </signal>
         <method name="PowerOff"/>
         <method name="Reboot"/>
         <method name="Suspend"/>

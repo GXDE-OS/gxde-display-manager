@@ -28,7 +28,7 @@
 #include <QVariantMap>
 #include <algorithm>
 
-#include "greeter-neo/src/power_backend.h"
+#include "greeter-neo/src/greeter_backend.h"
 #include "greeter-neo/src/session_list.h"
 #include "greeter-neo/src/utils/macros.h"
 
@@ -297,18 +297,39 @@ int main(int argc, char* argv[]) {
               !arguments.contains(QStringLiteral("--test-mode"))
           ? arguments.at(socket_index + 1)
           : QString();
-  gxde::greeter::PowerBackend power_backend(socket_name);
+  const auto option_values = [&arguments](const QString& option) {
+    QStringList values;
+    for (int i = 1; i + 1 < arguments.size(); ++i) {
+      if (arguments.at(i) == option) values.append(arguments.at(++i));
+    }
+    return values;
+  };
+  QStringList x11_directories = option_values("--x11-session-dir");
+  QStringList wayland_directories = option_values("--wayland-session-dir");
+  if (x11_directories.isEmpty()) {
+    x11_directories = {"/usr/local/share/xsessions", "/usr/share/xsessions"};
+  }
+  if (wayland_directories.isEmpty()) {
+    wayland_directories = {"/usr/local/share/wayland-sessions",
+                           "/usr/share/wayland-sessions"};
+  }
+  const QVariantList sessions = gxde::greeter::ReadSessionDirectories(
+      x11_directories, wayland_directories);
+  gxde::greeter::GreeterBackend greeter_backend(socket_name, sessions);
   QQmlApplicationEngine engine;
-  const GxdeReleaseInfo gxdeRelease = detectGxdeRelease();
+  const GxdeReleaseInfo gxde_release = detectGxdeRelease();
+  const QStringList backgrounds = option_values("--background");
   QVariantMap init_prop;
-  init_prop.insert("powerBackend", QVariant::fromValue(&power_backend));
+  init_prop.insert("greeterBackend", QVariant::fromValue(&greeter_backend));
+  init_prop.insert("previewMode", socket_name.isEmpty());
   init_prop.insert("backgroundUri",
-                   QUrl("qrc:/img/example-wallpaper-deepin.jpg"));
-  init_prop.insert("isGxdeOs", gxdeRelease.isGxde);
-  init_prop.insert("gxdeReleaseLabel", gxdeRelease.label);
+                   backgrounds.isEmpty()
+                       ? QUrl("qrc:/img/example-wallpaper-deepin.jpg")
+                       : QUrl::fromLocalFile(backgrounds.last()));
+  init_prop.insert("isGxdeOs", gxde_release.isGxde);
+  init_prop.insert("gxdeReleaseLabel", gxde_release.label);
   init_prop.insert("userModel", detectUsers());
-  init_prop.insert("sessionModel", gxde::greeter::ReadSessions(
-                                       {"/usr/local/share", "/usr/share"}));
+  init_prop.insert("sessionModel", sessions);
   engine.setInitialProperties(init_prop);
 
   QObject::connect(

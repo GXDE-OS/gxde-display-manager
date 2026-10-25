@@ -26,6 +26,7 @@ set(DAEMON_SOURCES
     DisplayManager.cpp
     DisplayServer.cpp
     LogindDBusTypes.cpp
+    greeter_settings.cc
     Greeter.cpp
     PowerManager.cpp
     Seat.cpp

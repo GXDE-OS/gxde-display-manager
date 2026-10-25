@@ -87,6 +87,8 @@ class GxdeDisplayManagerService : public QDBusAbstractAdaptor {
   QString LockWallpaperOverride() const;
   bool SetGreeterDisplayServer(const QString& displayServer);
   QString GreeterDisplayServer() const;
+  bool SetNeoGreeterEnabled(bool enabled);
+  bool NeoGreeterEnabled() const;
   void Show();
 
  signals:

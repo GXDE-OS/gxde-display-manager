@@ -22,6 +22,9 @@
 
 namespace gxde::greeter {
 
+QVariantList ReadSessionDirectories(const QStringList& x11_directories,
+                                    const QStringList& wayland_directories);
+
 QVariantList ReadSessions(const QStringList& data_directories);
 
 }

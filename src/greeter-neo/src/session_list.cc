@@ -81,13 +81,25 @@ QHash<QString, QString> ReadDesktopEntry(const QString& path) {
 }
 
 QVariantList ReadSessions(const QStringList& data_directories) {
+  QStringList x11_directories;
+  QStringList wayland_directories;
+  for (const QString& directory : data_directories) {
+    x11_directories.append(QDir(directory).filePath("xsessions"));
+    wayland_directories.append(QDir(directory).filePath("wayland-sessions"));
+  }
+  return ReadSessionDirectories(x11_directories, wayland_directories);
+}
+
+QVariantList ReadSessionDirectories(const QStringList& x11_directories,
+                                    const QStringList& wayland_directories) {
   QVariantList sessions;
   QSet<QString> seen;
-  for (const QString& directory : data_directories) {
-    for (const QString& type :
-         {QStringLiteral("x11"), QStringLiteral("wayland")}) {
-      const QDir session_directory(QDir(directory).filePath(
-          type == "x11" ? "xsessions" : "wayland-sessions"));
+  for (const QString& type :
+       {QStringLiteral("x11"), QStringLiteral("wayland")}) {
+    const auto& directories =
+        type == "x11" ? x11_directories : wayland_directories;
+    for (const QString& directory : directories) {
+      const QDir session_directory(directory);
       for (const QString& file : session_directory.entryList(
                {"*.desktop"}, QDir::Files | QDir::Readable, QDir::Name)) {
         const QString id = type + '/' + file;

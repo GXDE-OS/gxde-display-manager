@@ -15,6 +15,12 @@ cmake_minimum_required(VERSION 3.21)
 
 project(gxde-greeter VERSION 0.1 LANGUAGES CXX)
 
+get_directory_property(GREETER_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
+list(REMOVE_ITEM GREETER_COMPILE_DEFINITIONS
+  QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
+set_directory_properties(PROPERTIES
+  COMPILE_DEFINITIONS "${GREETER_COMPILE_DEFINITIONS}")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -26,16 +32,6 @@ find_package(Qt6 6.5
 
 qt_standard_project_setup(REQUIRES 6.5)
 
-foreach(cur IN ITEMS
-  qml/LiquidGlass.qml
-  qml/LiquidGlassButton.qml
-  qml/Main.qml
-  qml/TintArea.qml
-)
-get_filename_component(qml_alias "${cur}" NAME)
-set_source_files_properties("${cur}" PROPERTIES QT_RESOURCE_ALIAS "${qml_alias}")
-endforeach()
-
 qt_add_resources(GREETER_RESOURCES
   res/resources.qrc
 )
@@ -45,8 +41,8 @@ qt_add_executable(gxde-greeter
   src/session_list.cc
   src/session_list.h
   src/main.cc
-  src/power_backend.cc
-  src/power_backend.h
+  src/greeter_backend.cc
+  src/greeter_backend.h
   src/utils/macros.h
 )
 
@@ -82,6 +78,8 @@ qt_add_qml_module(gxde-greeter
     qml/components/PowerMenu.qml
 )
 
+set_target_properties(gxde-greeter PROPERTIES OUTPUT_NAME gxdm-greeter-neo)
+
 target_include_directories(gxde-greeter PRIVATE ..)
 
 target_link_libraries(gxde-greeter PRIVATE
@@ -99,15 +97,15 @@ install(TARGETS gxde-greeter
 option(GREETER_BUILD_TESTS "Build greeter backend tests" OFF)
 if(GREETER_BUILD_TESTS)
   enable_testing()
-  find_package(Qt6 REQUIRED COMPONENTS Test)
-  qt_add_executable(powerbackend-test
-    tests/power_backend_test.cc
-    src/power_backend.cc
-    src/power_backend.h
+  find_package(Qt6 REQUIRED COMPONENTS Test QuickTest)
+  qt_add_executable(greeter-backend-test
+    tests/greeter_backend_test.cc
+    src/greeter_backend.cc
+    src/greeter_backend.h
   )
-  target_include_directories(powerbackend-test PRIVATE ..)
-  target_link_libraries(powerbackend-test PRIVATE Qt6::Network Qt6::Test)
-  add_test(NAME powerbackend COMMAND powerbackend-test)
+  target_include_directories(greeter-backend-test PRIVATE ..)
+  target_link_libraries(greeter-backend-test PRIVATE Qt6::Network Qt6::Test)
+  add_test(NAME greeter-backend COMMAND greeter-backend-test)
   qt_add_executable(session-list-test
     tests/session_list_test.cc
     src/session_list.cc
@@ -116,13 +114,9 @@ if(GREETER_BUILD_TESTS)
   target_include_directories(session-list-test PRIVATE ..)
   target_link_libraries(session-list-test PRIVATE Qt6::Test)
   add_test(NAME session-list COMMAND session-list-test)
-  get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
-  execute_process(COMMAND "${QT_QMAKE_EXECUTABLE}" -query QT_INSTALL_BINS
-    OUTPUT_VARIABLE QT_BIN_DIRECTORY OUTPUT_STRIP_TRAILING_WHITESPACE)
-  find_program(QML6_TEST_RUNNER qmltestrunner
-    PATHS "${QT_BIN_DIRECTORY}" NO_DEFAULT_PATH)
-  if(QML6_TEST_RUNNER)
-    add_test(NAME session-menu COMMAND "${QML6_TEST_RUNNER}"
-      -platform offscreen -input "${CMAKE_CURRENT_SOURCE_DIR}/tests/qml")
-  endif()
+  qt_add_executable(greeter-qml-test tests/qml_test.cc ${GREETER_RESOURCES})
+  target_link_libraries(greeter-qml-test PRIVATE Qt6::QuickTest)
+  target_compile_definitions(greeter-qml-test PRIVATE
+    QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/qml")
+  add_test(NAME greeter-qml COMMAND greeter-qml-test -platform offscreen)
 endif()
