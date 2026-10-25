@@ -327,6 +327,7 @@ int main(int argc, char* argv[]) {
     GxdmGreeterScale::applyX11ScaleFactors();
   } else {
     GxdmGreeterCursor::enforceWaylandCursorConfig();
+    GxdmGreeterScale::applyThemeScale();
   }
   QGuiApplication app(argc, argv);
 

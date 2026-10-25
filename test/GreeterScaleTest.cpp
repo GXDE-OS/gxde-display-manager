@@ -29,6 +29,7 @@ class GreeterScaleTest : public QObject {
   void readsThemeScale_data();
   void readsThemeScale();
   void ignoresMissingFile();
+  void appliesThemeScale();
 };
 
 void GreeterScaleTest::readsThemeScale_data() {
@@ -78,6 +79,30 @@ void GreeterScaleTest::ignoresMissingFile() {
   QCOMPARE(GxdmGreeterScale::themeScaleEnvironment(
              directory.filePath(QStringLiteral("missing.ini"))),
            Environment());
+}
+
+void GreeterScaleTest::appliesThemeScale() {
+  qunsetenv("QT_SCALE_FACTOR");
+  qunsetenv("QT_SCREEN_SCALE_FACTORS");
+  QTemporaryDir directory;
+  QVERIFY(directory.isValid());
+  QVERIFY(!GxdmGreeterScale::applyThemeScale(
+    directory.filePath(QStringLiteral("missing.ini"))));
+  QVERIFY(!qEnvironmentVariableIsSet("QT_SCALE_FACTOR"));
+
+  const QString path = directory.filePath(QStringLiteral("qt-theme.ini"));
+  QFile file(path);
+  QVERIFY(file.open(QIODevice::WriteOnly));
+  file.write("[Theme]\nScreenScaleFactors=1.25\n");
+  file.close();
+  QVERIFY(GxdmGreeterScale::applyThemeScale(path));
+  QCOMPARE(qgetenv("QT_SCALE_FACTOR"), QByteArray("1.25"));
+
+  // A scale from the environment wins over the config.
+  qputenv("QT_SCALE_FACTOR", "2");
+  QVERIFY(GxdmGreeterScale::applyThemeScale(path));
+  QCOMPARE(qgetenv("QT_SCALE_FACTOR"), QByteArray("2"));
+  qunsetenv("QT_SCALE_FACTOR");
 }
 
 QTEST_GUILESS_MAIN(GreeterScaleTest)

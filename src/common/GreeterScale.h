@@ -29,6 +29,7 @@ QPair<QByteArray, QByteArray> themeScaleEnvironment(
   const QString& path = QString());
 
 void applyAutoScreenScaleFactors();
+bool applyThemeScale(const QString& path = QString());
 
 void applyX11ScaleFactors();
 

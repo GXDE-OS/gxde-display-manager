@@ -133,17 +133,25 @@ void applyAutoScreenScaleFactors() {
   qputenv("QT_SCREEN_SCALE_FACTORS", screenScaleFactors);
 }
 
-void applyX11ScaleFactors() {
-  if (scaleIsSet()) return;
+bool applyThemeScale(const QString& path) {
+  if (scaleIsSet()) {
+    return true;
+  }
 
-  const QPair<QByteArray, QByteArray> themeScale = themeScaleEnvironment();
+  const QPair<QByteArray, QByteArray> themeScale = themeScaleEnvironment(path);
   if (themeScale.first.isEmpty()) {
-    applyAutoScreenScaleFactors();
-    return;
+    return false;
   }
   qInfo() << "Using greeter theme scale:" << themeScale.first << "="
           << themeScale.second;
   qputenv(themeScale.first.constData(), themeScale.second);
+  return true;
+}
+
+void applyX11ScaleFactors() {
+  if (!applyThemeScale()) {
+    applyAutoScreenScaleFactors();
+  }
 }
 
 }

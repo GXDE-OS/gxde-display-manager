@@ -110,8 +110,7 @@ Item {
     if (!target || target === previous) return
     const focused = previous ? previous.activeFocusItem : null
     scene.parent = target.contentItem
-    
-    target.raise()
+    if (Qt.platform.pluginName === "xcb") target.raise()
     target.requestActivate()
     if (previous) foregroundFadeIn.restart()
     if (focused && focused !== previous.contentItem) {
