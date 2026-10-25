@@ -104,7 +104,10 @@ qt_cc_library(
     includes = _INCLUDES,
     linkopts = _X11_LINKOPTS + ["-lgsettings-qt6"],
     moc_hdrs = _COMMON_MOC_HDRS,
-    deps = ["//bazel/qt:dtk"],
+    deps = [
+        "//bazel/qt:dtk",
+        "//src/common:greeter_appearance",
+    ],
 )
 
 # Shared widgets resources (compiled into each binary; a static-lib rcc would be

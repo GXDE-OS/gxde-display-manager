@@ -17,7 +17,7 @@
 
 #include <unistd.h>
 
-#include "greeterappearance.h"
+#include "GreeterAppearance.h"
 #include "sessionbasemodel.h"
 #include "lockshortcutmanager.h"
 

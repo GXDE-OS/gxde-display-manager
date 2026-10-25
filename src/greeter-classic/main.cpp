@@ -26,7 +26,7 @@
 #include "loginwindow.h"
 #include "constants.h"
 #include "greeterworker.h"
-#include "greeterappearance.h"
+#include "GreeterCursor.h"
 #include "sessionbasemodel.h"
 #include "propertygroup.h"
 #include "multiscreenmanager.h"
@@ -46,105 +46,9 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/Xlib-xcb.h>
-#include <X11/cursorfont.h>
-#include <X11/Xcursor/Xcursor.h>
-#include <X11/extensions/Xfixes.h>
 
 DCORE_USE_NAMESPACE
 DWIDGET_USE_NAMESPACE
-
-static void enforceWaylandCursorConfig() {
-    const QByteArray variable = "QT_WAYLAND_DISABLED_INTERFACES";
-    QByteArrayList disabledInterfaces = qgetenv(
-        variable.constData()).split(',');
-    for (QByteArray &interface : disabledInterfaces) {
-        interface = interface.trimmed();
-    }
-
-    disabledInterfaces.removeAll(QByteArray());
-
-    const QByteArray cursorShapeInterface = "wp_cursor_shape_manager_v1";
-    if (!disabledInterfaces.contains(cursorShapeInterface)) {
-        disabledInterfaces.append(cursorShapeInterface);
-    }
-
-    qputenv(variable.constData(), disabledInterfaces.join(','));
-}
-
-//Load the System cursor --begin
-static XcursorImages*
-xcLoadImages(const char *image, int size) {
-    const QByteArray configuredTheme = qgetenv("XCURSOR_THEME");
-    if (!configuredTheme.isEmpty()) {
-        return XcursorLibraryLoadImages(image,
-            configuredTheme.constData(), size);
-    }
-
-    const QByteArrayList preferredThemes = {"gxde", "deepin", "Adwaita"};
-    for (const QByteArray &theme : preferredThemes) {
-        if (XcursorImages* images = XcursorLibraryLoadImages(
-                image, theme.constData(), size)) {
-            return images;
-        }
-    }
-
-    return nullptr;
-}
-
-static unsigned long loadCursorHandle(Display *dpy, const char *name, int size)
-{
-    if (size == -1) {
-        size = XcursorGetDefaultSize(dpy);
-    }
-
-    // Load the cursor images
-    XcursorImages *images = NULL;
-    images = xcLoadImages(name, size);
-
-    if (!images) {
-        return 0;
-    }
-
-    unsigned long handle = (unsigned long)XcursorImagesLoadCursor(dpy,
-                          images);
-    XcursorImagesDestroy(images);
-
-    return handle;
-}
-
-static int set_rootwindow_cursor() {
-    Display* display = XOpenDisplay(NULL);
-    if (!display) {
-        qDebug() << "Open display failed";
-        return -1;
-    }
-
-    const char *cursorName = qApp->devicePixelRatio() > 1.7
-        ? "loginspinner@2x"
-        : "loginspinner";
-
-    Cursor cursor = (Cursor)loadCursorHandle(display, cursorName, 24);
-    if (cursor == 0) {
-        cursor = (Cursor)loadCursorHandle(display, "watch", 24);
-    }
-
-    if (cursor == 0) {
-        XCloseDisplay(display);
-        return -1;
-    }
-    XDefineCursor(display, XDefaultRootWindow(display),cursor);
-
-    // XFixesChangeCursorByName is the key to change the cursor
-    // and the XFreeCursor and XCloseDisplay is also essential.
-
-    XFixesChangeCursorByName(display, cursor, "watch");
-
-    XFreeCursor(display, cursor);
-    XCloseDisplay(display);
-
-    return 0;
-}
-// Load system cursor --end
 
 static double outputScaleRatio(const XRRCrtcInfo *crtcInfo, const XRROutputInfo *outputInfo)
 {
@@ -216,9 +120,7 @@ static void set_auto_QT_SCREEN_SCALE_FACTORS()
 
 int main(int argc, char* argv[])
 {
-    const QString cursorTheme = GxdmGreeterAppearance::cursorTheme();
-    if (!cursorTheme.isEmpty())
-        qputenv("XCURSOR_THEME", cursorTheme.toUtf8());
+    GxdmGreeterCursor::applyConfiguredTheme();
 
     QByteArray requestedPlatform = qgetenv("QT_QPA_PLATFORM");
     for (int i = 1; requestedPlatform.isEmpty() && i + 1 < argc; ++i) {
@@ -230,7 +132,7 @@ int main(int argc, char* argv[])
         || (requestedPlatform.isEmpty() && !qEnvironmentVariableIsSet("WAYLAND_DISPLAY"));
 
     if (!useX11) {
-        enforceWaylandCursorConfig();
+        GxdmGreeterCursor::enforceWaylandCursorConfig();
     }
 
     // load dpi settings
@@ -269,7 +171,7 @@ int main(int argc, char* argv[])
 
     if (useX11) {
         QObject::connect(model, &SessionBaseModel::authFinished, model, [=] {
-            set_rootwindow_cursor();
+            GxdmGreeterCursor::setRootWindowWaitCursor(qApp->devicePixelRatio());
         });
     }
 

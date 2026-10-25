@@ -1,9 +1,11 @@
 #include <QFile>
+#include <QImage>
 #include <QSettings>
 #include <QTemporaryDir>
 #include <QTest>
+#include <QUrl>
 
-#include "greeterappearance.h"
+#include "GreeterAppearance.h"
 
 class GreeterAppearanceTest : public QObject {
   Q_OBJECT
@@ -12,6 +14,7 @@ class GreeterAppearanceTest : public QObject {
   void readsGlobalAppearance();
   void exposesDefaultWallpaperPaths();
   void detectsUnconfiguredWallpaper();
+  void acceptsOnlyReadableImages();
 };
 
 void GreeterAppearanceTest::readsGlobalAppearance() {
@@ -95,5 +98,30 @@ void GreeterAppearanceTest::detectsUnconfiguredWallpaper() {
   QVERIFY(!GxdmGreeterAppearance::hasConfiguredWallpaper(statePath));
 }
 
-QTEST_MAIN(GreeterAppearanceTest)
+void GreeterAppearanceTest::acceptsOnlyReadableImages() {
+  QTemporaryDir directory;
+  QVERIFY(directory.isValid());
+
+  const QString imagePath = directory.filePath(QStringLiteral("image.png"));
+  QImage image(4, 4, QImage::Format_RGB32);
+  image.fill(Qt::red);
+  QVERIFY(image.save(imagePath));
+  QCOMPARE(GxdmGreeterAppearance::readableImage(imagePath), imagePath);
+  QCOMPARE(GxdmGreeterAppearance::readableImage(
+    QUrl::fromLocalFile(imagePath).toString()), imagePath);
+
+  const QString textPath = directory.filePath(QStringLiteral("text.png"));
+  QFile text(textPath);
+  QVERIFY(text.open(QIODevice::WriteOnly));
+  QCOMPARE(text.write("image"), 5);
+  text.close();
+  QCOMPARE(GxdmGreeterAppearance::readableImage(textPath), QString());
+
+  QCOMPARE(GxdmGreeterAppearance::readableImage(
+    directory.filePath(QStringLiteral("missing.png"))), QString());
+  QCOMPARE(GxdmGreeterAppearance::readableImage(directory.path()), QString());
+  QCOMPARE(GxdmGreeterAppearance::readableImage(QString()), QString());
+}
+
+QTEST_GUILESS_MAIN(GreeterAppearanceTest)
 #include "GreeterAppearanceTest.moc"

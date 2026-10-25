@@ -1,7 +1,7 @@
 #include "lockcontent.h"
 
 #include "controlwidget.h"
-#include "greeterappearance.h"
+#include "GreeterAppearance.h"
 #include "userinputwidget.h"
 #include "sessionbasemodel.h"
 #include "userframe.h"

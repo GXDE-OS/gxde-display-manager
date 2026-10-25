@@ -1,14 +1,12 @@
 #include "userinfo.h"
 
-#include "greeterappearance.h"
+#include "GreeterAppearance.h"
 
 #include <QDBusConnection>
 #include <QDBusInterface>
 #include <QDBusObjectPath>
 #include <QDBusReply>
 #include <QFileInfo>
-#include <QImageReader>
-#include <QUrl>
 #include <QStringList>
 #include <QTimer>
 #include <QGSettings/QGSettings>
@@ -57,27 +55,6 @@ static bool checkUserIsNoPWGrp(User const * user)
     return false;
 }
 
-static const QString toLocalFile(const QString &path) {
-    QUrl url(path);
-
-    if (url.isLocalFile()) {
-        return url.path();
-    }
-
-    return url.url();
-}
-
-static QString readableImagePath(const QString& path) {
-    const QString localPath = toLocalFile(path);
-    const QFileInfo file(localPath);
-    if (!file.isFile() || !file.isReadable()) {
-        return QString();
-    }
-
-    QImageReader reader(localPath);
-    return reader.canRead() ? localPath : QString();
-}
-
 static QString deepinAccountsUserPath(const QString& userName) {
     QDBusInterface accounts(QStringLiteral("com.deepin.daemon.Accounts"),
         QStringLiteral("/com/deepin/daemon/Accounts"),
@@ -104,69 +81,8 @@ static QString deepinAccountsAvatar(const QString& userName) {
         QStringLiteral("com.deepin.daemon.Accounts.User"),
         QDBusConnection::systemBus());
 
-    return user.isValid() ? readableImagePath(
+    return user.isValid() ? GxdmGreeterAppearance::readableImage(
         user.property("IconFile").toString()) : QString();
-}
-
-static QString deepinAccountsLockBackground(const QString& userName) {
-    const QString userPath = deepinAccountsUserPath(userName);
-    if (userPath.isEmpty()) {
-        return QString();
-    }
-
-    QDBusInterface user(QStringLiteral("com.deepin.daemon.Accounts"),
-        userPath,
-        QStringLiteral("com.deepin.daemon.Accounts.User"),
-        QDBusConnection::systemBus());
-    if (!user.isValid()) {
-        return QString();
-    }
-
-    QString background = readableImagePath(
-        user.property("GreeterBackground").toString());
-    if (background.isEmpty()) {
-        background = readableImagePath(
-            user.property("BackgroundFile").toString());
-    }
-    return background;
-}
-
-static QString accountsServiceLockBackground(const QString& userName) {
-    // org.freedesktop.Accounts is a system service that is already running
-    // before any user session, so it is reachable from the greeter even when
-    // com.deepin.daemon.Accounts (dde) is not available. The deepin/GXDE
-    // accounts-service fork exposes the lock-screen wallpaper through the
-    // GreeterBackground / BackgroundFile extensions.
-    QDBusInterface accounts(QStringLiteral("org.freedesktop.Accounts"),
-        QStringLiteral("/org/freedesktop/Accounts"),
-        QStringLiteral("org.freedesktop.Accounts"),
-        QDBusConnection::systemBus());
-
-    if (!accounts.isValid()) {
-        return QString();
-    }
-
-    const QDBusReply<QDBusObjectPath> userPath = accounts.call(
-        QStringLiteral("FindUserByName"), userName);
-    if (!userPath.isValid() || userPath.value().path().isEmpty()) {
-        return QString();
-    }
-
-    QDBusInterface user(QStringLiteral("org.freedesktop.Accounts"),
-        userPath.value().path(),
-        QStringLiteral("org.freedesktop.Accounts.User"),
-        QDBusConnection::systemBus());
-    if (!user.isValid()) {
-        return QString();
-    }
-
-    QString background = readableImagePath(
-        user.property("GreeterBackground").toString());
-    if (background.isEmpty()) {
-        background = readableImagePath(
-            user.property("BackgroundFile").toString());
-    }
-    return background;
 }
 
 static QString gsettingsLockBackground() {
@@ -188,7 +104,7 @@ static QString gsettingsLockBackground() {
 
     const QStringList backgrounds = settings.get(key).toStringList();
     for (const QString& background : backgrounds) {
-        const QString path = readableImagePath(background);
+        const QString path = GxdmGreeterAppearance::readableImage(background);
         if (!path.isEmpty()) {
             return path;
         }
@@ -197,65 +113,11 @@ static QString gsettingsLockBackground() {
 }
 
 static QString lockBackgroundForUser(const QString& userName, uid_t uid) {
-    // 1. A GXDM lock override belongs to one user and never affects the
-    //    global greeter wallpaper. The override is written to two locations:
-    //    ~/.local/share/gxdm (for the in-session locker) and ~gxdm
-    //    /lock-wallpaper-override-<uid> (readable by the greeter even when
-    //    the user's home directory is not traversable, e.g. mode 0700).
-    const auto overrideFrom = [userName](const QString& path) {
-        const QString background = readableImagePath(path);
-        if (!background.isEmpty()) {
-            qInfo() << "(Frontend) Lock background: Using user override for"
-                << userName << background;
-        }
-        return background;
-    };
-
-    if (uid == getuid()) {
-        // In-session locker: prefer the freshly written user copy.
-        const QString localOverride = overrideFrom(
-            GxdmGreeterAppearance::lockWallpaperOverride(uid));
-        if (!localOverride.isEmpty())
-            return localOverride;
-
-        const QString systemOverride = overrideFrom(
-            GxdmGreeterAppearance::systemLockWallpaperOverride(uid));
-        if (!systemOverride.isEmpty())
-            return systemOverride;
-    } else {
-        // Greeter: the system copy is the only one guaranteed to be readable
-        // before the user session starts.
-        const QString systemOverride = overrideFrom(
-            GxdmGreeterAppearance::systemLockWallpaperOverride(uid));
-        if (!systemOverride.isEmpty())
-            return systemOverride;
-
-        const QString localOverride = overrideFrom(
-            GxdmGreeterAppearance::lockWallpaperOverride(uid));
-        if (!localOverride.isEmpty())
-            return localOverride;
-    }
-
-    // 2. Deepin Accounts (com.deepin.daemon.Accounts), the same interface the
-    //    classic lightdm greeter used for the login wallpaper. It is provided
-    //    by a system service, so it also works before the user session starts.
-    const QString accountsBackground =
-        deepinAccountsLockBackground(userName);
-    if (!accountsBackground.isEmpty()) {
-        qInfo() << "(Frontend) Lock background: Using Deepin Accounts for"
-            << userName << accountsBackground;
-        return accountsBackground;
-    }
-
-    // 3. Freedesktop AccountsService (org.freedesktop.Accounts) as a fallback
-    //    for systems without the Deepin accounts daemon.
-    const QString freedesktopBackground =
-        accountsServiceLockBackground(userName);
-    if (!freedesktopBackground.isEmpty()) {
-        qInfo() << "(Frontend) Lock background: Using AccountsService for"
-            << userName << freedesktopBackground;
-        return freedesktopBackground;
-    }
+    // 1-3. The GXDM lock override, Deepin Accounts and AccountsService.
+    const QString userBackground =
+        GxdmGreeterAppearance::userLockWallpaper(userName, uid);
+    if (!userBackground.isEmpty())
+        return userBackground;
 
     // 4. GSettings com.deepin.dde.appearance. Only meaningful when this
     //    process runs as the user itself (e.g. the in-session locker), where
@@ -297,7 +159,7 @@ static QString accountsServiceAvatar(const QString& userName) {
         QStringLiteral("org.freedesktop.Accounts.User"),
         QDBusConnection::systemBus());
 
-    return user.isValid() ? readableImagePath(
+    return user.isValid() ? GxdmGreeterAppearance::readableImage(
         user.property("IconFile").toString()) : QString();
 }
 
@@ -451,7 +313,7 @@ QString NativeUser::avatarPath() const {
         return accountsAvatar;
     }
 
-    const QString systemFace = readableImagePath(
+    const QString systemFace = GxdmGreeterAppearance::readableImage(
         QStringLiteral("/var/lib/AccountsService/icons/%1").arg(m_userName));
     if (!systemFace.isEmpty()) {
         return systemFace;
@@ -460,12 +322,12 @@ QString NativeUser::avatarPath() const {
     struct passwd* pw = getpwnam(m_userName.toUtf8().constData());
     if (pw && pw->pw_dir) {
         const QString home = QString::fromLocal8Bit(pw->pw_dir);
-        const QString faceIcon = readableImagePath(
+        const QString faceIcon = GxdmGreeterAppearance::readableImage(
             home + QStringLiteral("/.face.icon"));
         if (!faceIcon.isEmpty())
             return faceIcon;
 
-        const QString face = readableImagePath(
+        const QString face = GxdmGreeterAppearance::readableImage(
             home + QStringLiteral("/.face"));
         if (!face.isEmpty()) {
             return face;

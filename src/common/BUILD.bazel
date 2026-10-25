@@ -53,3 +53,21 @@ qt_cc_library(
     linkopts = ["-lXau"],
     deps = [":constants"],
 )
+
+# Wallpaper and cursor setup shared by the classic and neo greeters.
+qt_cc_library(
+    name = "greeter_appearance",
+    srcs = [
+        "GreeterAppearance.cpp",
+        "GreeterCursor.cpp",
+    ],
+    hdrs = [
+        "GreeterAppearance.h",
+        "GreeterCursor.h",
+    ],
+    linkopts = [
+        "-lX11",
+        "-lXcursor",
+        "-lXfixes",
+    ],
+)

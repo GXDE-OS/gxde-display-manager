@@ -59,15 +59,17 @@ if(BUILD_CLASSIC_GREETER)
 
     add_executable(GreeterAppearanceTest
         GreeterAppearanceTest.cpp
-        ../src/greeter-classic/global_util/greeterappearance.cpp
-        ../src/greeter-classic/global_util/greeterappearance.h
+        ../src/common/GreeterAppearance.cpp
+        ../src/common/GreeterAppearance.h
     )
     target_include_directories(GreeterAppearanceTest PRIVATE
-        ../src/greeter-classic/global_util
+        ../src/common
     )
     add_test(NAME GreeterAppearance COMMAND GreeterAppearanceTest)
     target_link_libraries(GreeterAppearanceTest PRIVATE
         Qt${QT_MAJOR_VERSION}::Core
+        Qt${QT_MAJOR_VERSION}::DBus
+        Qt${QT_MAJOR_VERSION}::Gui
         Qt${QT_MAJOR_VERSION}::Test
     )
 

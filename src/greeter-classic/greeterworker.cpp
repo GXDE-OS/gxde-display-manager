@@ -1,5 +1,5 @@
 #include "greeterworker.h"
-#include "greeterappearance.h"
+#include "GreeterAppearance.h"
 #include "sessionbasemodel.h"
 #include "systemdefaults.h"
 #include "userinfo.h"

@@ -28,6 +28,8 @@
 #include <QVariantMap>
 #include <algorithm>
 
+#include "common/GreeterAppearance.h"
+#include "common/GreeterCursor.h"
 #include "greeter-neo/src/greeter_backend.h"
 #include "greeter-neo/src/session_list.h"
 #include "greeter-neo/src/utils/macros.h"
@@ -283,11 +285,44 @@ QVariantList detectUsers() {
   return users;
 }
 
+// The login wallpaper, chosen like gxdm-greeter-classic does: the configured
+// greeter wallpaper, else the only user's own lock wallpaper, else the system
+// default; the bundled one when none of them is readable.
+QUrl greeterBackground(const QVariantList& users) {
+  QString path;
+  if (!GxdmGreeterAppearance::hasConfiguredWallpaper() && users.size() == 1) {
+    const QVariantMap user = users.first().toMap();
+    path = GxdmGreeterAppearance::userLockWallpaper(
+        user.value("username").toString(), user.value("uid").toUInt());
+  }
+  if (path.isEmpty()) {
+    path = GxdmGreeterAppearance::readableImage(
+        GxdmGreeterAppearance::wallpaper());
+  }
+  return path.isEmpty() ? QUrl("qrc:/img/example-wallpaper-deepin.jpg")
+                        : QUrl::fromLocalFile(path);
+}
+
+// Whether Qt will pick the xcb platform, decided before QGuiApplication
+// exists the same way gxdm-greeter-classic does.
+bool runsOnX11(int argc, char* argv[]) {
+  QByteArray platform = qgetenv("QT_QPA_PLATFORM");
+  for (int i = 1; platform.isEmpty() && i + 1 < argc; ++i) {
+    if (QByteArray(argv[i]) == "-platform") platform = argv[i + 1];
+  }
+  return platform.startsWith("xcb") ||
+         (platform.isEmpty() && !qEnvironmentVariableIsSet("WAYLAND_DISPLAY"));
+}
+
 }
 
 int main(int argc, char* argv[]) {
   qputenv("QT_IM_MODULE", QByteArrayLiteral("qtvirtualkeyboard"));
   qputenv("QT_VIRTUALKEYBOARD_STYLE", QByteArrayLiteral("gxde"));
+  GxdmGreeterCursor::applyConfiguredTheme();
+  if (!runsOnX11(argc, argv)) {
+    GxdmGreeterCursor::enforceWaylandCursorConfig();
+  }
   QGuiApplication app(argc, argv);
 
   const QStringList arguments = app.arguments();
@@ -316,19 +351,31 @@ int main(int argc, char* argv[]) {
   const QVariantList sessions = gxde::greeter::ReadSessionDirectories(
       x11_directories, wayland_directories);
   gxde::greeter::GreeterBackend greeter_backend(socket_name, sessions);
+  QObject::connect(&greeter_backend,
+                   &gxde::greeter::GreeterBackend::LoginSucceeded, &app,
+                   [&app] {
+                     if (QGuiApplication::platformName() ==
+                         QLatin1String("xcb")) {
+                       GxdmGreeterCursor::setRootWindowWaitCursor(
+                           app.devicePixelRatio());
+                     }
+                   });
   QQmlApplicationEngine engine;
   const GxdeReleaseInfo gxde_release = detectGxdeRelease();
   const QStringList backgrounds = option_values("--background");
+  const QString background_option = GxdmGreeterAppearance::readableImage(
+      backgrounds.isEmpty() ? QString() : backgrounds.last());
+  const QVariantList users = detectUsers();
   QVariantMap init_prop;
   init_prop.insert("greeterBackend", QVariant::fromValue(&greeter_backend));
   init_prop.insert("previewMode", socket_name.isEmpty());
   init_prop.insert("backgroundUri",
-                   backgrounds.isEmpty()
-                       ? QUrl("qrc:/img/example-wallpaper-deepin.jpg")
-                       : QUrl::fromLocalFile(backgrounds.last()));
+                   background_option.isEmpty()
+                       ? greeterBackground(users)
+                       : QUrl::fromLocalFile(background_option));
   init_prop.insert("isGxdeOs", gxde_release.isGxde);
   init_prop.insert("gxdeReleaseLabel", gxde_release.label);
-  init_prop.insert("userModel", detectUsers());
+  init_prop.insert("userModel", users);
   init_prop.insert("sessionModel", sessions);
   engine.setInitialProperties(init_prop);
 

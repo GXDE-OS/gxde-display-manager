@@ -26,9 +26,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 6.5
   REQUIRED COMPONENTS
+    DBus
     Quick
     Network
 )
+find_package(X11 REQUIRED)
 
 qt_standard_project_setup(REQUIRES 6.5)
 
@@ -44,6 +46,11 @@ qt_add_executable(gxde-greeter
   src/greeter_backend.cc
   src/greeter_backend.h
   src/utils/macros.h
+  # Wallpaper and cursor setup, shared with gxdm-greeter-classic.
+  ../common/GreeterAppearance.cpp
+  ../common/GreeterAppearance.h
+  ../common/GreeterCursor.cpp
+  ../common/GreeterCursor.h
 )
 
 set_source_files_properties(qml/MainWindow.qml PROPERTIES
@@ -83,8 +90,12 @@ set_target_properties(gxde-greeter PROPERTIES OUTPUT_NAME gxdm-greeter-neo)
 target_include_directories(gxde-greeter PRIVATE ..)
 
 target_link_libraries(gxde-greeter PRIVATE
+  Qt6::DBus
   Qt6::Quick
   Qt6::Network
+  X11::X11
+  X11::Xcursor
+  X11::Xfixes
 )
 
 include(GNUInstallDirs)
