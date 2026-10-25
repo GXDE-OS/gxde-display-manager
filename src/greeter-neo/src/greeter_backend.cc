@@ -218,7 +218,7 @@ void GreeterBackend::ReadMessages() {
     } else if (static_cast<SDDM::DaemonMessages>(message) ==
                SDDM::DaemonMessages::LoginFailed) {
       SetAuthenticating(false);
-      emit LoginFailed(tr("用户名或密码错误，或会话启动失败。"));
+      emit LoginFailed(tr("鉴权失败"));
     } else if (static_cast<SDDM::DaemonMessages>(message) ==
                SDDM::DaemonMessages::LoginSucceeded) {
       login_succeeded_ = true;

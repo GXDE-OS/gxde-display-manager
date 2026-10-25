@@ -674,8 +674,6 @@ Window {
 
     component EdgeGlow: Rectangle {
       required property real edgeRotation
-
-      color: "transparent"
       rotation: edgeRotation
       gradient: Gradient {
         GradientStop {

@@ -9,7 +9,7 @@ license=('GPL-3.0-or-later' 'GPL-2.0-or-later' 'CC-BY-3.0')
 # 与 debian/control 相同：dbus、layer-shell-qt、xauth、xkb 数据与 X 服务器
 # As in debian/control: dbus, layer-shell-qt, xauth, the xkb data and an X server.
 depends=('dtk2widget-qt6-git' 'dtk6core-git' 'dtk6log-git' 'qt6-base' 'qt6-declarative' 'qt6-svg'
-         'qt6-wayland' 'layer-shell-qt' 'gsettings-qt6' 'glib2' 'pam' 'systemd-libs' 'dbus' 'libx11'
+         'qt6-virtualkeyboard' 'qt6-wayland' 'layer-shell-qt' 'gsettings-qt6' 'glib2' 'pam' 'systemd-libs' 'dbus' 'libx11'
          'libxau' 'libxcb' 'libxcursor' 'libxext' 'libxfixes' 'libxi' 'libxkbcommon' 'libxrandr' 'libxtst'
          'xorg-xauth' 'xkeyboard-config' 'xorg-server' 'libgcc' 'libstdc++' 'glibc')
 makedepends=('git' 'cmake' 'ninja' 'pkgconf' 'qt6-tools' 'systemd' 'wayland-protocols')
