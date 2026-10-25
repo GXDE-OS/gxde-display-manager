@@ -39,10 +39,11 @@ file(GLOB NEO_COMMON_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/widgets/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/session_widgets/*.cpp"
 )
-# Wallpaper and cursor setup, shared with gxdm-greeter-neo.
+# Wallpaper, cursor and scale setup, shared with gxdm-greeter-neo.
 list(APPEND NEO_COMMON_SOURCES
     "${GXDM_REPO_ROOT}/src/common/GreeterAppearance.cpp"
     "${GXDM_REPO_ROOT}/src/common/GreeterCursor.cpp"
+    "${GXDM_REPO_ROOT}/src/common/GreeterScale.cpp"
 )
 file(GLOB NEO_COMMON_HEADERS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/view/*.h"
@@ -54,6 +55,7 @@ file(GLOB NEO_COMMON_HEADERS CONFIGURE_DEPENDS
 list(APPEND NEO_COMMON_HEADERS
     "${GXDM_REPO_ROOT}/src/common/GreeterAppearance.h"
     "${GXDM_REPO_ROOT}/src/common/GreeterCursor.h"
+    "${GXDM_REPO_ROOT}/src/common/GreeterScale.h"
 )
 
 set(NEO_VENDOR_SOURCES

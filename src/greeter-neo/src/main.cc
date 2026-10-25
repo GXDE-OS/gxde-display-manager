@@ -30,6 +30,7 @@
 
 #include "common/GreeterAppearance.h"
 #include "common/GreeterCursor.h"
+#include "common/GreeterScale.h"
 #include "greeter-neo/src/greeter_backend.h"
 #include "greeter-neo/src/session_list.h"
 #include "greeter-neo/src/utils/macros.h"
@@ -320,7 +321,9 @@ int main(int argc, char* argv[]) {
   qputenv("QT_IM_MODULE", QByteArrayLiteral("qtvirtualkeyboard"));
   qputenv("QT_VIRTUALKEYBOARD_STYLE", QByteArrayLiteral("gxde"));
   GxdmGreeterCursor::applyConfiguredTheme();
-  if (!runsOnX11(argc, argv)) {
+  if (runsOnX11(argc, argv)) {
+    GxdmGreeterScale::applyX11ScaleFactors();
+  } else {
     GxdmGreeterCursor::enforceWaylandCursorConfig();
   }
   QGuiApplication app(argc, argv);

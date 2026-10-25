@@ -51,6 +51,8 @@ qt_add_executable(gxde-greeter
   ../common/GreeterAppearance.h
   ../common/GreeterCursor.cpp
   ../common/GreeterCursor.h
+  ../common/GreeterScale.cpp
+  ../common/GreeterScale.h
 )
 
 set_source_files_properties(qml/MainWindow.qml PROPERTIES
@@ -96,6 +98,7 @@ target_link_libraries(gxde-greeter PRIVATE
   X11::X11
   X11::Xcursor
   X11::Xfixes
+  X11::Xrandr
 )
 
 include(GNUInstallDirs)

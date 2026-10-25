@@ -73,6 +73,22 @@ if(BUILD_CLASSIC_GREETER)
         Qt${QT_MAJOR_VERSION}::Test
     )
 
+    add_executable(GreeterScaleTest
+        GreeterScaleTest.cpp
+        ../src/common/GreeterScale.cpp
+        ../src/common/GreeterScale.h
+    )
+    target_include_directories(GreeterScaleTest PRIVATE
+        ../src/common
+    )
+    add_test(NAME GreeterScale COMMAND GreeterScaleTest)
+    target_link_libraries(GreeterScaleTest PRIVATE
+        Qt${QT_MAJOR_VERSION}::Core
+        Qt${QT_MAJOR_VERSION}::Test
+        X11
+        Xrandr
+    )
+
     add_executable(VirtualKeyboardTest
         VirtualKeyboardTest.cpp
         ../src/greeter-classic/widgets/virtualkbinstance.cpp
