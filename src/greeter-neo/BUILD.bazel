@@ -6,11 +6,13 @@ qt_cc_library(
     name = "greeter_neo",
     srcs = [
         "src/greeter_backend.cc",
+        "src/login_transition.cc",
         "src/screen_manager.cc",
         "src/session_list.cc",
     ],
     hdrs = [
         "src/greeter_backend.h",
+        "src/login_transition.h",
         "src/screen_manager.h",
         "src/session_list.h",
         "src/utils/macros.h",

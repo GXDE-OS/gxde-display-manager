@@ -19,6 +19,9 @@ void enforceWaylandCursorConfig();
 // stays up between the greeter exiting and the session mapping its windows.
 bool setRootWindowWaitCursor(qreal devicePixelRatio);
 
+// Copy the final wallpaper-only frame into the root background before exit.
+bool preserveRootBackground();
+
 }  // namespace GxdmGreeterCursor
 
 #endif  // SRC_COMMON_GREETERCURSOR_H_

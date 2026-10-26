@@ -17,9 +17,60 @@
 #include <QtQuickTest/quicktest.h>
 
 #include <QByteArray>
+#include <QtQml/qqml.h>
+
+class TransitionBackend : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(QStringList availableActions READ availableActions CONSTANT)
+  Q_PROPERTY(QString lastSession READ lastSession CONSTANT)
+  Q_PROPERTY(bool authenticating READ authenticating CONSTANT)
+  Q_PROPERTY(int completed MEMBER completed NOTIFY CompletedChanged)
+
+ public:
+  using QObject::QObject;
+
+  QStringList availableActions() const { return {}; }
+  QString lastSession() const { return {}; }
+  bool authenticating() const { return true; }
+  int completed = 0;
+
+  Q_INVOKABLE void FinishTransition() {
+    ++completed;
+    emit CompletedChanged();
+  }
+
+ signals:
+  void PrepareTransition(bool preserve);
+  void RequestFailed(QString message);
+  void LoginFailed(QString message);
+  void InformationMessage(QString message);
+  void LoginSucceeded();
+  void LastSessionChanged();
+  void CompletedChanged();
+};
+
+class TransitionScreenManager : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(QObject* currentWindow MEMBER currentWindow NOTIFY CurrentWindowChanged)
+
+ public:
+  using QObject::QObject;
+
+  QObject* currentWindow = nullptr;
+
+ signals:
+  void CurrentWindowChanged();
+  void CancelForwarded();
+};
 
 int main(int argc, char* argv[]) {
+  qmlRegisterType<TransitionBackend>("TransitionTest", 1, 0, "TransitionBackend");
+  qmlRegisterType<TransitionScreenManager>(
+      "TransitionTest", 1, 0, "TransitionScreenManager");
+
   qputenv("QT_IM_MODULE", QByteArrayLiteral("qtvirtualkeyboard"));
   qputenv("QT_VIRTUALKEYBOARD_STYLE", QByteArrayLiteral("gxde"));
   return quick_test_main(argc, argv, "GreeterQml", QUICK_TEST_SOURCE_DIR);
 }
+
+#include "qml_test.moc"

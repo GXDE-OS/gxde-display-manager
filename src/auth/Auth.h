@@ -169,6 +169,10 @@ namespace SDDM {
         */
         void start();
 
+        // May be called synchronously from authentication() to delay the reply.
+        void deferSessionStart();
+        void resumeSessionStart();
+
         /**
          * Indicates that we do not need the process anymore.
          */

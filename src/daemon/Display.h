@@ -101,10 +101,15 @@ namespace SDDM {
         void finishReusableSessionActivation(bool success,
                                               const QString &error = QString());
         void finishLogin(bool success);
+        bool beginTransition();
+        void completeTransition();
         void resolveLogindSession(qint64 helperPid);
         void removeDisplayManagerSession();
 
         DisplayServerType m_displayServerType = X11DisplayServerType;
+
+        bool m_sharedX11 { false };
+        QTimer *m_transitionTimer { nullptr };
 
         bool m_relogin { true };
         bool m_started { false };

@@ -324,6 +324,20 @@ namespace SDDM {
         // connect login signal
         connect(m_socketServer, &SocketServer::login, this, &Display::login);
 
+        m_transitionTimer = new QTimer(this);
+        m_transitionTimer->setSingleShot(true);
+        m_transitionTimer->setInterval(800);
+
+        connect(m_transitionTimer, &QTimer::timeout, this, [this] {
+            qWarning() << "Greeter transition timed out; continuing login";
+            completeTransition();
+        });
+        connect(m_socketServer, &SocketServer::transitionReady, this, [this](QLocalSocket *socket) {
+            if (socket == m_socket && m_transitionTimer->isActive()) {
+                completeTransition();
+            }
+        });
+
         // connect login result signals
         connect(this, &Display::loginFailed, m_socketServer, &SocketServer::loginFailed);
         connect(this, &Display::loginSucceeded, m_socketServer, &SocketServer::loginSucceeded);
@@ -630,6 +644,8 @@ namespace SDDM {
         // last session later, in slotAuthenticationFinished()
         m_sessionName = session.fileName();
 
+        m_sharedX11 = session.type() == Session::X11Session
+            && m_displayServerType == X11DisplayServerType;
         m_sessionTerminalId = m_terminalId;
         if ((session.type() == Session::WaylandSession && m_displayServerType == X11DisplayServerType) || (m_greeter->isRunning() && m_displayServerType != X11DisplayServerType)) {
             // Create a new VT when we need to have another compositor running
@@ -798,8 +814,12 @@ namespace SDDM {
         if (success) {
             qDebug() << "Authentication for user " << user << " successful";
 
+            const bool transitionPending = beginTransition();
+
             if (!m_reuseSessionId.isNull()) {
-                activateReusableSession();
+                if (!transitionPending) {
+                    activateReusableSession();
+                }
             } else {
                 if (qobject_cast<XorgDisplayServer *>(m_displayServer))
                     m_auth->setCookie(qobject_cast<XorgDisplayServer *>(m_displayServer)->cookie());
@@ -812,6 +832,37 @@ namespace SDDM {
             qDebug() << "Authentication for user " << user << " failed!!";
             finishLogin(false);
         }
+    }
+
+    bool Display::beginTransition() {
+        // Identical Wayland executables still run as separate instances. Until
+        // a compositor handoff protocol is available, only shared X11 can keep
+        // its background. Restoring an existing session also uses a fade.
+        const bool preserveBackground = m_sharedX11 && m_reuseSessionId.isNull();
+        if (!m_socketServer->prepareTransition(m_socket, preserveBackground)) {
+            return false;
+        }
+
+        qDebug() << "Preparing greeter transition:"
+                 << (preserveBackground ? "preserve X11 background" : "fade to black");
+
+        m_auth->deferSessionStart();
+        m_transitionTimer->start();
+        return true;
+    }
+
+    void Display::completeTransition() {
+        m_transitionTimer->stop();
+
+        if (m_stopping) {
+            return;
+        }
+
+        if (!m_reuseSessionId.isNull()) {
+            activateReusableSession();
+        }
+
+        m_auth->resumeSessionStart();
     }
 
     void Display::activateReusableSession() {
@@ -885,6 +936,8 @@ namespace SDDM {
     }
 
     void Display::finishLogin(bool success) {
+        m_transitionTimer->stop();
+
         if (success) {
             if (mainConfig.Users.RememberLastUser.get())
                 stateConfig.Last.User.set(m_auth->user());

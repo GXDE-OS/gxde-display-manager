@@ -53,6 +53,9 @@ GreeterBackend::GreeterBackend(const QString& socket_name,
   connect(&socket_, &QLocalSocket::connected, this, [this] {
     emit ConnectedChanged();
     SendMessage(static_cast<quint32>(SDDM::GreeterMessages::Connect));
+    if (transitions_enabled_) {
+      EnableTransitions();
+    }
   });
   connect(&socket_, &QLocalSocket::readyRead, this,
           &GreeterBackend::ReadMessages);
@@ -66,6 +69,29 @@ GreeterBackend::GreeterBackend(const QString& socket_name,
   if (!socket_name.isEmpty()) {
     socket_.connectToServer(socket_name);
   }
+}
+
+void GreeterBackend::EnableTransitions() {
+  transitions_enabled_ = true;
+
+  if (IsConnected()) {
+    SendMessage(static_cast<quint32>(SDDM::GreeterMessages::EnableTransitions));
+  }
+}
+
+void GreeterBackend::FinishTransition() {
+  if (transition_pending_) {
+    emit TransitionFinished(preserve_background_);
+  }
+}
+
+void GreeterBackend::TransitionReady() {
+  if (!transition_pending_) {
+    return;
+  }
+
+  transition_pending_ = false;
+  SendMessage(static_cast<quint32>(SDDM::GreeterMessages::TransitionReady));
 }
 
 bool GreeterBackend::IsConnected() const {
@@ -118,6 +144,7 @@ void GreeterBackend::SetAuthenticating(bool authenticating) {
 }
 
 void GreeterBackend::HandleDisconnect() {
+  transition_pending_ = false;
   SetCapabilities(0);
   emit ConnectedChanged();
   if (authenticating_ && !login_succeeded_) {
@@ -233,6 +260,8 @@ void GreeterBackend::ReadMessages() {
       case SDDM::DaemonMessages::LastSession:
         input_ >> text;
         break;
+      case SDDM::DaemonMessages::FadeToBlack:
+      case SDDM::DaemonMessages::PreserveBackground:
       case SDDM::DaemonMessages::LoginSucceeded:
       case SDDM::DaemonMessages::LoginFailed:
         break;
@@ -246,7 +275,17 @@ void GreeterBackend::ReadMessages() {
     if (!input_.commitTransaction()) {
       return;
     }
-    if (static_cast<SDDM::DaemonMessages>(message) ==
+    const auto opcode = static_cast<SDDM::DaemonMessages>(message);
+    if (opcode == SDDM::DaemonMessages::FadeToBlack ||
+        opcode == SDDM::DaemonMessages::PreserveBackground) {
+      if (!authenticating_ || !transitions_enabled_) {
+        continue;
+      }
+
+      transition_pending_ = true;
+      preserve_background_ = opcode == SDDM::DaemonMessages::PreserveBackground;
+      emit PrepareTransition(preserve_background_);
+    } else if (static_cast<SDDM::DaemonMessages>(message) ==
         SDDM::DaemonMessages::Capabilities) {
       SetCapabilities(capabilities);
     } else if (static_cast<SDDM::DaemonMessages>(message) ==
@@ -256,9 +295,11 @@ void GreeterBackend::ReadMessages() {
     } else if (static_cast<SDDM::DaemonMessages>(message) ==
                SDDM::DaemonMessages::LoginFailed) {
       SetAuthenticating(false);
+      transition_pending_ = false;
       emit LoginFailed(tr("鉴权失败"));
     } else if (static_cast<SDDM::DaemonMessages>(message) ==
                SDDM::DaemonMessages::LoginSucceeded) {
+      transition_pending_ = false;
       login_succeeded_ = true;
       SetAuthenticating(false);
       emit LoginSucceeded();

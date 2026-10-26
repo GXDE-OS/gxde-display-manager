@@ -41,6 +41,10 @@ class GreeterBackend : public QObject {
   explicit GreeterBackend(const QString& socket_name,
                           const QVariantList& sessions = {},
                           QObject* parent = nullptr);
+  void EnableTransitions();
+  Q_INVOKABLE void FinishTransition();
+  void TransitionReady();
+  bool TransitionPending() const { return transition_pending_; }
   bool IsConnected() const;
   bool IsAuthenticating() const;
   QString LastSession() const;
@@ -50,6 +54,8 @@ class GreeterBackend : public QObject {
   Q_INVOKABLE void Request(const QString& action);
 
  signals:
+  void PrepareTransition(bool preserveBackground);
+  void TransitionFinished(bool preserveBackground);
   void ConnectedChanged();
   void AuthenticatingChanged();
   void LastSessionChanged();
@@ -72,6 +78,9 @@ class GreeterBackend : public QObject {
   quint32 capabilities_ = 0;
   QVariantList sessions_;
   QString last_session_;
+  bool transitions_enabled_ = false;
+  bool transition_pending_ = false;
+  bool preserve_background_ = false;
   bool authenticating_ = false;
   bool login_succeeded_ = false;
 };

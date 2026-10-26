@@ -152,6 +152,12 @@ namespace SDDM {
                     emit login(socket, user, password, session);
                 }
                 break;
+                case GreeterMessages::EnableTransitions:
+                    socket->setProperty("transitions", true);
+                    break;
+                case GreeterMessages::TransitionReady:
+                    emit transitionReady(socket);
+                    break;
                 case GreeterMessages::PowerOff: {
                     // log message
                     qDebug() << "Message received from greeter: PowerOff";
@@ -198,6 +204,19 @@ namespace SDDM {
             }
         }
 
+    }
+
+    bool SocketServer::prepareTransition(QLocalSocket *socket, bool preserveBackground) {
+        if (!socket || !socket->property("transitions").toBool()) {
+            return false;
+        }
+
+        const auto message = preserveBackground
+            ? DaemonMessages::PreserveBackground
+            : DaemonMessages::FadeToBlack;
+
+        SocketWriter(socket) << quint32(message);
+        return true;
     }
 
     void SocketServer::loginFailed(QLocalSocket *socket) {

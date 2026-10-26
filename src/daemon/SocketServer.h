@@ -49,12 +49,14 @@ namespace SDDM {
         void informationMessage(QLocalSocket *socket, const QString &message);
         void loginFailed(QLocalSocket *socket);
         void loginSucceeded(QLocalSocket *socket);
+        bool prepareTransition(QLocalSocket *socket, bool preserveBackground);
 
     signals:
         void login(QLocalSocket *socket,
                    const QString &user, const QString &password,
                    const Session &session);
         void connected();
+        void transitionReady(QLocalSocket *socket);
 
     private:
         QLocalServer *m_server { nullptr };

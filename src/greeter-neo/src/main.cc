@@ -33,6 +33,7 @@
 #include "common/GreeterCursor.h"
 #include "common/GreeterScale.h"
 #include "greeter-neo/src/greeter_backend.h"
+#include "greeter-neo/src/login_transition.h"
 #include "greeter-neo/src/screen_manager.h"
 #include "greeter-neo/src/session_list.h"
 #include "greeter-neo/src/utils/macros.h"
@@ -368,6 +369,8 @@ int main(int argc, char* argv[]) {
                    });
   QQmlApplicationEngine engine;
   gxde::greeter::ScreenManager screen_manager(socket_name.isEmpty());
+  gxde::greeter::LoginTransition login_transition(greeter_backend, screen_manager);
+
   const GxdeReleaseInfo gxde_release = detectGxdeRelease();
   const QStringList backgrounds = option_values("--background");
   const QString background_option = GxdmGreeterAppearance::readableImage(

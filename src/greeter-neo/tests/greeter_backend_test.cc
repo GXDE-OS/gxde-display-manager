@@ -40,6 +40,8 @@ class GreeterBackendTest : public QObject {
   Q_OBJECT
 
  private slots:
+  void Transition_data();
+  void Transition();
   void Authentication();
   void AuthenticationDisconnect();
   void RestoresLastSession_data();
@@ -133,6 +135,79 @@ class GreeterBackendTest : public QObject {
     QVERIFY(backend.AvailableActions().isEmpty());
   }
 };
+
+void GreeterBackendTest::Transition_data() {
+  QTest::addColumn<bool>("preserve");
+  QTest::newRow("shared-x11") << true;
+  QTest::newRow("cross-server") << false;
+}
+
+void GreeterBackendTest::Transition() {
+  QFETCH(bool, preserve);
+  QLocalServer server;
+  QVERIFY(server.listen("gxde-transition-" + QUuid::createUuid().toString()));
+  GreeterBackend backend(server.fullServerName(),
+      {QVariantMap{{"id", "x11/test.desktop"}, {"type", "x11"},
+                   {"file", "test.desktop"}}});
+
+  backend.EnableTransitions();
+  QSignalSpy prepare(&backend, &GreeterBackend::PrepareTransition);
+  QSignalSpy finished(&backend, &GreeterBackend::TransitionFinished);
+  QSignalSpy failed(&backend, &GreeterBackend::LoginFailed);
+  QTRY_VERIFY(server.hasPendingConnections());
+  auto* peer = server.nextPendingConnection();
+  QTRY_COMPARE(peer->bytesAvailable(), 8);
+  QDataStream input(peer);
+  quint32 message;
+  input >> message;
+  QCOMPARE(message, quint32(SDDM::GreeterMessages::Connect));
+  input >> message;
+  QCOMPARE(message, quint32(SDDM::GreeterMessages::EnableTransitions));
+  backend.Login("user", "password", "x11/test.desktop");
+  QTRY_VERIFY(peer->bytesAvailable() > 0);
+  peer->readAll();
+  QByteArray reply;
+  QDataStream output(&reply, QIODevice::WriteOnly);
+  output << quint32(preserve ? SDDM::DaemonMessages::PreserveBackground
+                            : SDDM::DaemonMessages::FadeToBlack);
+
+  peer->write(reply.left(2));
+  peer->flush();
+  QTest::qWait(10);
+  QCOMPARE(prepare.size(), 0);
+  peer->write(reply.mid(2));
+  peer->flush();
+  QTRY_COMPARE(prepare.size(), 1);
+  QCOMPARE(prepare.first().first().toBool(), preserve);
+  QVERIFY(backend.IsAuthenticating());
+  QCOMPARE(peer->bytesAvailable(), 0);
+  backend.FinishTransition();
+  QCOMPARE(finished.size(), 1);
+  QCOMPARE(peer->bytesAvailable(), 0); // Still waiting for the rendered frame.
+  backend.TransitionReady();
+  QTRY_COMPARE(peer->bytesAvailable(), 4);
+  input >> message;
+  QCOMPARE(message, quint32(SDDM::GreeterMessages::TransitionReady));
+  backend.TransitionReady();
+  QTest::qWait(10);
+  QCOMPARE(peer->bytesAvailable(), 0);
+
+  peer->write(reply); // A failure during another transition cancels its reply.
+  peer->flush();
+  QTRY_COMPARE(prepare.size(), 2);
+  reply.clear();
+  QDataStream failure(&reply, QIODevice::WriteOnly);
+  failure << quint32(SDDM::DaemonMessages::LoginFailed);
+  peer->write(reply);
+  peer->flush();
+  QTRY_COMPARE(failed.size(), 1);
+  backend.FinishTransition();
+  backend.TransitionReady();
+  QCOMPARE(finished.size(), 1);
+  QVERIFY(!backend.IsAuthenticating());
+  QTest::qWait(10);
+  QCOMPARE(peer->bytesAvailable(), 0);
+}
 
 void GreeterBackendTest::Authentication() {
   QLocalServer server;

@@ -43,6 +43,8 @@ qt_add_executable(gxde-greeter
   src/session_list.cc
   src/session_list.h
   src/main.cc
+  src/login_transition.cc
+  src/login_transition.h
   src/greeter_backend.cc
   src/greeter_backend.h
   src/screen_manager.cc
@@ -77,10 +79,7 @@ set_source_files_properties(qml/components/PowerMenu.qml PROPERTIES
 set_source_files_properties(qml/components/SessionMenu.qml PROPERTIES
   QT_RESOURCE_ALIAS SessionMenu.qml)
 
-qt_add_qml_module(gxde-greeter
-  URI Greeter
-  VERSION 1.0
-  QML_FILES
+set(GREETER_QML_FILES
     qml/MainWindow.qml
     qml/components/UserSelecter.qml
     qml/components/PasswordCard.qml
@@ -89,6 +88,12 @@ qt_add_qml_module(gxde-greeter
     qml/components/DtkFrame.qml
     qml/components/SessionMenu.qml
     qml/components/PowerMenu.qml
+)
+
+qt_add_qml_module(gxde-greeter
+  URI Greeter
+  VERSION 1.0
+  QML_FILES ${GREETER_QML_FILES}
 )
 
 set_target_properties(gxde-greeter PROPERTIES OUTPUT_NAME gxdm-greeter-neo)
@@ -144,7 +149,10 @@ if(GREETER_BUILD_TESTS)
     Qt6::Quick Qt6::Test)
   add_test(NAME screen-manager COMMAND screen-manager-test)
   qt_add_executable(greeter-qml-test tests/qml_test.cc ${GREETER_RESOURCES})
-  target_link_libraries(greeter-qml-test PRIVATE Qt6::QuickTest)
+  qt_add_resources(greeter-qml-test "transition-test-qml"
+    PREFIX "/transition-test"
+    FILES ${GREETER_QML_FILES})
+  target_link_libraries(greeter-qml-test PRIVATE Qt6::QuickTest Qt6::Quick)
   target_compile_definitions(greeter-qml-test PRIVATE
     QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/qml")
   add_test(NAME greeter-qml COMMAND greeter-qml-test -platform offscreen)

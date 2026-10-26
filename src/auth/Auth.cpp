@@ -68,6 +68,8 @@ namespace SDDM {
         QByteArray cookie { };
         bool autologin { false };
         bool greeter { false };
+        bool deferStart { false };
+        bool authenticationPending { false };
         QProcessEnvironment environment { };
         qint64 id { 0 };
         static qint64 lastId;
@@ -182,10 +184,12 @@ namespace SDDM {
                     str >> user;
                     if (!user.isEmpty()) {
                         auth->setUser(user);
+                        authenticationPending = true;
                         Q_EMIT auth->authentication(user, true);
-                        str.reset();
-                        str << AUTHENTICATED << environment << cookie;
-                        str.send();
+
+                        if (!deferStart) {
+                            auth->resumeSessionStart();
+                        }
                     }
                     else {
                         Q_EMIT auth->authentication(user, false);
@@ -234,6 +238,8 @@ namespace SDDM {
         else
             qWarning("Auth: sddm-helper exited with %d (mapped to %d)", exitCode, helperStatus);
 
+        authenticationPending = false;
+        deferStart = false;
         Q_EMIT qobject_cast<Auth*>(parent())->finished(helperStatus);
     }
 
@@ -375,7 +381,31 @@ namespace SDDM {
         }
     }
 
+    void Auth::deferSessionStart() {
+        d->deferStart = true;
+    }
+
+    void Auth::resumeSessionStart() {
+        d->deferStart = false;
+
+        if (!d->authenticationPending) {
+            return;
+        }
+
+        d->authenticationPending = false;
+        if (!d->socket || d->socket->state() != QLocalSocket::ConnectedState) {
+            return;
+        }
+
+        SafeDataStream str(d->socket);
+        str << AUTHENTICATED << d->environment << d->cookie;
+        str.send();
+    }
+
     void Auth::start() {
+        d->deferStart = false;
+        d->authenticationPending = false;
+
         QStringList args;
         args << QStringLiteral("--socket") << SocketServer::instance()->fullServerName();
         args << QStringLiteral("--id") << QString::number(d->id);
@@ -393,6 +423,9 @@ namespace SDDM {
     }
 
     void Auth::stop() {
+        d->deferStart = false;
+        d->authenticationPending = false;
+
         if (d->child->state() == QProcess::NotRunning) {
             return;
         }

@@ -127,3 +127,23 @@ target_include_directories(GreeterSettingsTest PRIVATE
 target_link_libraries(GreeterSettingsTest PRIVATE
     Qt${QT_MAJOR_VERSION}::Core Qt${QT_MAJOR_VERSION}::Test)
 add_test(NAME GreeterSettings COMMAND GreeterSettingsTest)
+
+# A private helper fixture exercises Auth's actual socket protocol without PAM.
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/auth-transition")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/auth-transition/Constants.h"
+    "#define LIBEXEC_INSTALL_DIR \"${CMAKE_CURRENT_BINARY_DIR}/auth-transition\"\n")
+add_executable(AuthTransitionTest
+    AuthTransitionTest.cpp
+    ../src/auth/Auth.cpp
+    ../src/auth/AuthRequest.cpp
+    ../src/auth/AuthPrompt.cpp
+    ../src/common/SafeDataStream.cpp)
+set_target_properties(AuthTransitionTest PROPERTIES
+    OUTPUT_NAME gxdm-helper
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/auth-transition")
+target_include_directories(AuthTransitionTest BEFORE PRIVATE
+    "${CMAKE_CURRENT_BINARY_DIR}/auth-transition" ../src/auth ../src/common)
+target_link_libraries(AuthTransitionTest PRIVATE
+    Qt${QT_MAJOR_VERSION}::Qml Qt${QT_MAJOR_VERSION}::Network Qt${QT_MAJOR_VERSION}::Test)
+add_test(NAME AuthTransition COMMAND AuthTransitionTest)
+set_tests_properties(AuthTransition PROPERTIES TIMEOUT 20)

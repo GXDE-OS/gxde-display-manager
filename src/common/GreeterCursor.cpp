@@ -60,6 +60,36 @@ void enforceWaylandCursorConfig() {
   qputenv(variable.constData(), disabledInterfaces.join(','));
 }
 
+bool preserveRootBackground() {
+  Display* display = XOpenDisplay(nullptr);
+  if (!display) {
+    return false;
+  }
+
+  const Window root = XDefaultRootWindow(display);
+  XWindowAttributes attributes;
+  if (!XGetWindowAttributes(display, root, &attributes)) {
+    XCloseDisplay(display);
+    return false;
+  }
+  const Pixmap pixmap = XCreatePixmap(display, root, attributes.width,
+                                      attributes.height, attributes.depth);
+  XGCValues values {};
+  values.subwindow_mode = IncludeInferiors;
+  const GC gc = XCreateGC(display, root, GCSubwindowMode, &values);
+
+  XCopyArea(display, root, pixmap, gc, 0, 0, attributes.width,
+            attributes.height, 0, 0);
+  XSetWindowBackgroundPixmap(display, root, pixmap);
+
+  // The root keeps its own reference until the desktop replaces the background.
+  XFreeGC(display, gc);
+  XFreePixmap(display, pixmap);
+  XSync(display, False);
+  XCloseDisplay(display);
+  return true;
+}
+
 bool setRootWindowWaitCursor(qreal devicePixelRatio) {
   Display* display = XOpenDisplay(nullptr);
   if (!display) {

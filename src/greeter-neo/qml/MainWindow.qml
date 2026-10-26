@@ -39,6 +39,24 @@ Item {
   property QtObject screenManager: null
   property bool sessionChosen: false
   property bool loginSucceeded: false
+  property bool transitioning: false
+  property bool preserveBackground: false
+  property real transitionProgress: 0
+
+  NumberAnimation {
+    id: loginTransition
+    target: root
+    property: "transitionProgress"
+    from: 0
+    to: 1
+    duration: 150
+    easing.type: Easing.InOutQuad
+    onFinished: {
+      if (root.greeterBackend) {
+        root.greeterBackend.FinishTransition()
+      }
+    }
+  }
   readonly property var availablePowerActions: greeterBackend
     ? greeterBackend.availableActions : []
   property bool virtualKeyboardRequested: false
@@ -79,28 +97,68 @@ Item {
     }
   }
 
+  property var backendConnections: []
+
+  function connectSignal(signal, handler) {
+    signal.connect(handler)
+    backendConnections.push({ signal: signal, handler: handler })
+  }
+
   Component.onCompleted: {
     if (screenManager) {
-      screenManager.CancelForwarded.connect(root.closeTopPopup)
+      connectSignal(screenManager.CancelForwarded, root.closeTopPopup)
     }
-    if (!greeterBackend) return
-    greeterBackend.RequestFailed.connect(function(message) {
-      powerError.text = message
-      powerErrorPopup.open()
-    })
-    greeterBackend.LoginFailed.connect(function(message) {
-      root.showPasswordError(message)
-    })
-    greeterBackend.InformationMessage.connect(function(message) {
-      passwordCard.errorText = message
-    })
-    greeterBackend.LoginSucceeded.connect(function() {
-      root.loginSucceeded = true
-      passwordCard.clearPassword()
-      root.virtualKeyboardRequested = false
-    })
-    greeterBackend.LastSessionChanged.connect(root.restoreSession)
+
+    if (!greeterBackend) {
+      return
+    }
+
+    connectSignal(greeterBackend.RequestFailed, root.handleRequestFailed)
+    if (greeterBackend.PrepareTransition) {
+      connectSignal(greeterBackend.PrepareTransition, root.handlePrepareTransition)
+    }
+
+    connectSignal(greeterBackend.LoginFailed, root.handleLoginFailed)
+    connectSignal(greeterBackend.InformationMessage, root.handleInformationMessage)
+    connectSignal(greeterBackend.LoginSucceeded, root.handleLoginSucceeded)
+    connectSignal(greeterBackend.LastSessionChanged, root.restoreSession)
     restoreSession()
+  }
+
+  Component.onDestruction: {
+    for (const connection of backendConnections) {
+      connection.signal.disconnect(connection.handler)
+    }
+  }
+
+  function handleRequestFailed(message) {
+    powerError.text = message
+    powerErrorPopup.open()
+  }
+
+  function handlePrepareTransition(preserve) {
+    root.preserveBackground = preserve
+    root.transitioning = true
+    passwordCard.clearPassword()
+    foregroundFadeIn.stop()
+    loginTransition.restart()
+  }
+
+  function handleLoginFailed(message) {
+    loginTransition.stop()
+    root.transitioning = false
+    root.transitionProgress = 0
+    root.showPasswordError(message)
+  }
+
+  function handleInformationMessage(message) {
+    passwordCard.errorText = message
+  }
+
+  function handleLoginSucceeded() {
+    root.loginSucceeded = true
+    passwordCard.clearPassword()
+    root.virtualKeyboardRequested = false
   }
 
   function moveScene() {
@@ -111,7 +169,7 @@ Item {
     scene.parent = target.contentItem
     if (Qt.platform.pluginName === "xcb") target.raise()
     target.requestActivate()
-    if (previous) foregroundFadeIn.restart()
+    if (previous && !root.transitioning) foregroundFadeIn.restart()
     if (focused && focused !== previous.contentItem) {
       focused.forceActiveFocus()
     } else if (passwordCard.opened) {
@@ -149,6 +207,19 @@ Item {
       height: 480
       title: "GXDM Greeter"
       color: "#101010"
+
+      Rectangle {
+        parent: screenWindow.Overlay.overlay
+        anchors.fill: parent
+        z: 100000
+        color: "black"
+        opacity: root.preserveBackground ? 0 : root.transitionProgress
+        visible: root.transitioning && !root.preserveBackground
+
+        MouseArea {
+          anchors.fill: parent
+        }
+      }
 
       GreeterBackground {
         anchors.fill: parent
@@ -208,6 +279,7 @@ Item {
   }
 
   function requestLogin() {
+    if (root.transitioning || root.loginSucceeded) return
     clockView.positionedAtTop = true
     root.loginRequested()
   }
@@ -226,6 +298,8 @@ Item {
 
     Popup {
       id: powerErrorPopup
+      opacity: root.preserveBackground ? 1 - root.transitionProgress : 1
+      enabled: !root.transitioning
       parent: scene
       anchors.centerIn: parent
       width: Math.min(420, scene.width - 40)
@@ -252,6 +326,7 @@ Item {
 
     Item {
       id: windowContent
+      enabled: !root.transitioning
 
       anchors.fill: parent
 
@@ -265,6 +340,7 @@ Item {
 
       Item {
         id: foreground
+        opacity: root.preserveBackground ? 1 - root.transitionProgress : 1
 
         anchors.fill: parent
 
@@ -510,6 +586,8 @@ Item {
 
     SessionMenu {
       id: sessionMenu
+      opacity: root.preserveBackground ? 1 - root.transitionProgress : 1
+      enabled: !root.transitioning
 
       readonly property point anchor: {
         operationView.x
@@ -543,6 +621,8 @@ Item {
 
     PowerMenu {
       id: powerMenu
+      opacity: root.preserveBackground ? 1 - root.transitionProgress : 1
+      enabled: !root.transitioning
 
       readonly property point anchor: {
         operationView.x
@@ -572,6 +652,7 @@ Item {
 
       anchors.fill: parent
       focus: true
+      enabled: !root.transitioning
 
       Component.onCompleted: forceActiveFocus()
 
@@ -593,6 +674,8 @@ Item {
 
     PasswordCard {
       id: passwordCard
+      opacity: root.preserveBackground ? 1 - root.transitionProgress : 1
+      enabled: !root.transitioning
 
       property int userIndex: -1
       property var user: null
@@ -619,6 +702,8 @@ Item {
 
     Popup {
       id: virtualKeyboard
+      opacity: root.preserveBackground ? 1 - root.transitionProgress : 1
+      enabled: !root.transitioning
 
       property real slide: 0
 
