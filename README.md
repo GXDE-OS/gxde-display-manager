@@ -153,6 +153,7 @@ GXDM exposes lock-shortcut and global greeter appearance controls on the session
 | Method | Description |
 | --- | --- |
 | `TryEnrollLkScr(bool enabled) -> bool` | Registers or withdraws the Super+L GXDM lock shortcut. An existing Super+L binding is never stolen. |
+| `UnregisterLkScr()` | Withdraws Super+L and stops automatic re-enrollment for the current locker process. |
 | `LkScrStat() -> bool` | Returns whether GXDM successfully owns the Super+L shortcut. |
 | `Show()` | Shows the GXDM lock screen. |
 | `SetCursor(string theme) -> bool` | Sets the global greeter cursor theme. The theme must already be installed. |
@@ -166,6 +167,8 @@ GXDM exposes lock-shortcut and global greeter appearance controls on the session
 | `GreeterDisplayServer() -> string` | Returns the persisted greeter display server. |
 | `SetNeoGreeterEnabled(bool enabled) -> bool` | Enables the new QML greeter (default: true); false selects the classic greeter. |
 | `NeoGreeterEnabled() -> bool` | Returns the persisted greeter selection. |
+
+The lock service attempts to register Super+L on all systems by default, and will abort when attempt fails.
 
 New greeter switch on the system bus:
 
@@ -188,6 +191,11 @@ Examples:
 busctl --user call top.gxde.DisplayManager \
   /top/gxde/DisplayManager top.gxde.DisplayManager \
   TryEnrollLkScr b true
+
+# Unregister Super+L
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  UnregisterLkScr
 
 # Query the Super+L state
 busctl --user call top.gxde.DisplayManager \

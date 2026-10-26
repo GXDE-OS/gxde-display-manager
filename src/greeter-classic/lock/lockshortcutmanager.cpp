@@ -188,12 +188,17 @@ void LockShortcutManager::refreshLockWallpaper() {
 void LockShortcutManager::onGlobalShortcutPressed(
     const QString& component, const QString& action, qlonglong timestamp) {
   Q_UNUSED(timestamp)
-  if (component == kComponent && action == kAction) showLock();
+  if (m_enrollmentRequested && m_registered
+      && component == kComponent && action == kAction) {
+    showLock();
+  }
 }
 
 void LockShortcutManager::onShortcutsChanged(
     const QStringList& changedActionId, const DBusKeySequenceList& keys) {
-  if (changedActionId == actionId()) setRegistered(containsSuperL(keys));
+  if (m_enrollmentRequested && changedActionId == actionId()) {
+    setRegistered(containsSuperL(keys));
+  }
 }
 
 void LockShortcutManager::onKGlobalAccelOwnerChanged(
@@ -204,11 +209,17 @@ void LockShortcutManager::onKGlobalAccelOwnerChanged(
   m_componentPath.clear();
   setRegistered(false);
   if (m_enrollmentRequested && !newOwner.isEmpty()) {
-    QTimer::singleShot(0, this, [this] { enroll(); });
+    QTimer::singleShot(0, this, [this] {
+      enroll();
+    });
   }
 }
 
 bool LockShortcutManager::enroll() {
+  if (!m_enrollmentRequested) {
+    return false;
+  }
+
   QDBusInterface interface(kKGlobalAccelService, kKGlobalAccelPath,
       kKGlobalAccelInterface, QDBusConnection::sessionBus());
 
@@ -330,6 +341,10 @@ GxdeDisplayManagerService::GxdeDisplayManagerService(
 
 bool GxdeDisplayManagerService::TryEnrollLkScr(bool enabled) {
   return m_manager->tryEnroll(enabled);
+}
+
+void GxdeDisplayManagerService::UnregisterLkScr() {
+  m_manager->tryEnroll(false);
 }
 
 bool GxdeDisplayManagerService::LkScrStat() const {

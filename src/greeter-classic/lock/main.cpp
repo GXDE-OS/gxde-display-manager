@@ -42,7 +42,6 @@
 #include "lockworker.h"
 #include "sessionbasemodel.h"
 #include "propertygroup.h"
-#include "SystemDefaults.h"
 
 #include <QLabel>
 #include <QScreen>
@@ -149,16 +148,12 @@ int main(int argc, char *argv[])
     cmdParser.addOption(switchUser);
     QCommandLineOption autoEnroll(
         QStringLiteral("auto-enroll"),
-        QStringLiteral("run on GXDE and enroll the lock shortcut"));
+        QStringLiteral("enroll the lock shortcut (enabled by default)"));
     cmdParser.addOption(autoEnroll);
     cmdParser.process(app);
 
     const bool runDaemon = cmdParser.isSet(backend);
     const bool showUserList = cmdParser.isSet(switchUser);
-    const bool isGxde = GxdmSystemDefaults::isGxdeOperatingSystem();
-
-    if (cmdParser.isSet(autoEnroll) && !isGxde)
-        return 0;
 
     if (!app.setSingleInstance(
             QStringLiteral("gxdm-lock-classic"), DApplication::UserScope)) {
@@ -313,9 +308,9 @@ int main(int argc, char *argv[])
         conn.registerObject(QStringLiteral("/ScreenSaver"), &agent);
     }
 
-    if (isGxde)
-        QTimer::singleShot(0, &shortcutManager,
-            [&shortcutManager] { shortcutManager.tryEnroll(true); });
+    QTimer::singleShot(0, &shortcutManager, [&shortcutManager] {
+        shortcutManager.tryEnroll(true);
+    });
 
     if (!runDaemon) {
         if (showUserList) {

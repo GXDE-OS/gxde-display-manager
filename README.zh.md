@@ -153,6 +153,7 @@ GXDM通过会话总线提供锁屏快捷键和全局Greeter外观设置。应用
 | 方法 | 说明 |
 | --- | --- |
 | `TryEnrollLkScr(bool enabled) -> bool` | 尝试注册或注销Super+L GXDM锁屏快捷键。已有程序占用Super+L时不会抢占。 |
+| `UnregisterLkScr()` | 取消Super+L注册。 |
 | `LkScrStat() -> bool` | 返回Super+L是否已由GXDM成功注册。 |
 | `Show()` | 显示GXDM锁屏界面。 |
 | `SetCursor(string theme) -> bool` | 设置全局Greeter光标主题。主题必须已经安装。 |
@@ -166,6 +167,8 @@ GXDM通过会话总线提供锁屏快捷键和全局Greeter外观设置。应用
 | `GreeterDisplayServer() -> string` | 返回当前持久化的Greeter显示服务器。 |
 | `SetNeoGreeterEnabled(bool enabled) -> bool` | 是否启用新版 QML greeter，默认 true；false 切回经典版。 |
 | `NeoGreeterEnabled() -> bool` | 返回已保存的新版 greeter 开关。 |
+
+锁屏服务默认在所有系统尝试注册 Super+L；已被其他程序占用时不抢占。
 
 新版 greeter 开关（系统总线）：
 
@@ -188,6 +191,11 @@ busctl call top.gxde.DisplayManager /top/gxde/DisplayManager \
 busctl --user call top.gxde.DisplayManager \
   /top/gxde/DisplayManager top.gxde.DisplayManager \
   TryEnrollLkScr b true
+
+# 取消Super+L注册
+busctl --user call top.gxde.DisplayManager \
+  /top/gxde/DisplayManager top.gxde.DisplayManager \
+  UnregisterLkScr
 
 # 查询Super+L状态
 busctl --user call top.gxde.DisplayManager \
