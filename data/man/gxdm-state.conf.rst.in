@@ -44,7 +44,10 @@ The following options are configured in the [Greeter] section:
 
 `Wallpaper=`
 	Global wallpaper used by the greeter. The value can be an absolute path
-	or a Qt resource path bundled with the greeter.
+	or a Qt resource path bundled with the greeter. When unset or empty, the
+	greeter follows the current user's wallpaper (lock-screen override,
+	AccountsService data, then the desktop wallpaper) so it stays consistent
+	with the lock screen.
 
 SEE ALSO
 ========

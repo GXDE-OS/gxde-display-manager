@@ -132,9 +132,21 @@ namespace SDDM {
             for (const QString& directory : mainConfig.Wayland.SessionDir.get()) {
                 args << QStringLiteral("--wayland-session-dir") << directory;
             }
-            const QString wallpaper = stateConfig.Greeter.Wallpaper.get();
+            // 只转发用户显式配置的全局壁纸。stateConfig 在未配置时会回落到
+            // 内置默认图，直接转发会把 Greeter 锁死在默认壁纸上，忽略当前
+            // 用户的锁屏/桌面壁纸（锁屏与登录界面因此不一致）。
+            // Only forward an explicitly configured global wallpaper. The
+            // state config falls back to the built-in default when unset;
+            // forwarding that default would pin the greeter to it and hide
+            // the wallpaper the user actually picked.
+            const QString wallpaper = gxde::ConfiguredGreeterWallpaper();
             if (!wallpaper.isEmpty()) {
+                qInfo() << "(Frontend) Greeter: Using global wallpaper"
+                        << wallpaper;
                 args << QStringLiteral("--background") << wallpaper;
+            } else {
+                qInfo() << "(Frontend) Greeter: Following the current user's"
+                           " wallpaper";
             }
         }
 

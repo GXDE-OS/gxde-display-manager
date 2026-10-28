@@ -182,7 +182,7 @@ busctl call top.gxde.DisplayManager /top/gxde/DisplayManager \
 开关保存为 `gxdm.conf` 的 `[General] EnableNeoGreeter`，下次启动 greeter 生效。传入 `true` 可重新启用。成功保存后发出 `NeoGreeterEnabledChanged(bool)` 信号。新版程序缺失时回退经典版。可用 `gxdm-greeter-neo --test-mode` 预览。虚拟键盘需要同时安装 Qt Virtual Keyboard 的 QML 模块和输入法插件。
 
 
-**注意：**Greeter只使用一份全局壁纸。锁屏壁纸优先级为：当前用户的`LockWallpaperOverride`、当前用户的Deepin `GreeterBackground`、GSettings桌面壁纸、全局Greeter壁纸/默认壁纸。所有壁纸设置在持久化成功后立即刷新当前Greeter或锁屏。自定义图片和override必须是可识别的图像且不大于128 MiB；全局Greeter壁纸复制到`~gxdm`。用户锁屏override会保存两份：`~/.local/share/gxdm/lock-wallpaper-override`供会话内锁屏使用，`~gxdm/lock-wallpaper-override-<uid>`供Greeter使用（即使用户主目录不可进入，例如权限为`0700`，Greeter也能读取），均不依赖原始图片继续存在。`SetGreeterDisplayServer`会在下次创建Greeter显示时生效。
+**注意：**Greeter 只在显式配置了全局壁纸（`state.conf` 的 `[Greeter] Wallpaper` 非空）时才使用这份全局壁纸；未配置时新版 Greeter 会跟随当前用户的壁纸链，与锁屏保持一致。锁屏/用户壁纸优先级为：当前用户的`LockWallpaperOverride`、当前用户的Deepin `GreeterBackground`/`BackgroundFile`、Deepin `DesktopBackgrounds`（与 GSettings 桌面壁纸同源）、AccountsService、GSettings桌面壁纸、全局Greeter壁纸/默认壁纸。所有壁纸设置在持久化成功后立即刷新当前Greeter或锁屏。自定义图片和override必须是可识别的图像且不大于128 MiB；全局Greeter壁纸复制到`~gxdm`。用户锁屏override会保存两份：`~/.local/share/gxdm/lock-wallpaper-override`供会话内锁屏使用，`~gxdm/lock-wallpaper-override-<uid>`供Greeter使用（即使用户主目录不可进入，例如权限为`0700`，Greeter也能读取），均不依赖原始图片继续存在。`SetGreeterDisplayServer`会在下次创建Greeter显示时生效。
 
 常用调用示例：
 

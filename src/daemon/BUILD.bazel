@@ -100,6 +100,7 @@ qt_cc_binary(
         "DisplayServer.cpp",
         "LogindDBusTypes.cpp",
         "Greeter.cpp",
+        "greeter_settings.cc",
         "PowerManager.cpp",
         "Seat.cpp",
         "SeatManager.cpp",
@@ -139,5 +140,6 @@ qt_cc_binary(
         _cpp_moc_lib,
         "//src/auth:auth",
         "//src/common:common",
+        "//src/common:constants",
     ],
 )

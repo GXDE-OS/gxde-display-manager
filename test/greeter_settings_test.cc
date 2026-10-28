@@ -41,6 +41,7 @@ class GreeterSettingsTest : public QObject {
  private slots:
   void Persistence();
   void Selection();
+  void WallpaperSelection();
 };
 
 void GreeterSettingsTest::Persistence() {
@@ -102,6 +103,36 @@ void GreeterSettingsTest::Selection() {
   QVERIFY(QFile::remove(classic));
   QCOMPARE(gxde::GreeterExecutable(false, directory.path(), 6),
            directory.filePath(QStringLiteral("gxdm-greeter-qt6")));
+}
+
+void GreeterSettingsTest::WallpaperSelection() {
+  QTemporaryDir directory;
+  QVERIFY(directory.isValid());
+  const QString statePath = directory.filePath(QStringLiteral("state.conf"));
+
+  QCOMPARE(gxde::StateConfigPath(directory.path()), statePath);
+  // 未配置 [Greeter] Wallpaper：必须返回空，让 Greeter 跟随用户壁纸，
+  // 而不是把内置默认图转发成 --background。
+  QCOMPARE(gxde::ConfiguredGreeterWallpaper(statePath), QString());
+
+  QFile file(statePath);
+  QVERIFY(file.open(QIODevice::WriteOnly));
+  file.write("[Last]\nUser=shenmo-ikun\n");
+  file.close();
+  QCOMPARE(gxde::ConfiguredGreeterWallpaper(statePath), QString());
+
+  // ClearWallpaper 写入的空值同样视为未配置。
+  QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+  file.write("[Greeter]\nWallpaper=\n");
+  file.close();
+  QCOMPARE(gxde::ConfiguredGreeterWallpaper(statePath), QString());
+
+  // 显式配置的全局壁纸需要原样返回（去掉首尾空白）。
+  QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+  file.write("[Greeter]\nWallpaper= /var/lib/gxdm/greeter-wallpaper \n");
+  file.close();
+  QCOMPARE(gxde::ConfiguredGreeterWallpaper(statePath),
+           QStringLiteral("/var/lib/gxdm/greeter-wallpaper"));
 }
 
 }

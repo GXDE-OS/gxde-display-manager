@@ -27,21 +27,37 @@ bool isReadableFile(const QString& path) {
   return file.open(QIODevice::ReadOnly);
 }
 
-// GreeterBackground, falling back to BackgroundFile, of an Accounts user
-// object; both the Deepin daemon and the deepin/GXDE accounts-service fork
-// expose them.
+// GreeterBackground, falling back to BackgroundFile, and finally to the
+// user's desktop wallpaper list, of an Accounts user object. The Deepin
+// daemon is the only one exposing DesktopBackgrounds, which mirrors the
+// GSettings desktop wallpaper the in-session locker reads; keeping it here
+// lets the greeter (running as gxdm, without access to the user's dconf)
+// resolve the very same image.
 QString accountsUserBackground(const QString& service, const QString& path,
     const QString& interface) {
   QDBusInterface user(service, path, interface,
     QDBusConnection::systemBus());
   if (!user.isValid()) return QString();
 
-  const QString background = GxdmGreeterAppearance::readableImage(
-    user.property("GreeterBackground").toString());
-  return background.isEmpty()
-    ? GxdmGreeterAppearance::readableImage(
-        user.property("BackgroundFile").toString())
-    : background;
+  const QStringList properties = {
+    QStringLiteral("GreeterBackground"),
+    QStringLiteral("BackgroundFile"),
+  };
+  for (const QString& property : properties) {
+    const QByteArray name = property.toLatin1();
+    const QString background =
+      GxdmGreeterAppearance::readableImage(user.property(name.constData()).toString());
+    if (!background.isEmpty()) return background;
+  }
+
+  const QStringList desktopBackgrounds =
+    user.property("DesktopBackgrounds").toStringList();
+  for (const QString& desktopBackground : desktopBackgrounds) {
+    const QString background =
+      GxdmGreeterAppearance::readableImage(desktopBackground);
+    if (!background.isEmpty()) return background;
+  }
+  return QString();
 }
 
 QString deepinAccountsLockBackground(const QString& userName) {

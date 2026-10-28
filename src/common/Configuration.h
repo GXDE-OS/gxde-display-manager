@@ -116,8 +116,14 @@ namespace SDDM {
 
         Section(Greeter,
             Entry(CursorTheme,     QString,     QString(),                                      _S("Global cursor theme used by the greeter."));
-            Entry(Wallpaper,       QString,     _S("/usr/share/backgrounds/default_background.jpg"),
-                                                                                                 _S("Global wallpaper used by the greeter."));
+            // 空值表示“未配置”：Greeter 跟随当前用户的锁屏/桌面壁纸链。
+            // 只有显式写入路径（SetWallpaper / SetWallpaperGXDEDefault）时，
+            // 才把全局壁纸作为 --background 传给新版 Greeter，否则会盖掉用户壁纸。
+            // Empty means "not configured": the greeter follows the current
+            // user's lock/desktop wallpaper chain. Only an explicitly written
+            // path is forwarded to the new greeter as --background.
+            Entry(Wallpaper,       QString,     QString(),
+                                                                                                 _S("Global wallpaper used by the greeter. Empty follows the current user's wallpaper."));
         );
     );
 

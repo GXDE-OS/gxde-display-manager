@@ -19,11 +19,16 @@
 
 #include "greeter_settings.h"
 
+#include "Constants.h"
+
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QSaveFile>
+#include <QSettings>
 #include <QStringList>
+
+#include <pwd.h>
 
 namespace gxde {
 namespace {
@@ -73,6 +78,26 @@ QString GreeterExecutable(bool neo_enabled, const QString& bin_directory,
   if (QFileInfo(classic_path).isExecutable()) return classic_path;
   return directory.filePath(qt_major == 5 ? QStringLiteral("gxdm-greeter")
                                           : QStringLiteral("gxdm-greeter-qt6"));
+}
+
+QString StateConfigPath(const QString& state_directory) {
+  QString directory = state_directory;
+  if (directory.isEmpty()) {
+    const passwd* gxdm_user = getpwnam("gxdm");
+    directory = gxdm_user && gxdm_user->pw_dir
+                    ? QString::fromLocal8Bit(gxdm_user->pw_dir)
+                    : QStringLiteral(STATE_DIR);
+  }
+  return directory + QStringLiteral("/state.conf");
+}
+
+QString ConfiguredGreeterWallpaper(const QString& state_config_path) {
+  const QString path = state_config_path.isEmpty() ? StateConfigPath()
+                                                   : state_config_path;
+  const QSettings settings(path, QSettings::IniFormat);
+  return settings.value(QStringLiteral("Greeter/Wallpaper"), QString())
+      .toString()
+      .trimmed();
 }
 
 bool SaveGeneralSetting(const QString& config_path, const QString& key,
