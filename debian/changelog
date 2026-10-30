@@ -1,3 +1,11 @@
+gxde-display-manager-se (1.3.5-gxde1) unstable; urgency=medium
+
+  * 新版 Greeter 在只有一个用户时默认选中该用户：退出时间窗口后再次
+    回车或点击头像即可展开登录框
+  * 保留“未列出？”入口，未出现在用户列表中的账户仍可手动登录
+
+ -- shenmo <shenmo@spark-app.store>  Fri, 30 Oct 2026 22:09:00 +0800
+
 gxde-display-manager-se (1.3.4-gxde2) unstable; urgency=medium
 
   * 修复未配置全局壁纸时新版 Greeter 被强加上内置默认壁纸的问题
