@@ -278,10 +278,19 @@ Item {
     authFailureGlow.flash()
   }
 
+  // 只有一个用户时没有可挑选的对象，默认选中该用户：退出时间窗口后再次
+  // 回车或点击头像即可展开登录框，同时保留“未列出？”入口给列表外的账户。
+  function selectSingleUser() {
+    if (userSelecter.modelCount() === 1) {
+      userSelecter.currentIndex = 0
+    }
+  }
+
   function requestLogin() {
     if (root.transitioning || root.loginSucceeded) return
     clockView.positionedAtTop = true
     root.loginRequested()
+    root.selectSingleUser()
   }
 
   Timer {
@@ -660,6 +669,9 @@ Item {
         if (event.key === Qt.Key_Escape) {
           clockView.positionedAtTop = false
           root.virtualKeyboardRequested = false
+        } else if (clockView.positionedAtTop
+            && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
+          userSelecter.confirmUser(userSelecter.currentIndex)
         } else {
           root.requestLogin()
         }
