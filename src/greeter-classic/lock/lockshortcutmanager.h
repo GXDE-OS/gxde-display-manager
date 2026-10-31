@@ -70,6 +70,8 @@ class GxdeDisplayManagerService : public QDBusAbstractAdaptor {
   Q_PROPERTY(bool LkScrStat READ LkScrStat NOTIFY LkScrStatChanged)
   Q_PROPERTY(QString GreeterDisplayServer READ GreeterDisplayServer)
   Q_PROPERTY(QString LockWallpaperOverride READ LockWallpaperOverride)
+  Q_PROPERTY(QString LockScreenStyle READ LockScreenStyle
+                 NOTIFY LockScreenStyleChanged)
 
  public:
   explicit GxdeDisplayManagerService(LockShortcutManager* manager);
@@ -90,10 +92,18 @@ class GxdeDisplayManagerService : public QDBusAbstractAdaptor {
   QString GreeterDisplayServer() const;
   bool SetNeoGreeterEnabled(bool enabled);
   bool NeoGreeterEnabled() const;
+  // "classic" or "modern". Persisted by the system daemon; the running locker
+  // hands off to the matching binary the next time the screen is unlocked.
+  bool SetLockScreenStyle(const QString& style);
+  QString LockScreenStyle() const;
   void Show();
 
  signals:
   void LkScrStatChanged(bool registered);
+  void LockScreenStyleChanged(const QString& style);
+
+ private slots:
+  void onSystemLockScreenStyleChanged(const QString& style);
 
  private:
   LockShortcutManager* m_manager = nullptr;

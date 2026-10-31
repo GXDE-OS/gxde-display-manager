@@ -43,7 +43,13 @@
 #include "sessionbasemodel.h"
 #include "propertygroup.h"
 
+#include "Constants.h"
+#include "lockstyle.h"
+#include "lockstylemanager.h"
+
 #include <QLabel>
+#include <QFile>
+#include <QFileInfo>
 #include <QScreen>
 #include <QWindow>
 #include <dapplication.h>
@@ -51,6 +57,7 @@
 #include <QTimer>
 #include <QtGui/qguiapplication_platform.h>
 #include <wayland-client.h>
+
 #include <memory>
 // PATCHS
 // Qt6: removed `#include <QDesktopWidget>` (QDesktopWidget no longer exists)
@@ -81,6 +88,59 @@ bool shouldUseX11(int argc, char *argv[])
         || requestedPlatform.startsWith("dxcb")
         || (requestedPlatform.isEmpty()
             && !qEnvironmentVariableIsSet("WAYLAND_DISPLAY"));
+}
+
+// The handoff runs before QApplication exists, so QCoreApplication's
+// applicationDirPath() is unavailable. /proc/self/exe is Linux-specific but
+// this locker already depends on Linux/FreeBSD session APIs; on failure we
+// simply keep the classic frontend.
+QString executableDirectory()
+{
+    const QFileInfo self(QStringLiteral("/proc/self/exe"));
+    const QString target = self.symLinkTarget();
+    if (!target.isEmpty()) {
+        return QFileInfo(target).absolutePath();
+    }
+    return QFileInfo(self.canonicalFilePath()).absolutePath();
+}
+
+bool shouldHandOffToNeo(int argc, char *argv[])
+{
+    if (qEnvironmentVariableIsSet("GXDM_LOCK_NO_HANDOFF")) {
+        return false;
+    }
+
+    for (int i = 1; i < argc; ++i) {
+        const QByteArray argument(argv[i]);
+        if (argument == "--help" || argument == "-h"
+            || argument == "--version" || argument == "-v") {
+            return false;
+        }
+    }
+
+    const QString gxdmConfig = qEnvironmentVariable(
+        "GXDM_LOCK_GXDM_CONF", QStringLiteral(CONFIG_FILE));
+    const QString omgConfig = qEnvironmentVariable(
+        "GXDM_LOCK_OMG_CONF", QStringLiteral("/etc/gxdm/OMG.conf"));
+
+    const gxde::lock::LockStyle style =
+        gxde::lock::LockStyleResolver::ResolveFromFiles(
+            gxdmConfig, omgConfig, executableDirectory());
+    return style == gxde::lock::LockStyle::kModern;
+}
+
+void execNeo(int argc, char *argv[])
+{
+    const QString path = gxde::lock::LockStyleResolver::ExecutablePath(
+        gxde::lock::LockStyle::kModern, executableDirectory());
+
+    qInfo() << "Handing off to the QML lock screen:" << path;
+
+    QList<QByteArray> arguments;
+    for (int i = 1; i < argc; ++i) {
+        arguments << QByteArray(argv[i]);
+    }
+    gxde::lock::ExecLockScreen(path, arguments);
 }
 
 void roundtripWaylandDisplay() {
@@ -117,6 +177,12 @@ void configureLayerShell(LockFrame* lockFrame) {
 
 int main(int argc, char *argv[])
 {
+    if (shouldHandOffToNeo(argc, argv)) {
+        execNeo(argc, argv);
+        // execNeo() only returns when the new binary could not be started;
+        // keep the classic locker as a safe fallback.
+    }
+
     const bool useX11 = shouldUseX11(argc, argv);
     if (useX11) {
         DApplication::loadDXcbPlugin();
@@ -311,6 +377,43 @@ int main(int argc, char *argv[])
     QTimer::singleShot(0, &shortcutManager, [&shortcutManager] {
         shortcutManager.tryEnroll(true);
     });
+
+    // Runtime style switch: SetLockScreenStyle() goes through the GXDM daemon,
+    // which broadcasts LockScreenStyleChanged. Once the lock screen is hidden
+    // the classic locker releases its names and execs the configured locker
+    // in daemon mode.
+    gxde::lock::LockStylePaths stylePaths =
+        gxde::lock::LockStyleResolver::DefaultPaths();
+    stylePaths.gxdmConfig = qEnvironmentVariable(
+        "GXDM_LOCK_GXDM_CONF", stylePaths.gxdmConfig);
+    stylePaths.omgConfig = qEnvironmentVariable(
+        "GXDM_LOCK_OMG_CONF", stylePaths.omgConfig);
+    gxde::lock::LockStyleManager styleManager(
+        model, gxde::lock::LockStyle::kClassic, stylePaths);
+    QObject::connect(&displayManagerService,
+                     &GxdeDisplayManagerService::LockScreenStyleChanged,
+                     &styleManager, &gxde::lock::LockStyleManager::Refresh);
+    QObject::connect(
+        &styleManager, &gxde::lock::LockStyleManager::HandoffRequested,
+        &app, [&](const QString &executable) {
+            qInfo() << "Lock screen style changed; handing off to"
+                    << executable;
+            const QStringList names{
+                kGxdeDisplayManagerService,
+                DBUS_NAME,
+                QStringLiteral("org.freedesktop.ScreenSaver"),
+            };
+            for (const QString &name : names) {
+                conn.unregisterService(name);
+            }
+            gxde::lock::ExecLockScreen(executable, {QByteArrayLiteral("--daemon")});
+
+            // exec failed: take the names back and keep running.
+            conn.registerService(kGxdeDisplayManagerService);
+            conn.registerService(DBUS_NAME);
+            conn.registerService(QStringLiteral("org.freedesktop.ScreenSaver"));
+        },
+        Qt::QueuedConnection);
 
     if (!runDaemon) {
         if (showUserList) {

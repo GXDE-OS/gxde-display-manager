@@ -101,6 +101,10 @@ void LockWorker::authUser(const QString& password) {
     m_auth->start();
 }
 
+bool LockWorker::IsAuthenticating() const {
+    return m_authenticating;
+}
+
 void LockWorker::enableZoneDetected(bool disable) {
     // Hot-zone (com.deepin.daemon.Zone) removed; nothing to do.
     Q_UNUSED(disable)
@@ -153,15 +157,19 @@ void LockWorker::onAuthentication(const QString& user, bool ok) {
     // 将电源操作交由 gxdm daemon 处理，而不是仅执行解锁。
     switch (m_model->powerAction()) {
     case SessionBaseModel::RequireShutdown:
+        emit powerActionRequested(QStringLiteral("shutdown"));
         requestGxdmPowerAction(QStringLiteral("PowerOff"));
         return;
     case SessionBaseModel::RequireRestart:
+        emit powerActionRequested(QStringLiteral("reboot"));
         requestGxdmPowerAction(QStringLiteral("Reboot"));
         return;
     case SessionBaseModel::RequireSuspend:
+        emit powerActionRequested(QStringLiteral("suspend"));
         requestGxdmPowerAction(QStringLiteral("Suspend"));
         return;
     case SessionBaseModel::RequireHibernate:
+        emit powerActionRequested(QStringLiteral("hibernate"));
         requestGxdmPowerAction(QStringLiteral("Hibernate"));
         return;
     case SessionBaseModel::RequireNormal:

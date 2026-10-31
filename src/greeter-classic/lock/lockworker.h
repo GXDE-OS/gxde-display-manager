@@ -24,7 +24,15 @@ public:
     void switchToUser(std::shared_ptr<User> user) override;
     void authUser(const QString &password) override;
 
+    bool IsAuthenticating() const override;
+
     void enableZoneDetected(bool disable);  // hot-zone removed; kept as no-op
+
+signals:
+    // Emitted when a successful authentication is about to perform a power
+    // action instead of simply unlocking the session. The QML frontend uses
+    // this to leave its busy state and show progress.
+    void powerActionRequested(const QString &action);
 
 private:
     void onUserAdded(const QString &user) override;

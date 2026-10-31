@@ -108,6 +108,7 @@ qt_cc_binary(
         "XorgDisplayServer.cpp",
         "XorgUserDisplayServer.cpp",
         "WaylandDisplayServer.cpp",
+        "greeter_settings.cc",
         # generated headers (needed as inputs)
         "config.h",
         "displaymanageradaptor.h",
@@ -141,5 +142,6 @@ qt_cc_binary(
         "//src/auth:auth",
         "//src/common:common",
         "//src/common:constants",
+        "//src/lock-common:lock_style",
     ],
 )

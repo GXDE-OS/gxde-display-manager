@@ -167,6 +167,8 @@ GXDM exposes lock-shortcut and global greeter appearance controls on the session
 | `GreeterDisplayServer() -> string` | Returns the persisted greeter display server. |
 | `SetNeoGreeterEnabled(bool enabled) -> bool` | Enables the new QML greeter (default: true); false selects the classic greeter. |
 | `NeoGreeterEnabled() -> bool` | Returns the persisted greeter selection. |
+| `SetLockScreenStyle(string style) -> bool` | Persists the lock screen style (`classic` or `modern`) through the system daemon. Fails if the style's binary is not installed. |
+| `LockScreenStyle() -> string` | Returns the effective lock screen style. |
 
 The lock service attempts to register Super+L on all systems by default, and will abort when attempt fails.
 
@@ -180,6 +182,56 @@ busctl call top.gxde.DisplayManager /top/gxde/DisplayManager \
 ```
 
 The switch is stored as `[General] EnableNeoGreeter` in `gxdm.conf` and takes effect on the next greeter start. Pass `true` to re-enable it. The daemon emits `NeoGreeterEnabledChanged(bool)` after saving successfully. Missing new greeter binaries fall back to the classic greeter. Preview with `gxdm-greeter-neo --test-mode`. Qt Virtual Keyboard requires both its QML module and input context plugin.
+
+### QML lock screen
+
+`gxdm-lock-neo` is a Qt Quick frontend for the in-session locker. It reuses
+GXDM's PAM authenticator, user enumeration, lock-shortcut enrollment and D-Bus
+surface, so existing desktop shortcuts, power menus and
+`org.freedesktop.ScreenSaver` callers keep working. On Wayland it uses
+`ext-session-lock-v1` when available and falls back to LayerShellQt; on X11 it
+creates a full-screen window and grabs the keyboard.
+
+The style is selected with `[General] LockScreenStyle` in `/etc/gxdm.conf`:
+
+```ini
+[General]
+LockScreenStyle=modern
+```
+
+`classic` (the default) starts `gxdm-lock-classic`; `modern` starts
+`gxdm-lock-neo`. For compatibility, `[NextFeatReq] SwitchLkScrStyle` in
+`/etc/gxdm/OMG.conf` is used as a fallback when the `gxdm.conf` key is absent.
+The classic autostart and D-Bus service entries remain the stable entry point:
+when the modern style is configured and the binary is installed next to
+`gxdm-lock-classic`, the classic process execs the QML locker with the same
+arguments. If the QML binary is missing, the classic locker is used.
+
+The style can also be switched at runtime from the session bus (or with the
+same method on `top.gxde.DisplayManager.System`):
+
+```sh
+busctl --user call top.gxde.DisplayManager /top/gxde/DisplayManager \
+  top.gxde.DisplayManager SetLockScreenStyle s modern
+```
+
+The daemon writes `[General] LockScreenStyle` and emits
+`LockScreenStyleChanged(string)`. The running locker waits until the screen is
+unlocked, releases its D-Bus names and execs the other locker with `--daemon`,
+so the session is never left unlocked during the switch.
+
+Build the QML locker with `-DBUILD_NEO_LOCK=ON` (default; requires
+`BUILD_CLASSIC_GREETER=ON`). Preview it without locking the session:
+
+```sh
+./build-cmake/src/greeter-classic/gxdm-lock-neo --test-mode
+./build-cmake/src/greeter-classic/gxdm-lock-neo --test-mode --switch
+```
+
+The preview accepts any password and exits with `Esc`. Production starts with
+`--daemon` (autostart/D-Bus) or immediately locks when started without it.
+Lock-backend tests are enabled with `-DLOCK_BUILD_TESTS=ON` and registered as
+`LockBackend` and `LockStyle` in CTest.
 
 
 **Note:** the greeter uses the global wallpaper only when one is explicitly configured (a non-empty `[Greeter] Wallpaper` in `state.conf`). When unset, the new greeter follows the current user's wallpaper chain so it matches the lock screen. The lock/user wallpaper priority is: the current user's `LockWallpaperOverride`, the current user's Deepin `GreeterBackground`/`BackgroundFile`, Deepin `DesktopBackgrounds` (the same source as the GSettings desktop wallpaper), AccountsService, GSettings desktop backgrounds, then the global greeter wallpaper/default. Every wallpaper setting refreshes the active greeter or lock screen immediately after it is persisted. Custom wallpapers and overrides must be recognized images no larger than 128 MiB. The global greeter wallpaper is copied under `~gxdm`. The user lock override is copied twice: `~/.local/share/gxdm/lock-wallpaper-override` for the in-session locker and `~gxdm/lock-wallpaper-override-<uid>` for the greeter (which can still read it when the user's home directory is not traversable, e.g. mode `0700`); neither depends on the original image remaining available. `SetGreeterDisplayServer` takes effect the next time the greeter display is created.

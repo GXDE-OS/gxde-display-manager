@@ -185,6 +185,15 @@ set(NEO_LOCK_WAYLAND_PROTOCOL_SOURCES
     "${EXT_SESSION_LOCK_PROTOCOL_CODE}"
 )
 
+# Shared authentication, user and D-Bus backend plus the QML-facing facade.
+# The classic locker keeps its own copies for now; gxdm-lock-neo links these
+# libraries so both frontends stay in sync.
+set(GXDM_CLASSIC_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+add_subdirectory(
+    "${GXDM_REPO_ROOT}/src/lock-common"
+    "${CMAKE_CURRENT_BINARY_DIR}/lock-common"
+)
+
 file(GLOB NEO_LOCK_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/lock/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/lock/dbus/*.cpp"
@@ -202,6 +211,10 @@ add_executable(gxdm-lock-classic
     ${NEO_VENDOR_HEADERS}
     ${GXDM_AUTH_FILES}
     ${NEO_LOCK_WAYLAND_PROTOCOL_SOURCES}
+    "${GXDM_REPO_ROOT}/src/lock-common/lockstyle.cpp"
+    "${GXDM_REPO_ROOT}/src/lock-common/lockstyle.h"
+    "${GXDM_REPO_ROOT}/src/lock-common/lockstylemanager.cpp"
+    "${GXDM_REPO_ROOT}/src/lock-common/lockstylemanager.h"
     lock/images.qrc
     lock/logintheme.qrc
     ${NEO_WIDGET_RESOURCES}
@@ -212,6 +225,7 @@ target_include_directories(gxdm-lock-classic PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/lock"
     "${GXDM_REPO_ROOT}/src/auth"
     "${GXDM_REPO_ROOT}/src/common"
+    "${GXDM_REPO_ROOT}/src/lock-common"
     "${GXDM_CONSTANTS_INCLUDE_DIR}"
 )
 target_link_libraries(gxdm-lock-classic PRIVATE
@@ -221,3 +235,11 @@ target_link_libraries(gxdm-lock-classic PRIVATE
     Qt6::WaylandClientPrivate
 )
 install(TARGETS gxdm-lock-classic DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+# --- QML lock screen (gxdm-lock-neo) -----------------------------------------
+if(BUILD_NEO_LOCK)
+    add_subdirectory(
+        "${GXDM_REPO_ROOT}/src/lock-neo"
+        "${CMAKE_CURRENT_BINARY_DIR}/lock-neo"
+    )
+endif()

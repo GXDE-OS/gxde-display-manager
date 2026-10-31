@@ -167,6 +167,8 @@ GXDM通过会话总线提供锁屏快捷键和全局Greeter外观设置。应用
 | `GreeterDisplayServer() -> string` | 返回当前持久化的Greeter显示服务器。 |
 | `SetNeoGreeterEnabled(bool enabled) -> bool` | 是否启用新版 QML greeter，默认 true；false 切回经典版。 |
 | `NeoGreeterEnabled() -> bool` | 返回已保存的新版 greeter 开关。 |
+| `SetLockScreenStyle(string style) -> bool` | 通过系统守护进程保存锁屏样式（`classic` 或 `modern`）；对应程序未安装时返回失败。 |
+| `LockScreenStyle() -> string` | 返回当前生效的锁屏样式。 |
 
 锁屏服务默认在所有系统尝试注册 Super+L；已被其他程序占用时不抢占。
 
@@ -180,6 +182,53 @@ busctl call top.gxde.DisplayManager /top/gxde/DisplayManager \
 ```
 
 开关保存为 `gxdm.conf` 的 `[General] EnableNeoGreeter`，下次启动 greeter 生效。传入 `true` 可重新启用。成功保存后发出 `NeoGreeterEnabledChanged(bool)` 信号。新版程序缺失时回退经典版。可用 `gxdm-greeter-neo --test-mode` 预览。虚拟键盘需要同时安装 Qt Virtual Keyboard 的 QML 模块和输入法插件。
+
+### QML 锁屏
+
+`gxdm-lock-neo` 是基于 Qt Quick 的会话内锁屏前端。它复用 GXDM 的 PAM
+认证、用户枚举、锁屏快捷键注册和 D-Bus 接口，因此现有的桌面快捷键、
+电源菜单以及 `org.freedesktop.ScreenSaver` 调用都能继续工作。Wayland
+下优先使用 `ext-session-lock-v1`，不可用时回退到 LayerShellQt；X11 下
+创建全屏窗口并抓取键盘。
+
+通过 `/etc/gxdm.conf` 的 `[General] LockScreenStyle` 选择样式：
+
+```ini
+[General]
+LockScreenStyle=modern
+```
+
+`classic`（默认）启动 `gxdm-lock-classic`，`modern` 启动
+`gxdm-lock-neo`。为兼容旧配置，当 `gxdm.conf` 中没有该项时，会读取
+`/etc/gxdm/OMG.conf` 的 `[NextFeatReq] SwitchLkScrStyle`。经典锁屏的
+自启动和 D-Bus 服务入口保持不变：当配置为 modern 且 `gxdm-lock-neo`
+与 `gxdm-lock-classic` 安装在同一目录时，经典进程会以相同参数 exec
+新版前端；若新版程序不存在，则继续使用经典锁屏。
+
+也可以在运行时通过会话总线切换（系统总线 `top.gxde.DisplayManager.System`
+上有同名方法）：
+
+```sh
+busctl --user call top.gxde.DisplayManager /top/gxde/DisplayManager \
+  top.gxde.DisplayManager SetLockScreenStyle s modern
+```
+
+守护进程写入 `[General] LockScreenStyle` 并发出
+`LockScreenStyleChanged(string)` 信号。正在运行的锁屏会等到解锁后，释放自己的
+D-Bus 名称，再以 `--daemon` exec 另一种锁屏，切换过程中不会让会话处于未锁定状态。
+
+使用 `-DBUILD_NEO_LOCK=ON`（默认开启，需要
+`BUILD_CLASSIC_GREETER=ON`）构建。可在不真正锁定会话的情况下预览：
+
+```sh
+./build-cmake/src/greeter-classic/gxdm-lock-neo --test-mode
+./build-cmake/src/greeter-classic/gxdm-lock-neo --test-mode --switch
+```
+
+预览模式接受任意密码，按 `Esc` 退出。生产环境使用 `--daemon`
+（自启动/D-Bus）启动并等待锁屏请求，或直接启动以立即锁定。使用
+`-DLOCK_BUILD_TESTS=ON` 可启用锁屏后端测试，CTest 名称为
+`LockBackend` 和 `LockStyle`。
 
 
 **注意：**Greeter 只在显式配置了全局壁纸（`state.conf` 的 `[Greeter] Wallpaper` 非空）时才使用这份全局壁纸；未配置时新版 Greeter 会跟随当前用户的壁纸链，与锁屏保持一致。锁屏/用户壁纸优先级为：当前用户的`LockWallpaperOverride`、当前用户的Deepin `GreeterBackground`/`BackgroundFile`、Deepin `DesktopBackgrounds`（与 GSettings 桌面壁纸同源）、AccountsService、GSettings桌面壁纸、全局Greeter壁纸/默认壁纸。所有壁纸设置在持久化成功后立即刷新当前Greeter或锁屏。自定义图片和override必须是可识别的图像且不大于128 MiB；全局Greeter壁纸复制到`~gxdm`。用户锁屏override会保存两份：`~/.local/share/gxdm/lock-wallpaper-override`供会话内锁屏使用，`~gxdm/lock-wallpaper-override-<uid>`供Greeter使用（即使用户主目录不可进入，例如权限为`0700`，Greeter也能读取），均不依赖原始图片继续存在。`SetGreeterDisplayServer`会在下次创建Greeter显示时生效。

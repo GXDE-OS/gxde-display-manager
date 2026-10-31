@@ -24,6 +24,8 @@ public:
     virtual void switchToUser(std::shared_ptr<User> user) = 0;
     virtual void authUser(const QString &password)        = 0;
 
+    virtual bool IsAuthenticating() const { return false; }
+
     virtual void setLayout(std::shared_ptr<User> user, const QString &layout);
     virtual void onUserListChanged(const QStringList &list);
     virtual void onUserAdded(const QString &user);

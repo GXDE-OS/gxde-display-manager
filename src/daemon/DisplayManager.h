@@ -49,6 +49,9 @@ namespace SDDM {
         bool SetNeoGreeterEnabled(bool enabled);
         bool NeoGreeterEnabled() const;
 
+        bool SetLockScreenStyle(const QString &style);
+        QString LockScreenStyle() const;
+
         void PowerOff();
         void Reboot();
         void Suspend();
@@ -56,6 +59,7 @@ namespace SDDM {
 
     signals:
         void NeoGreeterEnabledChanged(bool enabled);
+        void LockScreenStyleChanged(const QString &style);
         void WallpaperChanged(const QString &wallpaper);
         void LockWallpaperOverrideChanged(uint uid, const QString &wallpaper);
     };

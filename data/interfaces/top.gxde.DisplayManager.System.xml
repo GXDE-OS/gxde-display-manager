@@ -49,6 +49,16 @@
         <signal name="NeoGreeterEnabledChanged">
             <arg type="b" name="enabled"/>
         </signal>
+        <method name="SetLockScreenStyle">
+            <arg type="s" name="style" direction="in"/>
+            <arg type="b" name="success" direction="out"/>
+        </method>
+        <method name="LockScreenStyle">
+            <arg type="s" name="style" direction="out"/>
+        </method>
+        <signal name="LockScreenStyleChanged">
+            <arg type="s" name="style"/>
+        </signal>
         <method name="PowerOff"/>
         <method name="Reboot"/>
         <method name="Suspend"/>

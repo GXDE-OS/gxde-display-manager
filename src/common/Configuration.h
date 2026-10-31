@@ -38,6 +38,9 @@ namespace SDDM {
 
         //  Name                   Type         Default value                                   Description
         Entry(EnableNeoGreeter, bool, true, _S("Use the new QML greeter. Takes effect on the next greeter start."));
+        Entry(LockScreenStyle,     QString,     _S("classic"),                                  _S("In-session lock screen style. Valid values are: classic, modern.\n"
+                                                                                                   "When unset, [NextFeatReq] SwitchLkScrStyle in OMG.conf is used.\n"
+                                                                                                   "Running lock screens switch after the next unlock."));
         Entry(DisplayServer,       QString,     _S("wayland"),                                  _S("Which display server should be used.\n"
                                                                                                    "Valid values are: x11, x11-user, wayland. Wayland support is experimental"));
         Entry(HaltCommand,         QString,     _S(HALT_COMMAND),                               _S("Halt command"));

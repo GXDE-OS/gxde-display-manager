@@ -1,0 +1,41 @@
+load("//bazel/qt:qt.bzl", "qt_cc_binary", "qt_qml_module")
+
+package(default_visibility = ["//visibility:public"])
+
+# QML lock screen. Mirrors src/lock-neo/CMakeLists.txt: the UI is a flattened
+# "Lock" QML module, images/fonts come from the neo greeter's resources, and
+# authentication/D-Bus/session-lock come from //src/lock-common:lock_common.
+qt_cc_binary(
+    name = "gxdm-lock-neo",
+    srcs = [
+        "src/main.cc",
+        "//src/greeter-neo:rcc_resources",
+        qt_qml_module(
+            name = "qml_lock",
+            uri = "Lock",
+            version = "1.0",
+            qml_files = [
+                "qml/LockWindow.qml",
+                "qml/LockScreen.qml",
+                "qml/components/Clock.qml",
+                "qml/components/LoginCard.qml",
+                "qml/components/LockButton.qml",
+                "qml/components/PowerMenu.qml",
+                "qml/components/UserAvatar.qml",
+                "qml/components/UserSwitcher.qml",
+                "qml/components/VirtualKeyboardPanel.qml",
+            ],
+            init_name = "lock_qml",
+        ),
+    ],
+    deps = [
+        "//src/common:greeter_appearance",
+        "//src/lock-common:lock_common",
+    ],
+    linkopts = [
+        "-lLayerShellQtInterface",
+        "-lQt6WaylandClient",
+        "-lwayland-client",
+        "-lX11",
+    ],
+)

@@ -19,6 +19,7 @@
 
 #include "DisplayManager.h"
 #include "greeter_settings.h"
+#include "lockstyle.h"
 
 #include "Configuration.h"
 #include "Constants.h"
@@ -295,6 +296,41 @@ namespace SDDM {
     bool GxdeDisplayManager::NeoGreeterEnabled() const {
         mainConfig.load();
         return mainConfig.EnableNeoGreeter.get();
+    }
+
+    bool GxdeDisplayManager::SetLockScreenStyle(const QString &style) {
+        gxde::lock::LockStyle requested = gxde::lock::LockStyle::kClassic;
+        if (!gxde::lock::LockStyleResolver::ParseStyleName(style, &requested))
+            return false;
+
+        // Refuse a style whose binary is not installed; the lockers would
+        // silently fall back to classic and the setting would lie.
+        const gxde::lock::LockStylePaths paths =
+            gxde::lock::LockStyleResolver::DefaultPaths();
+        if (!QFileInfo(gxde::lock::LockStyleResolver::ExecutablePath(
+                requested, paths.binDir)).isExecutable())
+            return false;
+
+        const QString before = LockScreenStyle();
+        const QString normalized =
+            gxde::lock::LockStyleResolver::StyleName(requested);
+        if (!gxde::SaveGeneralSetting(QStringLiteral(CONFIG_FILE),
+                QStringLiteral("LockScreenStyle"), normalized)) {
+            return false;
+        }
+        mainConfig.LockScreenStyle.set(normalized);
+
+        if (LockScreenStyle() != before)
+            emit LockScreenStyleChanged(normalized);
+        return true;
+    }
+
+    QString GxdeDisplayManager::LockScreenStyle() const {
+        // Same resolution as the lockers: gxdm.conf, then the legacy OMG.conf
+        // switch, then classic; a missing binary also means classic.
+        return gxde::lock::LockStyleResolver::StyleName(
+            gxde::lock::LockStyleResolver::Resolve(
+                gxde::lock::LockStyleResolver::DefaultPaths()));
     }
 
     // 修复锁屏界面电源选项无效的问题

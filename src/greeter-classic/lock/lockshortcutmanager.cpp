@@ -337,6 +337,10 @@ GxdeDisplayManagerService::GxdeDisplayManagerService(
     : QDBusAbstractAdaptor(manager), m_manager(manager) {
   connect(manager, &LockShortcutManager::registrationChanged, this,
     &GxdeDisplayManagerService::LkScrStatChanged);
+  QDBusConnection::systemBus().connect(kSystemDisplayManagerService,
+    kSystemDisplayManagerPath, kSystemDisplayManagerInterface,
+    QStringLiteral("LockScreenStyleChanged"), this,
+    SLOT(onSystemLockScreenStyleChanged(QString)));
 }
 
 bool GxdeDisplayManagerService::TryEnrollLkScr(bool enabled) {
@@ -443,6 +447,22 @@ bool GxdeDisplayManagerService::SetNeoGreeterEnabled(bool enabled) {
 
 bool GxdeDisplayManagerService::NeoGreeterEnabled() const {
   return callSystemDisplayManager(QStringLiteral("NeoGreeterEnabled"));
+}
+
+bool GxdeDisplayManagerService::SetLockScreenStyle(const QString& style) {
+  return callSystemDisplayManager(QStringLiteral("SetLockScreenStyle"),
+                                  {style});
+}
+
+QString GxdeDisplayManagerService::LockScreenStyle() const {
+  const QString style =
+    querySystemDisplayManager(QStringLiteral("LockScreenStyle"));
+  return style.isEmpty() ? QStringLiteral("classic") : style;
+}
+
+void GxdeDisplayManagerService::onSystemLockScreenStyleChanged(
+    const QString& style) {
+  emit LockScreenStyleChanged(style);
 }
 
 void GxdeDisplayManagerService::Show() { m_manager->showLock(); }
