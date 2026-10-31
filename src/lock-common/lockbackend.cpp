@@ -230,6 +230,10 @@ void LockBackend::ShowUserList() {
   emit ShowUserListRequested();
 }
 
+void LockBackend::NotifyUnlockFadeFinished() {
+  emit UnlockFadeFinished();
+}
+
 void LockBackend::onAuthFinished(bool success) {
   authenticating_ = false;
   emit AuthenticatingChanged();

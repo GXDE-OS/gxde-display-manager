@@ -25,7 +25,26 @@ Item {
   property bool windowVisible: true
   readonly property bool ready: backend !== null
 
+  // Lock anim: blur strength graduately applies, and 
+  property real revealProgress: 0
+  readonly property real wallpaperBlurMax: 1.0
+  property bool unlocking: false
+
   signal requestQuit()
+  signal unlockFadeFinished()
+
+  function startReveal() {
+    if (!screen.windowVisible || wallpaper.status !== Image.Ready) return
+    revealAnimation.restart()
+  }
+
+  function resetReveal() {
+    revealAnimation.stop()
+    unlockFadeAnimation.stop()
+    screen.revealProgress = 0
+    screen.unlocking = false
+    screen.opacity = 1
+  }
 
   function cycleLayout() {
     if (!screen.backend) return
@@ -43,6 +62,8 @@ Item {
 
   function handleAuthenticated() {
     loginCard.showSuccess()
+    screen.unlocking = true
+    unlockFadeAnimation.restart()
   }
 
   function handleAuthenticationFailed(message) {
@@ -73,11 +94,37 @@ Item {
   }
 
   onWindowVisibleChanged: {
-    if (windowVisible && screen.primaryScreen) {
-      loginCard.focusPassword()
-    } else if (!windowVisible) {
+    if (windowVisible) {
+      screen.startReveal()
+      if (screen.primaryScreen) loginCard.focusPassword()
+    } else {
+      screen.resetReveal()
       loginCard.clearPassword()
     }
+  }
+
+  Component.onCompleted: screen.startReveal()
+
+  NumberAnimation {
+    id: revealAnimation
+
+    target: screen
+    property: "revealProgress"
+    from: 0
+    to: 1
+    duration: 700
+    easing.type: Easing.OutCubic
+  }
+
+  NumberAnimation {
+    id: unlockFadeAnimation
+
+    target: screen
+    property: "opacity"
+    to: 0
+    duration: 450
+    easing.type: Easing.InOutQuad
+    onFinished: screen.unlockFadeFinished()
   }
 
   // --- Wallpaper -------------------------------------------------------------
@@ -101,12 +148,15 @@ Item {
     cache: false
     smooth: true
     mipmap: true
+    onStatusChanged: if (status === Image.Ready) screen.startReveal()
     visible: source.toString() !== "" && status === Image.Ready
+    opacity: screen.revealProgress
     layer.enabled: visible
     layer.smooth: true
     layer.effect: MultiEffect {
       blurEnabled: true
-      blur: 0.55
+      blurMax: 32
+      blur: screen.wallpaperBlurMax * screen.revealProgress
       brightness: -0.22
       saturation: 0.9
       contrast: 0.02

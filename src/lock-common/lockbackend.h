@@ -86,6 +86,7 @@ class LockBackend : public QObject {
   Q_INVOKABLE void CancelPowerAction();
   Q_INVOKABLE void SetKbLayout(const QString& layout);
   Q_INVOKABLE void ShowUserList();
+  Q_INVOKABLE void NotifyUnlockFadeFinished();
 
  signals:
   void Authenticated();
@@ -103,6 +104,7 @@ class LockBackend : public QObject {
   void UserSwitchAvailableChanged();
   void KbLayoutsChanged();
   void ShowUserListRequested();
+  void UnlockFadeFinished();
 
  private slots:
   void onAuthFinished(bool success);

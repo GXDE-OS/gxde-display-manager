@@ -197,6 +197,7 @@ int main(int argc, char* argv[]) {
     GxdmGreeterScale::applyThemeScale();
   }
 
+  QQuickWindow::setDefaultAlphaBuffer(true);
   QGuiApplication app(argc, argv);
   app.setQuitOnLastWindowClosed(false);
   app.setOrganizationName(QStringLiteral("deepin"));
@@ -406,6 +407,13 @@ int main(int argc, char* argv[]) {
   QQuickWindow* primaryWindow = nullptr;
   std::function<void(QQuickWindow*)> grabKeyboard;
 
+  constexpr int kUnlockFadeTimeoutMs = 1000;
+  bool unlockPending = false;
+  qsizetype pendingUnlockFades = 0;
+  QTimer unlockFadeTimer;
+  unlockFadeTimer.setSingleShot(true);
+  unlockFadeTimer.setInterval(kUnlockFadeTimeoutMs);
+
   auto destroyWindow = [&](QScreen* screen) {
     QQuickWindow* window = windows.take(screen);
     if (!window) return;
@@ -564,15 +572,40 @@ int main(int argc, char* argv[]) {
                      }
                    });
 
+  auto finishUnlock = [&] {
+    if (!unlockPending) return;
+    unlockPending = false;
+    pendingUnlockFades = 0;
+    unlockFadeTimer.stop();
+    if (sessionLockIntegration && sessionLockIntegration->isAvailable()) {
+      sessionLockIntegration->unlock();
+    } else {
+      model.setIsShow(false);
+    }
+  };
+
+  QObject::connect(&unlockFadeTimer, &QTimer::timeout, &app, [&] {
+    qWarning() << "(Lock) Unlock fade-out timed out; unlocking now.";
+    finishUnlock();
+  });
+
+  QObject::connect(&backend, &gxde::lock::LockBackend::UnlockFadeFinished,
+                   &app, [&] {
+                     if (unlockPending && --pendingUnlockFades <= 0) {
+                       finishUnlock();
+                     }
+                   });
+
   QObject::connect(&backend, &gxde::lock::LockBackend::Authenticated, &app,
                    [&] {
-                     if (demo) return;
-                     if (sessionLockIntegration &&
-                         sessionLockIntegration->isAvailable()) {
-                       sessionLockIntegration->unlock();
-                     } else {
-                       model.setIsShow(false);
+                     if (demo || unlockPending) return;
+                     unlockPending = true;
+                     pendingUnlockFades = windows.size();
+                     if (pendingUnlockFades == 0) {
+                       finishUnlock();
+                       return;
                      }
+                     unlockFadeTimer.start();
                    });
 
   if (sessionLockIntegration) {

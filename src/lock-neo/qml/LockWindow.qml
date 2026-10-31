@@ -28,7 +28,9 @@ Window {
   height: testMode ? 720 : 600
   x: testMode ? 80 : 0
   y: testMode ? 80 : 0
-  color: "#000000"
+  
+  // Anim: From transparent to opaque
+  color: lockScreen.unlocking ? "transparent" : "#000000"
   flags: testMode ? Qt.Window
     : (Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
   visibility: testMode ? Window.Windowed
@@ -56,6 +58,13 @@ Window {
     testMode: root.testMode
     windowVisible: root.visible
     onRequestQuit: Qt.quit()
+    onUnlockFadeFinished: {
+      if (root.testMode) {
+        Qt.quit()
+      } else if (root.backend) {
+        root.backend.NotifyUnlockFadeFinished()
+      }
+    }
   }
 
   function handleAuthenticated() {
