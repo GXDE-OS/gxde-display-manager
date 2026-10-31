@@ -188,6 +188,11 @@ int main(int argc, char* argv[]) {
 
   qputenv("QT_IM_MODULE", QByteArrayLiteral("qtvirtualkeyboard"));
   qputenv("QT_VIRTUALKEYBOARD_STYLE", QByteArrayLiteral("gxde"));
+  // The keyboard is the InputPanel embedded in LockScreen.qml. Without this,
+  // focusing the password field makes the plugin open its own top-level panel
+  // window, which steals window activation from the lock window; the field
+  // then loses focus, the panel closes, the field refocuses... and flickers.
+  qputenv("QT_VIRTUALKEYBOARD_DESKTOP_DISABLE", QByteArrayLiteral("1"));
 
   GxdmGreeterCursor::applyConfiguredTheme();
   if (useX11) {
