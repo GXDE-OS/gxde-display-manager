@@ -44,7 +44,7 @@ LockStylePaths LockStyleResolver::DefaultPaths() {
 }
 
 LockStyle LockStyleResolver::Resolve(const LockStylePaths& paths) {
-  LockStyle style = LockStyle::kClassic;
+  LockStyle style = LockStyle::kModern;
 
   const QString gxdm_value =
       ReadSetting(paths.gxdmConfig, QStringLiteral("General"),
@@ -54,10 +54,12 @@ LockStyle LockStyleResolver::Resolve(const LockStylePaths& paths) {
         ReadSetting(paths.omgConfig, QStringLiteral("NextFeatReq"),
                     QStringLiteral("SwitchLkScrStyle"));
     if (!ParseStyleName(omg_value, &style)) {
-      style = LockStyle::kClassic;
+      style = LockStyle::kModern;
     }
   }
 
+  // The classic locker is always installed; it is the fallback whenever the
+  // configured binary is missing.
   if (!QFileInfo(ExecutablePath(style, paths.binDir)).isExecutable()) {
     style = LockStyle::kClassic;
   }

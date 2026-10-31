@@ -51,7 +51,8 @@ class LockStyleTest : public QObject {
   Q_OBJECT
 
  private slots:
-  void defaultsToClassic();
+  void defaultsToModern();
+  void defaultFallsBackToClassicWithoutNeo();
   void gxdmConfigWins();
   void omgFallback();
   void stripsInlineComments();
@@ -62,7 +63,24 @@ class LockStyleTest : public QObject {
   void managerIgnoresMissingBinary();
 };
 
-void LockStyleTest::defaultsToClassic() {
+void LockStyleTest::defaultsToModern() {
+  QTemporaryDir dir;
+  QVERIFY(dir.isValid());
+
+  const QString bin = dir.filePath(QStringLiteral("bin"));
+  QVERIFY(QDir().mkpath(bin));
+  QVERIFY(makeExecutable(QDir(bin).filePath(
+      QStringLiteral("gxdm-lock-classic"))));
+  QVERIFY(makeExecutable(QDir(bin).filePath(
+      QStringLiteral("gxdm-lock-neo"))));
+
+  QVERIFY(gxde::lock::LockStyleResolver::ResolveFromFiles(
+              dir.filePath(QStringLiteral("missing-gxdm.conf")),
+              dir.filePath(QStringLiteral("missing-omg.conf")), bin) ==
+          gxde::lock::LockStyle::kModern);
+}
+
+void LockStyleTest::defaultFallsBackToClassicWithoutNeo() {
   QTemporaryDir dir;
   QVERIFY(dir.isValid());
 
@@ -169,7 +187,7 @@ struct StyleFixture {
     if (withNeo) {
       makeExecutable(QDir(bin).filePath(QStringLiteral("gxdm-lock-neo")));
     }
-    writeFile(gxdm, "[General]\n");
+    writeFile(gxdm, "[General]\nLockScreenStyle=classic\n");
     writeFile(omg, "[NextFeatReq]\n");
   }
 

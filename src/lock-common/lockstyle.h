@@ -38,7 +38,8 @@ struct LockStylePaths {
 
 // Resolves the configured lock screen style and the executable that implements
 // it. gxdm.conf's [General] LockScreenStyle takes precedence over OMG.conf's
-// [NextFeatReq] SwitchLkScrStyle; the default is classic.
+// [NextFeatReq] SwitchLkScrStyle; the default is modern, falling back to
+// classic when gxdm-lock-neo is not installed.
 class LockStyleResolver {
  public:
   static LockStylePaths DefaultPaths();

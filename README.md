@@ -199,8 +199,8 @@ The style is selected with `[General] LockScreenStyle` in `/etc/gxdm.conf`:
 LockScreenStyle=modern
 ```
 
-`classic` (the default) starts `gxdm-lock-classic`; `modern` starts
-`gxdm-lock-neo`. For compatibility, `[NextFeatReq] SwitchLkScrStyle` in
+`modern` (the default) starts `gxdm-lock-neo`; `classic` starts
+`gxdm-lock-classic`. If `gxdm-lock-neo` is not installed, `classic` is used. For compatibility, `[NextFeatReq] SwitchLkScrStyle` in
 `/etc/gxdm/OMG.conf` is used as a fallback when the `gxdm.conf` key is absent.
 The classic autostart and D-Bus service entries remain the stable entry point:
 when the modern style is configured and the binary is installed next to

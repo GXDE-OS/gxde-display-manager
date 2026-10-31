@@ -198,8 +198,8 @@ busctl call top.gxde.DisplayManager /top/gxde/DisplayManager \
 LockScreenStyle=modern
 ```
 
-`classic`（默认）启动 `gxdm-lock-classic`，`modern` 启动
-`gxdm-lock-neo`。为兼容旧配置，当 `gxdm.conf` 中没有该项时，会读取
+`modern`（默认）启动 `gxdm-lock-neo`，`classic` 启动
+`gxdm-lock-classic`；未安装 `gxdm-lock-neo` 时使用 `classic`。为兼容旧配置，当 `gxdm.conf` 中没有该项时，会读取
 `/etc/gxdm/OMG.conf` 的 `[NextFeatReq] SwitchLkScrStyle`。经典锁屏的
 自启动和 D-Bus 服务入口保持不变：当配置为 modern 且 `gxdm-lock-neo`
 与 `gxdm-lock-classic` 安装在同一目录时，经典进程会以相同参数 exec
