@@ -17,6 +17,7 @@
 #include "greeter-neo/src/greeter_backend.h"
 
 #include <QByteArray>
+#include <QCoreApplication>
 #include <QDataStream>
 #include <QDebug>
 #include <QFileInfo>
@@ -134,7 +135,10 @@ GreeterBackend::GreeterBackend(const QString& socket_name,
   connect(&socket_, &QLocalSocket::errorOccurred, this, [this] {
     HandleDisconnect();
     if (login_succeeded_) return;
-    emit RequestFailed(tr("电源服务连接失败：%1").arg(socket_.errorString()));
+    emit RequestFailed(
+        QCoreApplication::translate(
+            "GreeterBackend", "Failed to connect to the power service: %1")
+            .arg(socket_.errorString()));
   });
   if (!socket_name.isEmpty()) {
     socket_.connectToServer(socket_name);
@@ -271,7 +275,9 @@ void GreeterBackend::HandleDisconnect() {
   emit ConnectedChanged();
   if (authenticating_ && !login_succeeded_) {
     SetAuthenticating(false);
-    emit LoginFailed(tr("登录服务连接已断开，请稍后重试。"));
+    emit LoginFailed(QCoreApplication::translate(
+        "GreeterBackend",
+        "Lost connection to the login service. Please try again later."));
   }
 }
 
@@ -279,11 +285,13 @@ void GreeterBackend::Login(const QString& username, const QString& password,
                            const QString& session_id) {
   if (authenticating_ || login_succeeded_) return;
   if (!IsConnected()) {
-    emit LoginFailed(tr("登录服务不可用。"));
+    emit LoginFailed(QCoreApplication::translate(
+        "GreeterBackend", "Login service is unavailable."));
     return;
   }
   if (username.trimmed().isEmpty()) {
-    emit LoginFailed(tr("请输入用户名。"));
+    emit LoginFailed(QCoreApplication::translate("GreeterBackend",
+                                                 "Please enter a username."));
     return;
   }
   QByteArray data;
@@ -292,7 +300,8 @@ void GreeterBackend::Login(const QString& username, const QString& password,
          << password;
   if (!WriteSession(output, session_id)) {
     data.fill('\0');
-    emit LoginFailed(tr("请选择可用的桌面会话。"));
+    emit LoginFailed(QCoreApplication::translate(
+        "GreeterBackend", "Please select an available desktop session."));
     return;
   }
   // The password takes over from the reader (the daemon would cancel it
@@ -301,7 +310,8 @@ void GreeterBackend::Login(const QString& username, const QString& password,
   SetAuthenticating(true);
   if (socket_.write(data) != data.size()) {
     SetAuthenticating(false);
-    emit LoginFailed(tr("无法发送登录请求。"));
+    emit LoginFailed(QCoreApplication::translate(
+        "GreeterBackend", "Failed to send the login request."));
   }
   data.fill('\0');
   socket_.flush();
@@ -331,7 +341,9 @@ bool GreeterBackend::SendMessage(quint32 message) {
   output << message;
   if (socket_.state() != QLocalSocket::ConnectedState ||
       socket_.write(data) != data.size()) {
-    emit RequestFailed(tr("无法发送电源请求，请稍后重试。"));
+    emit RequestFailed(QCoreApplication::translate(
+        "GreeterBackend",
+        "Failed to send the power request. Please try again later."));
     return false;
   }
   socket_.flush();
@@ -344,13 +356,15 @@ void GreeterBackend::Request(const QString& name) {
       continue;
     }
     if (!(capabilities_ & action.capability)) {
-      emit RequestFailed(tr("当前无法执行此电源操作。"));
+      emit RequestFailed(QCoreApplication::translate(
+          "GreeterBackend", "This power action is not available right now."));
       return;
     }
     SendMessage(static_cast<quint32>(action.message));
     return;
   }
-  emit RequestFailed(tr("未知的电源操作。"));
+  emit RequestFailed(
+      QCoreApplication::translate("GreeterBackend", "Unknown power action."));
 }
 
 void GreeterBackend::ReadMessages() {
@@ -390,7 +404,9 @@ void GreeterBackend::ReadMessages() {
         input_.abortTransaction();
         socket_.abort();
         SetCapabilities(0);
-        emit RequestFailed(tr("电源服务返回了无法识别的消息。"));
+        emit RequestFailed(QCoreApplication::translate(
+            "GreeterBackend",
+            "The power service returned an unrecognized message."));
         return;
     }
     if (!input_.commitTransaction()) {
@@ -421,7 +437,8 @@ void GreeterBackend::ReadMessages() {
                SDDM::DaemonMessages::LoginFailed) {
       SetAuthenticating(false);
       transition_pending_ = false;
-      emit LoginFailed(tr("鉴权失败"));
+      emit LoginFailed(QCoreApplication::translate("GreeterBackend",
+                                                   "Authentication failed"));
     } else if (static_cast<SDDM::DaemonMessages>(message) ==
                SDDM::DaemonMessages::LoginSucceeded) {
       transition_pending_ = false;

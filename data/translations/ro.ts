@@ -5,14 +5,14 @@
     <name>PictureBox</name>
     <message>
         <source>Press to login</source>
-        <translation type="unfinished"></translation>
+        <translation>Apasă pentru autentificare</translation>
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (Wayland)</translation>
     </message>
 </context>
 <context>
@@ -46,8 +46,36 @@
         <translation>Parolă</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>Introdu o parolă!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>Schimbă parola</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>Introdu numele de utilizator și parola</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>Introdu numele de utilizator</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>Introdu parola</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>Parolă:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>Arată parola</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>Ascunde parola</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>Oprește</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>Suspendă</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>Hibernează</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>Nume de utilizator</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>Schimbarea parolei a fost abandonată deoarece s-a atins numărul maxim de încercări</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>O nouă rundă de schimbare a parolei! Introdu din nou parola curentă!</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

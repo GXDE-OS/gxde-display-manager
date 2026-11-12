@@ -5,14 +5,14 @@
     <name>PictureBox</name>
     <message>
         <source>Press to login</source>
-        <translation type="unfinished"></translation>
+        <translation>押してログイン</translation>
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (Wayland)</translation>
     </message>
 </context>
 <context>
@@ -46,8 +46,36 @@
         <translation>パスワード</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>パスワードを入力してください！</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>パスワードを変更</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>ユーザ名とパスワードを入力してください</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>ユーザ名を入力してください</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>パスワードを入力してください</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>パスワード:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>パスワードを表示</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>パスワードを隠す</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>シャットダウン</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>サスペンド</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>ハイバネート</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>ユーザ名</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>最大試行回数に達したため、パスワードの変更を中止しました</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>パスワード変更をやり直します。現在のパスワードをもう一度入力してください！</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

@@ -5,14 +5,14 @@
     <name>PictureBox</name>
     <message>
         <source>Press to login</source>
-        <translation type="unfinished"></translation>
+        <translation>اضغط للولوج</translation>
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (Wayland)</translation>
     </message>
 </context>
 <context>
@@ -46,8 +46,36 @@
         <translation>كلمة المرور</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>فضلًا أدخل كلمة مرور!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>غيّر كلمة المرور</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>أدخل اسم المستخدم وكلمة مروره</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>أدخل اسم المستخدم</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>أدخل كلمة المرور</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>كلمة المرور:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>أظهر كلمة المرور</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>أخفِ كلمة المرور</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>أطفئ</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>علّق</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>أسبت</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>اسم المستخدم</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>أُجهض تغيير كلمة المرور لبلوغ الحد الأقصى من المحاولات</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>جولة جديدة لتغيير كلمة المرور! فضلًا أدخل كلمة المرور الحالية مجددًا!</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

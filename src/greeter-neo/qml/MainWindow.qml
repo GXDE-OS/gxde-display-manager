@@ -64,15 +64,6 @@ Item {
     ? (virtualKeyboard.height + virtualKeyboard.screenMargin)
       * virtualKeyboard.slide
     : 0
-  readonly property var weekdays: [
-    "星期日",
-    "星期一",
-    "星期二",
-    "星期三",
-    "星期四",
-    "星期五",
-    "星期六"
-  ]
 
   signal loginRequested()
   signal sessionSelected(var session)
@@ -156,7 +147,7 @@ Item {
 
   function handleFingerprintChanged() {
     if (greeterBackend.fingerprintGaveUp && passwordCard.shown) {
-      passwordCard.errorText = qsTr("指纹多次不匹配，请输入密码")
+      passwordCard.errorText = qsTr("Too many fingerprint mismatches. Please enter your password.")
     }
   }
 
@@ -282,10 +273,7 @@ Item {
   }
 
   function dateLabel(value) {
-    return value.getFullYear() + "年"
-      + (value.getMonth() + 1) + "月"
-      + value.getDate() + "日 "
-      + weekdays[value.getDay()]
+    return Qt.locale().toString(value, Locale.LongFormat)
   }
 
   function openPasswordDialog(index, user) {
@@ -309,7 +297,7 @@ Item {
   }
 
   function showPasswordError(message) {
-    passwordCard.showError(message || qsTr("鉴权失败"))
+    passwordCard.showError(message || qsTr("Authentication failed"))
     authFailureGlow.flash()
   }
 
@@ -361,7 +349,7 @@ Item {
           color: "white"
         }
         Button {
-          text: qsTr("关闭")
+          text: qsTr("Close")
           anchors.right: parent.right
           onClicked: powerErrorPopup.close()
         }
@@ -599,7 +587,7 @@ Item {
             source: sessionMenu.iconFor(root.selectedSession)
             tint: "transparent"
             visible: root.sessionModel.length > 0
-            Accessible.name: qsTr("选择桌面会话：")
+            Accessible.name: qsTr("Select a desktop session:")
               + (root.selectedSession ? root.selectedSession.name : "")
             onClicked: {
               powerMenu.close()
@@ -754,7 +742,7 @@ Item {
           ? { "username": userName, "fullName": userName } : user, password)
         busy = true
         if (!root.greeterBackend) {
-          root.showPasswordError(qsTr("登录服务不可用。"))
+          root.showPasswordError(qsTr("Login service is unavailable."))
           return
         }
         root.greeterBackend.Login(askUserName ? userName : user.username,

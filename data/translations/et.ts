@@ -9,7 +9,7 @@
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
         <translation>%1 (Wayland)</translation>
@@ -46,8 +46,36 @@
         <translation>Salasõna</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>Palun sisesta salasõna!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>Muuda salasõna</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>Sisesta kasutajanimi ja salasõna</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>Sisesta kasutajanimi</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>Sisesta salasõna</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>Salasõna:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>Näita salasõna</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>Peida salasõna</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>Seiska</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>Uinak</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>Talveuni</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>Kasutajanimi</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>Salasõna muutmine katkestati, sest saavutati katsete ülempiir</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>Uus salasõna muutmise voor! Palun sisesta praegune salasõna uuesti!</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

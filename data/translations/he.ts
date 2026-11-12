@@ -9,7 +9,7 @@
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
         <translation>%1 (Wayland)</translation>
@@ -46,8 +46,36 @@
         <translation>סיסמה</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>נא להזין סיסמה!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>שינוי סיסמה</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>יש להזין את שם המשתמש ואת הסיסמה שלך</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>יש להזין את שם המשתמש שלך</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>יש להזין את הסיסמה שלך</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>סיסמה:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>הצגת הסיסמה</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>הסתרת הסיסמה</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>כיבוי</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>השהיה</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>מצב שינה</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>שם משתמש</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>שינוי הסיסמה בוטל כי הגעת למספר הניסיונות המרבי</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>סבב חדש של שינוי סיסמה! נא להזין שוב את הסיסמה הנוכחית!</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

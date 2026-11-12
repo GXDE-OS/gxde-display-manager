@@ -9,7 +9,7 @@
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
         <translation>%1 (Wayland)</translation>
@@ -46,8 +46,36 @@
         <translation>Lykilorð</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>Sláðu inn lykilorð!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>Breyta lykilorði</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>Sláðu inn notandanafn og lykilorð</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>Sláðu inn notandanafn</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>Sláðu inn lykilorð</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>Lykilorð:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>Sýna lykilorð</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>Fela lykilorð</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>Slökkva</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>Svæfa</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>Leggja í dvala</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>Notandanafn</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>Hætt var við breytingu lykilorðs þar sem hámarksfjölda tilrauna var náð</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>Ný umferð lykilorðsbreytingar! Sláðu aftur inn núverandi lykilorð!</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

@@ -5,14 +5,14 @@
     <name>PictureBox</name>
     <message>
         <source>Press to login</source>
-        <translation type="unfinished"></translation>
+        <translation>Premi per accedere</translation>
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (Wayland)</translation>
     </message>
 </context>
 <context>
@@ -46,8 +46,36 @@
         <translation>Password</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>Inserisci una password!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>Cambia password</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>Inserisci nome utente e password</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>Inserisci il nome utente</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>Inserisci la password</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>Password:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>Mostra password</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>Nascondi password</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>Spegni</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>Sospendi</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>Iberna</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>Nome utente</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>Cambio della password annullato: raggiunto il numero massimo di tentativi</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>Nuovo ciclo di cambio password! Inserisci di nuovo la password attuale!</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

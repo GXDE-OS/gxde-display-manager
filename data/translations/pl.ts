@@ -9,7 +9,7 @@
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
         <translation>%1 (Wayland)</translation>
@@ -42,6 +42,14 @@
         <translation>Hasło</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>Wprowadź hasło!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>Zmień hasło</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>Wprowadź nazwę użytkownika i hasło</translation>
     </message>
@@ -56,6 +64,18 @@
     <message>
         <source>Enter your password</source>
         <translation>Wpisz hasło</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>Hasło:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>Pokaż hasło</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>Ukryj hasło</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -84,6 +104,14 @@
     <message>
         <source>Welcome to %1</source>
         <translation>Witamy w %1</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>Zmiana hasła została przerwana, ponieważ osiągnięto maksymalną liczbę prób</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>Nowa runda zmiany hasła! Wprowadź ponownie bieżące hasło!</translation>
     </message>
 </context>
 </TS>

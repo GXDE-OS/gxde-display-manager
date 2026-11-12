@@ -5,14 +5,14 @@
     <name>PictureBox</name>
     <message>
         <source>Press to login</source>
-        <translation type="unfinished"></translation>
+        <translation>Pritisnite za prijavu</translation>
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (Wayland)</translation>
     </message>
 </context>
 <context>
@@ -46,8 +46,36 @@
         <translation>Lozinka</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>Unesite lozinku!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>Promijeni lozinku</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>Unesite vaše korisničko ime i lozinku</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>Unesite vaše korisničko ime</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>Unesite vašu lozinku</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>Lozinka:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>Prikaži lozinku</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>Sakrij lozinku</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>Ugasi</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>Suspenduj</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>Hiberniraj</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>Korisničko ime</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>Promjena lozinke je prekinuta jer je dostignut najveći broj pokušaja</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>Novi krug promjene lozinke! Unesite ponovo trenutnu lozinku!</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

@@ -5,14 +5,14 @@
     <name>PictureBox</name>
     <message>
         <source>Press to login</source>
-        <translation type="unfinished"></translation>
+        <translation>Кіру үшін басыңыз</translation>
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (Wayland)</translation>
     </message>
 </context>
 <context>
@@ -46,8 +46,36 @@
         <translation>Пароль</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>Парольді енгізіңіз!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>Парольді өзгерту</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>Пайдаланушы атын және паролін енгізіңіз</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>Пайдаланушы атын енгізіңіз</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>Парольді енгізіңіз</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>Пароль:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>Парольді көрсету</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>Парольді жасыру</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>Сөндіру</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>Ұйықтату</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>Гибернация</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>Пайдаланушы аты</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>Әрекеттердің ең көп санына жеткендіктен, парольді өзгерту тоқтатылды</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>Парольді өзгертудің жаңа кезеңі! Ағымдағы парольді қайта енгізіңіз!</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

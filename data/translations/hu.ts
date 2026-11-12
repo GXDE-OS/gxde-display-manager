@@ -5,14 +5,14 @@
     <name>PictureBox</name>
     <message>
         <source>Press to login</source>
-        <translation type="unfinished"></translation>
+        <translation>Nyomja meg a bejelentkezéshez</translation>
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (Wayland)</translation>
     </message>
 </context>
 <context>
@@ -46,8 +46,36 @@
         <translation>Jelszó</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>Kérem, adjon meg egy jelszót!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>Jelszó módosítása</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>Írja be a felhasználónevét és a jelszavát</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>Írja be a felhasználónevét</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>Írja be a jelszavát</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>Jelszó:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>Jelszó megjelenítése</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>Jelszó elrejtése</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>Leállítás</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>Felfüggesztés</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>Hibernálás</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>Felhasználónév</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>A jelszómódosítás megszakadt, mert elérte a próbálkozások maximális számát</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>Új jelszómódosítási kör! Kérem, adja meg újra a jelenlegi jelszavát!</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

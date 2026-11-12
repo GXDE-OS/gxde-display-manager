@@ -1,4 +1,4 @@
-load("//bazel/qt:qt.bzl", "qt_cc_binary", "qt_cc_library", "qt_rcc")
+load("//bazel/qt:qt.bzl", "qt_cc_binary", "qt_cc_library", "qt_rcc", "qt_translations_rcc")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -135,6 +135,7 @@ qt_cc_binary(
         "greeterworker.h",
         qt_rcc(name = "rcc_image", qrc = "image.qrc", data = glob(["img/**"]), init_name = "image"),
         qt_rcc(name = "rcc_logintheme", qrc = "logintheme.qrc", data = glob(["theme/**", "skin/**"]), init_name = "logintheme"),
+        qt_translations_rcc(name = "rcc_i18n", ts_files = glob(["translations/*.ts"]), init_name = "i18n"),
     ] + _WIDGET_RCC,
     copts = ["-std=c++20"],
     includes = _INCLUDES,

@@ -1,4 +1,4 @@
-load("//bazel/qt:qt.bzl", "qt_cc_binary", "qt_cc_library", "qt_qml_module", "qt_rcc")
+load("//bazel/qt:qt.bzl", "qt_cc_binary", "qt_cc_library", "qt_qml_module", "qt_rcc", "qt_translations_rcc")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -38,6 +38,11 @@ qt_cc_binary(
             qrc = "res/resources.qrc",
             data = glob(["res/**"], exclude = ["res/resources.qrc"]),
             init_name = "resources",
+        ),
+        qt_translations_rcc(
+            name = "rcc_i18n",
+            ts_files = glob(["translations/*.ts"]),
+            init_name = "i18n",
         ),
         qt_qml_module(
             name = "qml_greeter",

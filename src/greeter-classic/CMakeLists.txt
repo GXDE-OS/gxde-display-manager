@@ -16,7 +16,7 @@ remove_definitions(
     -DQT_NO_FOREACH
 )
 
-find_package(Qt6 COMPONENTS Core Gui Widgets DBus Network Xml Svg REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui Widgets DBus Network Xml Svg LinguistTools REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(DTK2WIDGET REQUIRED IMPORTED_TARGET dtk2widget)
 pkg_check_modules(GSETTINGS_QT6 REQUIRED IMPORTED_TARGET gsettings-qt6)
@@ -107,4 +107,13 @@ add_executable(gxdm-greeter-classic
 )
 target_include_directories(gxdm-greeter-classic PRIVATE ${NEO_INCLUDE_DIRS})
 target_link_libraries(gxdm-greeter-classic PRIVATE ${NEO_COMMON_LIBS})
+
+# The greeter's own translations, embedded under :/i18n.
+file(GLOB GREETER_CLASSIC_TS_FILES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/translations/*.ts")
+qt_add_translations(gxdm-greeter-classic
+    TS_FILES ${GREETER_CLASSIC_TS_FILES}
+    RESOURCE_PREFIX "/i18n"
+    LUPDATE_OPTIONS -locations none -no-obsolete
+)
 install(TARGETS gxdm-greeter-classic DESTINATION "${CMAKE_INSTALL_BINDIR}")

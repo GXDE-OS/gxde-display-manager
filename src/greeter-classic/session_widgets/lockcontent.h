@@ -70,6 +70,7 @@ private:
     std::shared_ptr<User> m_user;
     QList<QMetaObject::Connection> m_currentUserConnects;
     QTranslator *m_translator;
+    QTranslator *m_greeterTranslator;
 };
 
 #endif // LOCKCONTENT_H

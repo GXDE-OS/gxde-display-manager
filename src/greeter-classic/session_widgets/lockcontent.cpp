@@ -26,6 +26,7 @@ LockContent::LockContent(SessionBaseModel * const model, QWidget *parent)
     , m_model(model)
     , m_virtualKB(nullptr)
     , m_translator(new QTranslator)
+    , m_greeterTranslator(new QTranslator(this))
 {
     m_controlWidget = new ControlWidget;
     m_userInputWidget = new UserInputWidget;
@@ -162,9 +163,24 @@ void LockContent::onCurrentUserChanged(std::shared_ptr<User> user)
 
     // set user language
     qApp->removeTranslator(m_translator);
+    qApp->removeTranslator(m_greeterTranslator);
     const QString locale { user->locale().split(".").first() };
-    m_translator->load("/usr/share/gxde-session-ui/translations/gxde-session-ui_" + QLocale(locale.isEmpty() ? "en_US" : locale).name());
+    const QLocale userLocale(locale.isEmpty() ? "en_US" : locale);
+    m_translator->load("/usr/share/gxde-session-ui/translations/gxde-session-ui_" + userLocale.name());
     qApp->installTranslator(m_translator);
+    // The greeter's own catalog covers the strings gxde-session-ui lacks;
+    // installed last, so it is searched first. Chinese locales without a
+    // catalog of their own (zh_HK, zh_SG, ...) use the one in the same script.
+    const auto loadGreeterTranslation = [this](const QLocale &candidate) {
+        return m_greeterTranslator->load(candidate, QStringLiteral("gxdm-greeter-classic"),
+                                         QStringLiteral("_"), QStringLiteral(":/i18n"));
+    };
+    if (loadGreeterTranslation(userLocale)
+        || (userLocale.language() == QLocale::Chinese
+            && loadGreeterTranslation(QLocale(userLocale.script() == QLocale::TraditionalChineseScript
+                                                  ? QStringLiteral("zh_TW")
+                                                  : QStringLiteral("zh_CN")))))
+        qApp->installTranslator(m_greeterTranslator);
 
     for (auto connect : m_currentUserConnects) {
         m_user.get()->disconnect(connect);

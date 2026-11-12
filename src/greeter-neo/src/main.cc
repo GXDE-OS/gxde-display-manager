@@ -21,9 +21,11 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QHash>
+#include <QLocale>
 #include <QQmlApplicationEngine>
 #include <QQmlComponent>
 #include <QStringList>
+#include <QTranslator>
 #include <QUrl>
 #include <QVariantList>
 #include <QVariantMap>
@@ -87,24 +89,38 @@ struct GxdeReleaseInfo {
   QString label;
 };
 
+// `key[xx_YY]`, then `key[xx]`, then plain `key`, for the UI languages.
+QString localizedValue(const ReleaseData& data, const QString& key) {
+  for (QString locale : QLocale().uiLanguages()) {
+    locale.replace('-', '_');
+    for (const QString& name : {locale, locale.section('_', 0, 0)}) {
+      const QString value = data.value(key + '[' + name + ']');
+      if (!value.isEmpty()) {
+        return value;
+      }
+    }
+  }
+  return data.value(key);
+}
+
 QString localizedGxdeCodename(const QString& codename) {
-  if (codename.compare(GXDE15_STABLE_CODENAME, Qt::CaseInsensitive) == 0) {
-    return QString::fromUtf8(GXDE15_STABLE_CODENAME_CN);
-  }
+  static const struct {
+    const char* id;
+    const char* name;
+  } kCodenames[] = {
+      {GXDE15_STABLE_CODENAME, QT_TRANSLATE_NOOP("GxdeRelease", "Bixie")},
+      {GXDE25_STABLE_CODENAME, QT_TRANSLATE_NOOP("GxdeRelease", "Lizhi")},
+      {GXDE25_UNSTABLE_CODENAME,
+       QT_TRANSLATE_NOOP("GxdeRelease", "Zhuangzhuang")},
+      {GXDE25_LOONGARCH_UNSTABLE_CODENAME,
+       QT_TRANSLATE_NOOP("GxdeRelease", "Hetao")},
+  };
 
-  if (codename.compare(GXDE25_STABLE_CODENAME, Qt::CaseInsensitive) == 0) {
-    return QString::fromUtf8(GXDE25_STABLE_CODENAME_CN);
+  for (const auto& entry : kCodenames) {
+    if (codename.compare(entry.id, Qt::CaseInsensitive) == 0) {
+      return QCoreApplication::translate("GxdeRelease", entry.name);
+    }
   }
-
-  if (codename.compare(GXDE25_UNSTABLE_CODENAME, Qt::CaseInsensitive) == 0) {
-    return QString::fromUtf8(GXDE25_UNSTABLE_CODENAME_CN);
-  }
-
-  if (codename.compare(GXDE25_LOONGARCH_UNSTABLE_CODENAME,
-                       Qt::CaseInsensitive) == 0) {
-    return QString::fromUtf8(GXDE25_LOONGARCH_UNSTABLE_CODENAME_CN);
-  }
-
   return codename;
 }
 
@@ -124,9 +140,12 @@ GxdeReleaseInfo detectGxdeRelease() {
     version = osRelease.value("VERSION_ID");
   }
 
-  const QString productType = desktopVersion.value("Release/Type[zh_CN]");
-  const QString milestone =
-      localizedGxdeCodename(desktopVersion.value("Addition/Milestone"));
+  const QString productType = localizedValue(desktopVersion, "Release/Type");
+  const QString milestoneId = desktopVersion.value("Addition/Milestone");
+  QString milestone = localizedValue(desktopVersion, "Addition/Milestone");
+  if (milestone == milestoneId) {
+    milestone = localizedGxdeCodename(milestoneId);
+  }
   QStringList labelParts;
 
   for (const QString& part : {version, productType}) {
@@ -137,8 +156,13 @@ GxdeReleaseInfo detectGxdeRelease() {
 
   info.label = labelParts.join(' ');
   if (!milestone.isEmpty()) {
-    info.label += QString::fromUtf8(GXDE_QUOTE_BEGIN_CN) + milestone +
-                  QString::fromUtf8(GXDE_QUOTE_END_CN);
+    info.label = info.label.isEmpty()
+                     ? milestone
+                     : QCoreApplication::translate(
+                           "GxdeRelease", "%1 · \"%2\"",
+                           "Release label: %1 is the version and edition, "
+                           "%2 the release codename")
+                           .arg(info.label, milestone);
   }
   return info;
 }
@@ -307,6 +331,20 @@ QUrl greeterBackground(const QVariantList& users) {
                         : QUrl::fromLocalFile(path);
 }
 
+// Chinese locales without a catalog of their own (zh_HK, zh_SG, ...) use
+// the one written in the same script.
+bool loadTranslation(QTranslator& translator, const QLocale& locale) {
+  const auto load = [&translator](const QLocale& candidate) {
+    return translator.load(candidate, QStringLiteral("gxdm-greeter-neo"),
+                           QStringLiteral("_"), QStringLiteral(":/i18n"));
+  };
+  if (load(locale)) return true;
+  if (locale.language() != QLocale::Chinese) return false;
+  return load(QLocale(locale.script() == QLocale::TraditionalChineseScript
+                          ? QStringLiteral("zh_TW")
+                          : QStringLiteral("zh_CN")));
+}
+
 // Whether Qt will pick the xcb platform, decided before QGuiApplication
 // exists the same way gxdm-greeter-classic does.
 bool runsOnX11(int argc, char* argv[]) {
@@ -331,6 +369,10 @@ int main(int argc, char* argv[]) {
     GxdmGreeterScale::applyThemeScale();
   }
   QGuiApplication app(argc, argv);
+  QTranslator translator;
+  if (loadTranslation(translator, QLocale())) {
+    app.installTranslator(&translator);
+  }
 
   const QStringList arguments = app.arguments();
   const int socket_index = arguments.indexOf(QStringLiteral("--socket"));

@@ -5,14 +5,14 @@
     <name>PictureBox</name>
     <message>
         <source>Press to login</source>
-        <translation>Egin klik saioa hasteko></translation>
+        <translation>Egin klik saioa hasteko&gt;</translation>
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
-        <translation>%1 (Wayland)></translation>
+        <translation>%1 (Wayland)</translation>
     </message>
 </context>
 <context>
@@ -46,8 +46,36 @@
         <translation>Pasahitza</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>Sartu pasahitz bat!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>Aldatu pasahitza</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>Sartu erabiltzaile izena eta pasahitza</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>Sartu erabiltzaile izena</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>Sartu pasahitza</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>Pasahitza:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>Erakutsi pasahitza</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>Ezkutatu pasahitza</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>Itzali</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>Eseki</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>Hibernatu</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>Erabiltzaile izena</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>Pasahitz aldaketa bertan behera utzi da, gehienezko saiakera kopurura iritsi delako</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>Pasahitz aldaketaren txanda berria! Sartu uneko pasahitza berriro!</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

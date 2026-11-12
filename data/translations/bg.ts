@@ -9,7 +9,7 @@
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
         <translation>%1 (Wayland)</translation>
@@ -53,11 +53,11 @@
         <source>Reboot</source>
         <translation>Рестартиране</translation>
     </message>
-        <message>
+    <message>
         <source>Suspend</source>
         <translation>Приспиване</translation>
     </message>
-        <message>
+    <message>
         <source>Hibernate</source>
         <translation>Дълбоко заспиване</translation>
     </message>
@@ -73,7 +73,7 @@
         <source>Username</source>
         <translation>Потребителско име</translation>
     </message>
-        <message>
+    <message>
         <source>Enter your username</source>
         <translation>Въведете потребителското си име</translation>
     </message>
@@ -85,7 +85,7 @@
         <source>Select your user and enter password</source>
         <translation>Изберете потребител и въведете парола</translation>
     </message>
-     <message>
+    <message>
         <source>Show password</source>
         <translation>Показване на парола</translation>
     </message>

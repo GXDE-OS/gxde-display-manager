@@ -5,14 +5,14 @@
     <name>PictureBox</name>
     <message>
         <source>Press to login</source>
-        <translation type="unfinished"></translation>
+        <translation>Притисните за пријаву</translation>
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (Wayland)</translation>
     </message>
 </context>
 <context>
@@ -46,8 +46,36 @@
         <translation>Лозинка</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>Унесите лозинку!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>Промени лозинку</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>Унесите ваше корисничко име и лозинку</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>Унесите ваше корисничко име</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>Унесите вашу лозинку</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>Лозинка:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>Прикажи лозинку</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>Сакриј лозинку</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>Угаси</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>Суспендуј</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>Хибернирај</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>Корисничко име</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>Промена лозинке је прекинута јер је достигнут највећи број покушаја</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>Нови круг промене лозинке! Унесите поново тренутну лозинку!</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

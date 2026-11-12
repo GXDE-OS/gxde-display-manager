@@ -5,14 +5,14 @@
     <name>PictureBox</name>
     <message>
         <source>Press to login</source>
-        <translation type="unfinished"></translation>
+        <translation>सत्यापन हेतु दबाइए</translation>
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (Wayland)</translation>
     </message>
 </context>
 <context>
@@ -46,8 +46,36 @@
         <translation>कूटशब्द</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>कृपया कूटशब्द डालिए!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>कूटशब्द बदलिए</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>अपनी पहचान और संबंधित कूटशब्द डालिए।</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>अपनी पहचान डालिए</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>अपना कूटशब्द डालिए</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>कूटशब्द:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>कूटशब्द दिखाइए</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>कूटशब्द छिपाइए</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>बंद कीजिए</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>निलंबित कीजिए</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>हाइबरनेट कीजिए</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>आपकी पहचान</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>अधिकतम प्रयासों की सीमा पूरी होने के कारण कूटशब्द परिवर्तन रद्द किया गया।</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>कूटशब्द परिवर्तन का नया चरण! कृपया वर्तमान कूटशब्द फिर से डालिए!</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

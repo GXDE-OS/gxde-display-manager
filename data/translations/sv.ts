@@ -9,7 +9,7 @@
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
         <translation>%1 (Wayland)</translation>
@@ -50,6 +50,10 @@
         <translation>Fyll i ditt användarnamn och lösenord</translation>
     </message>
     <message>
+        <source>Password:</source>
+        <translation>Lösenord:</translation>
+    </message>
+    <message>
         <source>Reboot</source>
         <translation>Starta om</translation>
     </message>
@@ -70,7 +74,6 @@
         <translation>Stäng av</translation>
     </message>
     <message>
-        <location filename="../../components/common/TextConstants.qml" line="39"/>
         <source>Username</source>
         <translation>Användarnamn</translation>
     </message>
@@ -101,10 +104,6 @@
     <message>
         <source>Change password</source>
         <translation>Ändra lösenord</translation>
-    </message>
-    <message>
-        <source>Unregistered user</source>
-        <translation>Ogiltig användarnamn</translation>
     </message>
     <message>
         <source>Password change aborted because maximum tries reached</source>

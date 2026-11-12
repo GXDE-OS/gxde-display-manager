@@ -29,6 +29,7 @@ find_package(Qt6 6.5
     DBus
     Quick
     Network
+    LinguistTools
 )
 find_package(X11 REQUIRED)
 
@@ -110,6 +111,15 @@ target_link_libraries(gxde-greeter PRIVATE
   X11::Xcursor
   X11::Xfixes
   X11::Xrandr
+)
+
+# Translations, embedded under :/i18n.
+file(GLOB GREETER_TS_FILES CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/translations/*.ts")
+qt_add_translations(gxde-greeter
+  TS_FILES ${GREETER_TS_FILES}
+  RESOURCE_PREFIX "/i18n"
+  LUPDATE_OPTIONS -locations none -no-obsolete
 )
 
 include(GNUInstallDirs)

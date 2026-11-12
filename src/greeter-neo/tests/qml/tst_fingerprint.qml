@@ -81,7 +81,7 @@ TestCase {
 
         backend.fingerprintGaveUp = true
         backend.FingerprintChanged()
-        compare(card.errorText, "指纹多次不匹配，请输入密码")
+        compare(card.errorText, "Too many fingerprint mismatches. Please enter your password.")
     }
 
     function test_password_submit_stops_listening() {

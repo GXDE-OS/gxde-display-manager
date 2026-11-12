@@ -9,7 +9,7 @@
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
         <translation>%1 (Wayland)</translation>
@@ -48,6 +48,10 @@
     <message>
         <source>Enter your username and password</source>
         <translation>Indtast dit brugernavn og adgangskode</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>Adgangskode:</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -100,10 +104,6 @@
     <message>
         <source>Change password</source>
         <translation>Skift adgangskode</translation>
-    </message>
-    <message>
-        <source>Unregistered user</source>
-        <translation>Uregistreret bruger</translation>
     </message>
     <message>
         <source>Password change aborted because maximum tries reached</source>

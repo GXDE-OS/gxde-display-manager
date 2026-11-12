@@ -8,6 +8,7 @@ Provides:
   qt_dbus_adaptor    - qdbusxml2cpp adaptor (.h/.cpp) from a D-Bus XML.
   qt_dbus_interface  - qdbusxml2cpp interface/proxy (.h/.cpp) from a D-Bus XML.
   qt_lrelease        - compile a .ts -> .qm.
+  qt_translations_rcc - compile .ts files and embed the .qm files as resources.
   qt_cc_binary       - cc_binary that auto-mocs `moc_hdrs` and links //bazel/qt:qt6.
   qt_cc_library      - cc_library that auto-mocs `moc_hdrs` and deps //bazel/qt:qt6.
 """
@@ -201,6 +202,32 @@ def qt_lrelease_all(name, ts_files):
         rule = "%s_%s" % (name, stem.replace("@", "_at_"))
         qms.append(qt_lrelease(name = rule, ts = ts))
     native.filegroup(name = name, srcs = qms)
+
+def qt_translations_rcc(name, ts_files, init_name, prefix = "/i18n"):
+    """Compile .ts files to .qm and embed them under qrc:<prefix>/ (like
+    qt_add_translations' RESOURCE_PREFIX). Returns the generated qrc_*.cpp."""
+    qms = []
+    for ts in ts_files:
+        stem = _stem(ts)
+        qms.append(qt_lrelease(name = "%s_%s" % (name, stem.replace("@", "_at_")), ts = ts))
+    qrc = ['<RCC><qresource prefix="%s">' % prefix] + [
+        "<file>%s</file>" % q
+        for q in qms
+    ] + ["</qresource></RCC>"]
+    out = "qrc_%s.cpp" % init_name
+    native.genrule(
+        name = name,
+        srcs = qms,
+        outs = [out],
+        cmd = " && ".join([
+            "d=$$(mktemp -d)",
+            "cp $(SRCS) $$d/",
+            "printf '%%s\\n' %s > $$d/i18n.qrc" % " ".join(["'%s'" % l for l in qrc]),
+            "%s --name %s $$d/i18n.qrc -o $@" % (RCC, init_name),
+            "rm -rf $$d",
+        ]),
+    )
+    return out
 
 def qt_cc_library(name, srcs = [], hdrs = [], moc_hdrs = [], moc_opts = [], deps = [], **kwargs):
     moc_srcs = qt_moc(name + "_moc", moc_hdrs, moc_opts) if moc_hdrs else []

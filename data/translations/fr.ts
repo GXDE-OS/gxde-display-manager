@@ -9,7 +9,7 @@
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
         <translation>%1 (Wayland)</translation>
@@ -53,11 +53,11 @@
         <source>Reboot</source>
         <translation>Redémarrer</translation>
     </message>
-        <message>
+    <message>
         <source>Suspend</source>
         <translation>Suspendre</translation>
     </message>
-        <message>
+    <message>
         <source>Hibernate</source>
         <translation>Hiberner</translation>
     </message>
@@ -73,7 +73,7 @@
         <source>Username</source>
         <translation>Identifiant</translation>
     </message>
-        <message>
+    <message>
         <source>Enter your username</source>
         <translation>Entrez votre identifiant</translation>
     </message>
@@ -85,7 +85,7 @@
         <source>Select your user and enter password</source>
         <translation>Sélectionnez votre identifiant et entrez votre mot de passe</translation>
     </message>
-     <message>
+    <message>
         <source>Show password</source>
         <translation>Montrer le mot de passe</translation>
     </message>

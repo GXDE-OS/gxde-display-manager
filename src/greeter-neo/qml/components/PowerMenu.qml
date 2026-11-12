@@ -25,10 +25,10 @@ Popup {
   property int currentIndex: -1
 
   readonly property var actions: [
-    { action: "reboot", text: qsTr("重启") },
-    { action: "shutdown", text: qsTr("关机") },
+    { action: "reboot", text: qsTr("Reboot") },
+    { action: "shutdown", text: qsTr("Shut down") },
     { separator: true },
-    { action: "suspend", text: qsTr("待机") }
+    { action: "suspend", text: qsTr("Suspend") }
   ]
 
   readonly property color highlightColor: light ? "#0081ff" : "#024cca"

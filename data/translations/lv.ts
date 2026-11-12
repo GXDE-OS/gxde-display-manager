@@ -5,14 +5,14 @@
     <name>PictureBox</name>
     <message>
         <source>Press to login</source>
-        <translation type="unfinished"></translation>
+        <translation>Nospiediet, lai ienāktu</translation>
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 (Wayland)</translation>
     </message>
 </context>
 <context>
@@ -46,8 +46,36 @@
         <translation>Parole</translation>
     </message>
     <message>
+        <source>Please enter a password!</source>
+        <translation>Lūdzu, ievadiet paroli!</translation>
+    </message>
+    <message>
+        <source>Change password</source>
+        <translation>Mainīt paroli</translation>
+    </message>
+    <message>
         <source>Enter your username and password</source>
         <translation>Ievadiet savu lietotājvārdu un paroli</translation>
+    </message>
+    <message>
+        <source>Enter your username</source>
+        <translation>Ievadiet savu lietotājvārdu</translation>
+    </message>
+    <message>
+        <source>Enter your password</source>
+        <translation>Ievadiet savu paroli</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>Parole:</translation>
+    </message>
+    <message>
+        <source>Show password</source>
+        <translation>Rādīt paroli</translation>
+    </message>
+    <message>
+        <source>Hide password</source>
+        <translation>Slēpt paroli</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -62,8 +90,24 @@
         <translation>Izslēgt</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>Iesnaudināt</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>Hibernēt</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>Lietotāja vārds</translation>
+    </message>
+    <message>
+        <source>Password change aborted because maximum tries reached</source>
+        <translation>Paroles maiņa pārtraukta, jo sasniegts maksimālais mēģinājumu skaits</translation>
+    </message>
+    <message>
+        <source>New password change round! Please input current password again!</source>
+        <translation>Jauna paroles maiņas kārta! Lūdzu, vēlreiz ievadiet pašreizējo paroli!</translation>
     </message>
     <message>
         <source>Select your user and enter password</source>

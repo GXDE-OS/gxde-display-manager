@@ -9,7 +9,7 @@
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
         <translation>%1 (Wayland)</translation>
@@ -57,7 +57,7 @@
         <source>Suspend</source>
         <translation>Ждущий режим</translation>
     </message>
-        <message>
+    <message>
         <source>Hibernate</source>
         <translation>Спящий режим</translation>
     </message>

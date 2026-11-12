@@ -9,7 +9,7 @@
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>SDDM::SessionModel</name>
     <message>
         <source>%1 (Wayland)</source>
         <translation>%1 (Wayland)</translation>
@@ -46,6 +46,10 @@
         <translation>Passord</translation>
     </message>
     <message>
+        <source>Enter your username and password</source>
+        <translation>Skriv inn brukarnamn og passord</translation>
+    </message>
+    <message>
         <source>Enter your username</source>
         <translation>Skriv inn brukarnamn</translation>
     </message>
@@ -56,6 +60,10 @@
     <message>
         <source>Select your user and enter password</source>
         <translation>Vel brukar og skriv inn passord</translation>
+    </message>
+    <message>
+        <source>Password:</source>
+        <translation>Passord:</translation>
     </message>
     <message>
         <source>Reboot</source>
@@ -70,20 +78,16 @@
         <translation>Slå av</translation>
     </message>
     <message>
+        <source>Suspend</source>
+        <translation>Kvile</translation>
+    </message>
+    <message>
+        <source>Hibernate</source>
+        <translation>Dvale</translation>
+    </message>
+    <message>
         <source>Username</source>
         <translation>Brukarnamn</translation>
-    </message>
-    <message>
-        <source>Enter your username</source>
-        <translation>Skriv inn brukarnamn</translation>
-    </message>
-    <message>
-        <source>Enter your password</source>
-        <translation>Skriv inn passord</translation>
-    </message>
-    <message>
-        <source>Select your user and enter password</source>
-        <translation>Vel brukar og skriv inn passord</translation>
     </message>
     <message>
         <source>Show password</source>
@@ -100,10 +104,6 @@
     <message>
         <source>Change password</source>
         <translation>Endre passord</translation>
-    </message>
-    <message>
-        <source>Unregistered user</source>
-        <translation>Ugyldig brukar</translation>
     </message>
     <message>
         <source>Password change aborted because maximum tries reached</source>

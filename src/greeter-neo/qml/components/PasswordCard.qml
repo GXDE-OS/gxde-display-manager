@@ -161,7 +161,7 @@ Popup {
       width: parent.width
       topPadding: card.askUserName ? 0 : 10
       bottomPadding: 16
-      text: card.askUserName ? qsTr("其他用户") : card.userName
+      text: card.askUserName ? qsTr("Other user") : card.userName
       color: card.textColor
       font.pixelSize: 15
       font.weight: Font.Medium
@@ -174,7 +174,7 @@ Popup {
       id: userNameField
 
       visible: card.askUserName
-      placeholderText: qsTr("用户名")
+      placeholderText: qsTr("Username")
       inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
       onAccepted: {
         if (passwordField.text.length > 0) {
@@ -197,8 +197,8 @@ Popup {
       rightPadding: submitButton.width + 8
       echoMode: TextInput.Password
       passwordCharacter: "\u2022"
-      placeholderText: card.fingerprintListening ? qsTr("密码或指纹")
-                                                 : qsTr("密码")
+      placeholderText: card.fingerprintListening ? qsTr("Password or fingerprint")
+                                                 : qsTr("Password")
       inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText
       showError: card.errorText.length > 0
       onAccepted: card.submit()

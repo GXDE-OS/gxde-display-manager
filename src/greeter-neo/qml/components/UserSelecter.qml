@@ -35,7 +35,7 @@ FocusScope {
   property bool revealed: true
   property real revealProgress: revealed ? 1.0 : 0.0
   property bool showNotListed: true
-  property string notListedText: qsTr("未列出？")
+  property string notListedText: qsTr("Not listed?")
   property url previousIconSource: "qrc:/icons/prev.svg"
   property url nextIconSource: "qrc:/icons/next.svg"
   property real pendingWheelAngle: 0
