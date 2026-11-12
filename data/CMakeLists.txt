@@ -16,20 +16,10 @@ configure_file(
     "${CMAKE_CURRENT_BINARY_DIR}/top.gxde.DisplayManager.service"
     @ONLY
 )
-configure_file(
-    "gxdm-lock-classic.desktop.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/gxdm-lock-classic.desktop"
-    @ONLY
-)
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/top.gxde.DisplayManager.service"
     DESTINATION "${CMAKE_INSTALL_FULL_DATADIR}/dbus-1/services"
-)
-
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/gxdm-lock-classic.desktop"
-    DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/xdg/autostart"
 )
 
 install(FILES

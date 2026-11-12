@@ -12,9 +12,6 @@ pkg_files(
         # Default greeter
         "//src/greeter-classic:gxdm-greeter-classic",
         "//src/greeter-neo:gxdm-greeter-neo",
-        # In-session lock screen (PAM-direct, no dde-daemon)
-        "//src/greeter-classic:gxdm-lock-classic",
-        "//src/lock-neo:gxdm-lock-neo",
     ],
     attributes = pkg_attributes(mode = "0755"),
     prefix = "/usr/bin",
@@ -27,6 +24,7 @@ pkg_files(
         "//src/helper:gxdm-helper",
         "//src/helper:gxdm-helper-start-wayland",
         "//src/helper:gxdm-helper-start-x11user",
+        "//src/settings-agent:gxdm-settings-agent",
     ],
     attributes = pkg_attributes(mode = "0755"),
     prefix = "/usr/libexec",

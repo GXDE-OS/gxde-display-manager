@@ -1,0 +1,15 @@
+load("//bazel/qt:qt.bzl", "qt_cc_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+# Mirrors src/settings-agent/CMakeLists.txt.
+qt_cc_binary(
+    name = "gxdm-settings-agent",
+    srcs = [
+        "main.cpp",
+        "SettingsAgent.cpp",
+        "SettingsAgent.h",
+    ],
+    copts = ["-std=c++20"],
+    moc_hdrs = ["SettingsAgent.h"],
+)

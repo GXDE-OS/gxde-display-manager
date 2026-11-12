@@ -79,28 +79,19 @@ pkg_files(
 )
 
 gxdm_configure_file(
-    name = "configure_lock_autostart",
-    src = "gxdm-lock-classic.desktop.in",
-    out = "gxdm-lock-classic.desktop",
-    extra = {"CMAKE_INSTALL_FULL_BINDIR": "/usr/bin"},
-)
-
-gxdm_configure_file(
     name = "configure_display_manager_service",
     src = "top.gxde.DisplayManager.service.in",
     out = "top.gxde.DisplayManager.service",
-    extra = {"CMAKE_INSTALL_FULL_BINDIR": "/usr/bin"},
+    extra = {"CMAKE_INSTALL_FULL_LIBEXECDIR": "/usr/libexec"},
 )
 
 pkg_files(
     name = "session_integration_pkg",
     srcs = [
-        "gxdm-lock-classic.desktop",
         "top.gxde.DisplayManager.service",
     ],
     prefix = "/",
     renames = {
-        "gxdm-lock-classic.desktop": "etc/xdg/autostart/gxdm-lock-classic.desktop",
         "top.gxde.DisplayManager.service": "usr/share/dbus-1/services/top.gxde.DisplayManager.service",
     },
 )

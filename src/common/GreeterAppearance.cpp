@@ -30,7 +30,7 @@ bool isReadableFile(const QString& path) {
 // GreeterBackground, falling back to BackgroundFile, and finally to the
 // user's desktop wallpaper list, of an Accounts user object. The Deepin
 // daemon is the only one exposing DesktopBackgrounds, which mirrors the
-// GSettings desktop wallpaper the in-session locker reads; keeping it here
+// GSettings desktop wallpaper the in-session lock screen reads; keeping it here
 // lets the greeter (running as gxdm, without access to the user's dconf)
 // resolve the very same image.
 QString accountsUserBackground(const QString& service, const QString& path,
@@ -134,23 +134,6 @@ bool hasConfiguredWallpaper(const QString& statePath) {
   return !configured.isEmpty();
 }
 
-QString lockWallpaperOverridePath(uint uid, const QString& dataDirectory) {
-  QString directory = dataDirectory;
-  if (directory.isEmpty()) {
-    const passwd* user = getpwuid(uid);
-    if (!user || !user->pw_dir) return QString();
-    directory = QString::fromLocal8Bit(user->pw_dir)
-      + QStringLiteral("/.local/share/gxdm");
-  }
-  return directory + QStringLiteral("/lock-wallpaper-override");
-}
-
-QString lockWallpaperOverride(uint uid, const QString& dataDirectory) {
-  const QString configured = lockWallpaperOverridePath(uid, dataDirectory);
-
-  return isReadableFile(configured) ? configured : QString();
-}
-
 QString systemLockWallpaperOverridePath(uint uid,
     const QString& stateDirectory) {
   QString directory = stateDirectory;
@@ -185,22 +168,15 @@ QString readableImage(const QString& path) {
 }
 
 QString userLockWallpaper(const QString& userName, uint uid) {
-  // 1. A GXDM lock override belongs to one user and never affects the
-  //    global greeter wallpaper. It is written to ~/.local/share/gxdm (for
-  //    the in-session locker) and ~gxdm/lock-wallpaper-override-<uid>
-  //    (readable by the greeter even when the home directory is not).
-  //    The in-session locker prefers the freshly written user copy; the
-  //    greeter can only rely on the system one.
-  QStringList overrides = {systemLockWallpaperOverride(uid),
-                           lockWallpaperOverride(uid)};
-  if (uid == getuid()) overrides.swapItemsAt(0, 1);
-  for (const QString& path : overrides) {
-    const QString background = readableImage(path);
-    if (!background.isEmpty()) {
-      qInfo() << "(Frontend) Lock background: Using user override for"
-        << userName << background;
-      return background;
-    }
+  // 1. The user's lock override, pushed by gxde-lock through the GXDM
+  //    settings agent. It belongs to one user and never affects the global
+  //    greeter wallpaper. The copy lives in ~gxdm/lock-wallpaper-override-<uid>
+  //    so the greeter can read it even when the home directory is 0700.
+  const QString override = readableImage(systemLockWallpaperOverride(uid));
+  if (!override.isEmpty()) {
+    qInfo() << "(Frontend) Lock background: Using user override for"
+      << userName << override;
+    return override;
   }
 
   // 2. Deepin Accounts, the interface the classic lightdm greeter used for

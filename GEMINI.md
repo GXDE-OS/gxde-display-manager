@@ -14,18 +14,20 @@ complete display-manager stack, not just a greeter:
 | Daemon | `gxdm` | `src/daemon` | Owns seats, displays, sessions and power management; starts greeters; integrates with logind/elogind; exposes D-Bus APIs. |
 | New greeter | `gxdm-greeter-neo` | `src/greeter-neo` | Default QML/Qt Quick greeter with login transitions and multi-screen support. |
 | Classic greeter | `gxdm-greeter-classic` | `src/greeter-classic` | GXDE/DTK2Widget greeter inherited from DDE `session-ui`. |
-| Classic lock screen | `gxdm-lock-classic` | `src/greeter-classic/lock` | In-session DTK/QWidget lock screen; reuses GXDM's PAM authenticator and is the stable autostart/D-Bus entry point. |
-| QML lock screen | `gxdm-lock-neo` | `src/lock-neo` | Qt Quick lock screen backed by `src/lock-common`; selected by `[General] LockScreenStyle`. |
 | Generic greeter | `gxdm-greeter-qt6` | `src/greeter` | SDDM-style Qt Quick greeter used for themes and compatibility. |
 | Auth helper | `gxdm-helper` | `src/helper` | PAM authentication and session setup over a local socket. |
 | Display helpers | `gxdm-helper-start-wayland`, `gxdm-helper-start-x11user` | `src/helper` | Start compositors/X servers and prepare the user session. |
+| Settings agent | `gxdm-settings-agent` (libexec) | `src/settings-agent` | Owns the session-bus `top.gxde.DisplayManager`; D-Bus activated, forwards greeter settings to the daemon, exits when idle. |
+
+The in-session lock screen is **not** part of GXDM; it is the separate
+`gxde-lock` project (`top.gxde.Lock`). GXDM only keeps a per-user copy of the
+lock wallpaper, pushed by gxde-lock, so the greeter can show it.
 
 Key facts:
 
 - **Languages:** C++ (C++20 under CMake; `greeter-neo` uses C++17; Bazel
   defaults to C++17 with per-target C++20 overrides), QML, CMake, Bazel, shell.
-- **UI stack:** Qt 6, Qt Quick/QML, DTK2Widget/DTK6, LayerShellQt,
-  GSettings-Qt6.
+- **UI stack:** Qt 6, Qt Quick/QML, DTK2Widget/DTK6, GSettings-Qt6.
 - **Platform:** Linux with systemd/logind or elogind; FreeBSD-specific PAM and
   build branches also exist.
 - **Upstream heritage:** the C++ namespace is `SDDM`, the CMake project is
@@ -42,12 +44,11 @@ Key facts:
 | Path | Contents |
 | --- | --- |
 | `src/daemon` | `DaemonApp`, `DisplayManager`, `Seat`, `Display`, `Greeter`, `DisplayServer` (X11/Wayland), `PowerManager`, socket server, logind types. |
-| `src/auth` | Shared authentication protocol: `Auth`, `AuthRequest`, `AuthPrompt`, `AuthMessages`. Used by the daemon, helper and lock screen. |
+| `src/auth` | Shared authentication protocol: `Auth`, `AuthRequest`, `AuthPrompt`, `AuthMessages`. Used by the daemon and helper. |
 | `src/common` | Config parsing (`ConfigReader`, `Configuration`), session/theme metadata, `Constants.h.in`, `SafeDataStream`, `XAuth`, `VirtualTerminal`, greeter appearance/cursor/scale, OS defaults. |
 | `src/greeter` | Generic SDDM-derived Qt Quick greeter (`gxdm-greeter-qt6`). |
-| `src/greeter-classic` | DTK2Widget greeter and in-session lock screen. `lock/` contains the locker; `vendor/` contains imported DDE code. |
-| `src/lock-common` | QML-facing lock backend (`LockBackend`, `UserListModel`), style resolution (`LockStyleResolver`) and the shared `gxdm-lock-backend`/`gxdm-lock-common` static libraries. |
-| `src/lock-neo` | QML lock screen (`gxdm-lock-neo`): `src/main.cc`, `qml/LockWindow.qml`, `qml/LockScreen.qml`, and lock-specific components. |
+| `src/greeter-classic` | DTK2Widget greeter. `vendor/` contains imported DDE code. |
+| `src/settings-agent` | `gxdm-settings-agent`: session-bus front end of `top.gxde.DisplayManager.System`. |
 | `src/greeter-neo` | New QML greeter: `qml/MainWindow.qml`, C++ backend, session list, screen manager, login transition, and gated tests. |
 | `src/helper` | PAM helper, Wayland/X11 user-session helpers, `backend/PamBackend.cpp`. |
 | `components` | Reusable QML components installed as `GxdmComponents` (`2.0/` and `common/`). |
@@ -86,23 +87,15 @@ may use `sddm-*` binary names. Prefer the actual GXDM target names in
 - `[General] EnableNeoGreeter` defaults to `true`. When the neo binary is
   missing, the daemon falls back to the classic greeter.
 - Qt Virtual Keyboard requires both its QML module and input-context plugin.
-- Lock screen frontends: `gxdm-lock-classic` remains the autostart/D-Bus
-  entry point. When `[General] LockScreenStyle` (or OMG.conf's
-  `SwitchLkScrStyle`) resolves to `modern` (the default), it execs `gxdm-lock-neo` with the
-  same arguments. A missing QML binary falls back to the classic locker.
-- Runtime style switch: `SetLockScreenStyle` (session `top.gxde.DisplayManager`
-  forwards to `top.gxde.DisplayManager.System`) persists the key as root and
-  emits `LockScreenStyleChanged`. Each locker's `LockStyleManager` re-resolves
-  the style and, once the screen is hidden, the locker releases its D-Bus names
-  (and neo's instance lock) and execs the other binary with `--daemon`.
-- `gxdm-lock-neo` uses `ext-session-lock-v1` on Wayland when available, then
-  LayerShellQt; on X11 it uses full-screen windows and grabs the keyboard.
 
 ### D-Bus
 
 - **Public/session bus:** service `top.gxde.DisplayManager`, object path
   `/top/gxde/DisplayManager`, interface `top.gxde.DisplayManager`. This is the
-  API regular applications should use.
+  API regular applications should use. It is served by `gxdm-settings-agent`,
+  which D-Bus starts on demand; it opens wallpapers with the caller's
+  permissions and forwards file descriptors (plus the caller's uid for lock
+  wallpaper overrides) to the system bus.
 - **Internal/system bus:** the daemon owns the same service name and exposes
   `top.gxde.DisplayManager.System`. Treat this as an implementation detail; do
   not call it from regular applications.
@@ -111,10 +104,9 @@ may use `sddm-*` binary names. Prefer the actual GXDM target names in
   `top.gxde.DisplayManager.service.in`).
 - Global appearance state is persisted in `~gxdm/state.conf`; the greeter
   display server is written to `/etc/gxdm.conf`. User lock-screen wallpaper
-  overrides are stored under `~/.local/share/gxdm/` and copied to `~gxdm/` for
-  the greeter.
-- The session-bus API includes lock-shortcut enrollment (`TryEnrollLkScr`,
-  `UnregisterLkScr`, `LkScrStat`), greeter/lock appearance (`SetCursor`,
+  overrides (pushed by gxde-lock) are stored as
+  `~gxdm/lock-wallpaper-override-<uid>` for the greeter.
+- The session-bus API includes greeter appearance (`SetCursor`,
   `SetWallpaper*`, `SetLockWallpaperOverride`,
   `ClearLockWallpaperOverride`), display-server selection, and
   `SetNeoGreeterEnabled`/`NeoGreeterEnabled`. See `README.md` for the full table
@@ -164,11 +156,10 @@ Install the dependencies listed in `debian/control`. At minimum:
 - A C++20-capable compiler and CMake (the top level says 3.16, but
   `src/greeter-neo` and `debian/control` require 3.21; treat 3.21 as the
   effective minimum).
-- Qt 6: Core, DBus, Gui, Widgets, Network, Qml, Quick, Svg, Xml, WaylandClient,
-  Test, QuickTest, LinguistTools.
+- Qt 6: Core, DBus, Gui, Widgets, Network, Qml, Quick, Svg, Xml, Test,
+  QuickTest, LinguistTools.
 - DTK2Widget-Qt6, DTK6 Core, DTK6 DLog.
-- GSettings-Qt6, LayerShellQt, PAM, systemd, X11/XCB/XKB/Xrandr/Xcursor/Xfixes/
-  XInput/XTest, wayland-protocols.
+- GSettings-Qt6, PAM, systemd, X11/XCB/XKB/Xrandr/Xcursor/Xfixes/XInput/XTest.
 - For packaging: debhelper/dpkg-buildpackage or Arch `makepkg`.
 
 ### CMake (primary development build)
@@ -194,9 +185,7 @@ Useful options:
 | --- | --- | --- |
 | `BUILD_WITH_QT6` | `ON` | Qt 6 build. Qt 5 is legacy and only allowed when both GXDE greeters are disabled. |
 | `BUILD_NEO_GREETER` | `ON` | Build `gxdm-greeter-neo`. Requires Qt 6. |
-| `BUILD_CLASSIC_GREETER` | `ON` | Build `gxdm-greeter-classic` and `gxdm-lock-classic`. Requires Qt 6. |
-| `BUILD_NEO_LOCK` | `ON` | Build `gxdm-lock-neo` and the shared lock backend. Requires `BUILD_CLASSIC_GREETER=ON`. |
-| `LOCK_BUILD_TESTS` | `OFF` | Build `LockBackend` and `LockStyle` CTest cases. |
+| `BUILD_CLASSIC_GREETER` | `ON` | Build `gxdm-greeter-classic`. Requires Qt 6. |
 | `BUILD_MAN_PAGES` | `OFF` | Build man pages (requires `rst2man`). |
 | `ENABLE_JOURNALD` | `ON` | Enable journald logging when libsystemd is available. |
 | `NO_SYSTEMD` | `OFF` | Disable systemd support. |
@@ -286,8 +275,6 @@ Test inventory (`test/CMakeLists.txt`):
 | `MultiScreenManager` | `MultiScreenManagerTest` | Requires `BUILD_CLASSIC_GREETER`; `-platform offscreen`. |
 | `GreeterSettings` | `GreeterSettingsTest` | Config persistence and greeter selection. |
 | `AuthTransition` | `AuthTransitionTest` | 20 s timeout; runs a private `gxdm-helper` fixture without PAM. |
-| `LockBackend` | `LockBackendTest` | Requires `LOCK_BUILD_TESTS=ON`; lock facade and user model. |
-| `LockStyle` | `LockStyleTest` | Requires `LOCK_BUILD_TESTS=ON`; lock style resolution and deferred handoff. |
 
 Neo-greeter tests are built only with `-DGREETER_BUILD_TESTS=ON`:
 
@@ -428,7 +415,6 @@ Do not edit or commit:
 | Arch package | `cd arch && makepkg -si` |
 | Sync Arch version | `./update-pkgver` |
 | Greeter preview | `./build-cmake/src/greeter-neo/gxdm-greeter-neo --test-mode` |
-| Lock screen preview | `./build-cmake/src/greeter-classic/gxdm-lock-neo --test-mode` |
 | Service status | `systemctl status gxdm.service --no-pager` |
 | Service logs | `sudo journalctl -u gxdm.service -b --no-pager` |
 | Restart service | `sudo systemctl restart gxdm.service` (only on a test machine) |
@@ -452,16 +438,10 @@ Do not edit or commit:
   `GreeterScale`, `VirtualKeyboard` and `MultiScreenManager` are skipped unless
   `BUILD_CLASSIC_GREETER=ON`.
 - **Neo tests:** they are not built by default; pass `-DGREETER_BUILD_TESTS=ON`.
-- **Lock tests:** `LockBackend` and `LockStyle` are only built with
-  `-DLOCK_BUILD_TESTS=ON`.
-- **Lock screen style:** `gxdm-lock-classic` is still the autostart/D-Bus
-  entry; it execs `gxdm-lock-neo` when `LockScreenStyle=modern`. New QML lock
-  files must be added to `LOCK_NEO_QML_FILES` and given a
-  `QT_RESOURCE_ALIAS` in `src/lock-neo/CMakeLists.txt`.
-- **QML lock and Bazel:** `//src/lock-neo:gxdm-lock-neo` is part of
-  `//:gxdm-dist`. The lock backend sources stay in `src/greeter-classic/lock`
-  and are exposed as `//src/greeter-classic:lock_backend`; QML files must also
-  be listed in `src/lock-neo/BUILD.bazel`.
+- **No lock screen here:** lock-screen code, Super+L, `org.freedesktop.ScreenSaver`
+  and lock styles belong to gxde-lock. `session_widgets/lockcontent.*` and the
+  `dbuslock*` interfaces in `src/greeter-classic` are DDE widgets the classic
+  greeter still uses, not a locker.
 - **Greeter names:** `gxdm-greeter-neo` is the default when enabled;
   `gxdm-greeter-classic` is the fallback; `gxdm-greeter-qt6` is the generic
   theme greeter. Do not conflate them in docs or D-Bus examples.

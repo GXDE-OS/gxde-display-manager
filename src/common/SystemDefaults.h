@@ -1,8 +1,7 @@
 #ifndef SYSTEMDEFAULTS_H
 #define SYSTEMDEFAULTS_H
 
-// OS defaults shared by gxdm-greeter-classic, gxdm-lock-classic and
-// gxdm-greeter-neo.
+// OS defaults shared by gxdm-greeter-classic and gxdm-greeter-neo.
 
 #include <QString>
 

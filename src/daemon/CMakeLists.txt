@@ -1,7 +1,6 @@
 include_directories(
     "${CMAKE_SOURCE_DIR}/src/common"
     "${CMAKE_SOURCE_DIR}/src/auth"
-    "${CMAKE_SOURCE_DIR}/src/lock-common"
     "${CMAKE_BINARY_DIR}/src/common"
     ${LIBXAU_INCLUDE_DIRS}
     "${LIBXCB_INCLUDE_DIR}"
@@ -22,7 +21,6 @@ set(DAEMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/auth/Auth.cpp
     ${CMAKE_SOURCE_DIR}/src/auth/AuthPrompt.cpp
     ${CMAKE_SOURCE_DIR}/src/auth/AuthRequest.cpp
-    ${CMAKE_SOURCE_DIR}/src/lock-common/lockstyle.cpp
 
     DaemonApp.cpp
     Display.cpp

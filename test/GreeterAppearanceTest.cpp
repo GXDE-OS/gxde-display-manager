@@ -28,13 +28,6 @@ void GreeterAppearanceTest::readsGlobalAppearance() {
   wallpaper.close();
 
   const uint uid = 1000;
-  const QString lockOverridePath = directory.filePath(
-    QStringLiteral("lock-wallpaper-override"));
-  QFile lockOverride(lockOverridePath);
-  QVERIFY(lockOverride.open(QIODevice::WriteOnly));
-  QCOMPARE(lockOverride.write("image"), 5);
-  lockOverride.close();
-
   const QString systemLockOverridePath = directory.filePath(
     QStringLiteral("lock-wallpaper-override-%1").arg(uid));
   QFile systemLockOverride(systemLockOverridePath);
@@ -53,18 +46,11 @@ void GreeterAppearanceTest::readsGlobalAppearance() {
     GxdmGreeterAppearance::cursorTheme(statePath), QStringLiteral("gxde"));
   QCOMPARE(GxdmGreeterAppearance::wallpaper(statePath), wallpaperPath);
   QVERIFY(GxdmGreeterAppearance::hasConfiguredWallpaper(statePath));
-  QCOMPARE(GxdmGreeterAppearance::lockWallpaperOverride(
-    uid, directory.path()), lockOverridePath);
-  QCOMPARE(GxdmGreeterAppearance::lockWallpaperOverridePath(
-    uid, directory.path()), lockOverridePath);
   QCOMPARE(GxdmGreeterAppearance::systemLockWallpaperOverridePath(
     uid, directory.path()), systemLockOverridePath);
   QCOMPARE(GxdmGreeterAppearance::systemLockWallpaperOverride(
     uid, directory.path()), systemLockOverridePath);
-  QVERIFY(QFile::remove(lockOverridePath));
   QVERIFY(QFile::remove(systemLockOverridePath));
-  QCOMPARE(GxdmGreeterAppearance::lockWallpaperOverride(
-    uid, directory.path()), QString());
   QCOMPARE(GxdmGreeterAppearance::systemLockWallpaperOverride(
     uid, directory.path()), QString());
 }

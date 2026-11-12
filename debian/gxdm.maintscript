@@ -1,0 +1,1 @@
+rm_conffile /etc/xdg/autostart/gxdm-lock-classic.desktop 1.3.6-gxde7~

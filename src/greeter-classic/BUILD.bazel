@@ -1,11 +1,8 @@
-load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel/qt:qt.bzl", "qt_cc_binary", "qt_cc_library", "qt_rcc")
 
 package(default_visibility = ["//visibility:public"])
 
-# Headers shared by the greeter and the lock screen that carry Q_OBJECT and must
-# be moc'd. moc'd once here (in neo_common) to avoid duplicate moc_*.cpp outputs
-# that would clash if both binaries moc'd the same headers.
+# Shared headers that carry Q_OBJECT; moc'd once here in neo_common.
 _COMMON_MOC_HDRS = [
     "view/logowidget.h",
     "global_util/multiscreenmanager.h",
@@ -61,7 +58,7 @@ _INCLUDES = [
     "vendor",
 ]
 
-# X11 libs needed by keyboardmonitor (common), the greeter main and the locker.
+# X11 libs needed by keyboardmonitor (common) and the greeter main.
 _X11_LINKOPTS = [
     "-lX11",
     "-lXi",
@@ -127,28 +124,6 @@ _WIDGET_RCC = [
     ),
 ]
 
-genrule(
-    name = "ext_session_lock_v1_protocol",
-    outs = [
-        "wayland-ext-session-lock-v1-client-protocol.h",
-        "wayland-ext-session-lock-v1-protocol.c",
-    ],
-    cmd = "set -e; " +
-          "/usr/bin/wayland-scanner --include-core-only client-header " +
-          "/usr/share/wayland-protocols/staging/ext-session-lock/ext-session-lock-v1.xml " +
-          "$(@D)/wayland-ext-session-lock-v1-client-protocol.h; " +
-          "/usr/bin/wayland-scanner --include-core-only public-code " +
-          "/usr/share/wayland-protocols/staging/ext-session-lock/ext-session-lock-v1.xml " +
-          "$(@D)/wayland-ext-session-lock-v1-protocol.c",
-)
-
-cc_library(
-    name = "ext_session_lock_v1_protocol_lib",
-    srcs = [":wayland-ext-session-lock-v1-protocol.c"],
-    hdrs = [":wayland-ext-session-lock-v1-client-protocol.h"],
-    includes = ["."],
-)
-
 # --- Greeter (talks to the GXDM daemon over --socket) ------------------------
 qt_cc_binary(
     name = "gxdm-greeter-classic",
@@ -168,81 +143,4 @@ qt_cc_binary(
         "loginwindow.h",
     ],
     deps = [":neo_common"],
-)
-
-# --- Lock backend (shared by gxdm-lock-classic and gxdm-lock-neo) -----------
-# PAM worker (reusing GXDM's SDDM::Auth in auth-only mode), lock shortcut and
-# session D-Bus surface, org.freedesktop.ScreenSaver and ext-session-lock-v1.
-qt_cc_library(
-    name = "lock_backend",
-    srcs = [
-        "lock/dbus/dbuslockagent.cpp",
-        "lock/dbus/dbuslockfrontservice.cpp",
-        "lock/fingerprintunlock.cpp",
-        "lock/freedesktopscreensaver.cpp",
-        "lock/lockshortcutmanager.cpp",
-        "lock/lockworker.cpp",
-        "lock/waylandsessionlock.cpp",
-    ],
-    hdrs = [
-        "lock/dbus/dbuslockagent.h",
-        "lock/dbus/dbuslockfrontservice.h",
-        "lock/fingerprintunlock.h",
-        "lock/freedesktopscreensaver.h",
-        "lock/lockshortcutmanager.h",
-        "lock/lockworker.h",
-        "lock/waylandsessionlock.h",
-    ],
-    copts = ["-std=c++20"],
-    includes = _INCLUDES + ["lock", "lock/dbus"],
-    moc_hdrs = [
-        "lock/dbus/dbuslockagent.h",
-        "lock/dbus/dbuslockfrontservice.h",
-        "lock/fingerprintunlock.h",
-        "lock/freedesktopscreensaver.h",
-        "lock/lockshortcutmanager.h",
-        "lock/lockworker.h",
-        "lock/waylandsessionlock.h",
-    ],
-    deps = [
-        ":ext_session_lock_v1_protocol_lib",
-        ":neo_common",
-        "//src/auth:auth",
-        "//src/common:fingerprint_probe",
-        "//src/common:fingerprint_session",
-        "//src/common:greeter_appearance",
-    ],
-    linkopts = [
-        "-lQt6WaylandClient",
-        "-lwayland-client",
-    ],
-)
-
-# --- Classic lock screen (DTK widgets on top of :lock_backend) ---------------
-qt_cc_binary(
-    name = "gxdm-lock-classic",
-    srcs = [
-        "lock/main.cpp",
-        "lock/lockframe.cpp",
-        "lock/lockframe.h",
-        "lock/timewidget.cpp",
-        "lock/timewidget.h",
-        qt_rcc(name = "rcc_lock_images", qrc = "lock/images.qrc", data = glob(["lock/fonts/**"]), init_name = "lock_images"),
-        qt_rcc(name = "rcc_lock_logintheme", qrc = "lock/logintheme.qrc", data = glob(["lock/theme/**", "lock/skin/**"]), init_name = "lock_logintheme"),
-    ] + _WIDGET_RCC,
-    copts = ["-std=c++20"],
-    includes = _INCLUDES + ["lock", "lock/dbus"],
-    moc_hdrs = [
-        "lock/lockframe.h",
-        "lock/timewidget.h",
-    ],
-    deps = [
-        ":lock_backend",
-        "//src/lock-common:lock_style_manager",
-    ],
-    linkopts = [
-        "-lLayerShellQtInterface",
-        "-lQt6WaylandClient",
-        "-lwayland-client",
-    ],
 )

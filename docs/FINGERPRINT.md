@@ -1,14 +1,15 @@
-# 指纹登录与解锁
+# 指纹登录
 
-GXDM 可以用指纹代替密码：新版 greeter（`gxdm-greeter-neo`）用指纹登录，
-锁屏用指纹解锁。指纹与密码同时可用，任何时候都能改输密码。
+GXDM 可以用指纹代替密码：新版 greeter（`gxdm-greeter-neo`）用指纹登录。
+指纹与密码同时可用，任何时候都能改输密码。
 
 | 场景 | 支持情况 |
 | --- | --- |
 | 新版 greeter 登录 | 支持，登录框会提示“密码或指纹” |
 | 经典 greeter 登录 | 不支持 |
-| 新版锁屏 `gxdm-lock-neo` | 支持，有提示 |
-| 经典锁屏 `gxdm-lock-classic` | 可以解锁，但界面没有指纹提示 |
+
+锁屏的指纹解锁由 gxde-lock 提供，使用它自己的 PAM 服务
+`/etc/pam.d/gxde-lock-fingerprint`，请参考 gxde-lock 的文档。
 
 指纹验证由 fprintd 和 `pam_fprintd` 完成，GXDM 自己不读取、不保存指纹数据。
 
@@ -95,8 +96,8 @@ sudo install -Dm644 services/gxdm-fingerprint.pam /etc/pam.d/gxdm-fingerprint
 sudo install -Dm644 services/debian.gxdm-fingerprint.pam /etc/pam.d/gxdm-fingerprint
 ```
 
-**不需要重启 GXDM。** greeter 每次打开登录框、锁屏每次显示时都会重新检查
-这三个条件，录入完成后下次锁屏或登录就能用。
+**不需要重启 GXDM。** greeter 每次打开登录框时都会重新检查这三个条件，
+录入完成后下次登录就能用。
 
 FreeBSD 不安装这个文件，因为 fprintd 不在 FreeBSD 基本系统里。
 
@@ -109,11 +110,6 @@ FreeBSD 不安装这个文件，因为 fprintd 不在 FreeBSD 基本系统里。
 - 通过“未列出？”手动输入用户名时不使用指纹。
 - 开始输入并提交密码后，指纹等待会停止。
 
-**解锁（锁屏）**
-
-- 锁屏一出现就开始等待指纹，包括还停在时钟画面的时候，不必先唤出密码框。
-- 锁屏隐藏时（空闲待命的锁屏进程）不占用读取器。
-
 **识别失败时**
 
 | 情况 | 表现 |
@@ -122,8 +118,7 @@ FreeBSD 不安装这个文件，因为 fprintd 不在 FreeBSD 基本系统里。
 | 连续失败达到次数（默认 3 次） | 显示“指纹多次不匹配，请输入密码”，停止等待 |
 | 一段时间没有按手指（默认 30 秒） | 静默重新开始等待，界面不变 |
 
-停止等待后，以下操作会重新启用指纹：greeter 中重新打开登录框、密码输错一次；
-锁屏中进入或离开密码输入界面。
+停止等待后，重新打开登录框或密码输错一次会重新启用指纹。
 
 ## 5. 调整
 
@@ -178,7 +173,6 @@ pamtester gxdm-fingerprint "$USER" authenticate
 
 ```sh
 journalctl -b -u gxdm | grep -iE 'fingerprint|fprint'    # greeter 登录（守护进程）
-journalctl -b --user | grep -iE 'fingerprint|fprint'     # 锁屏（X11 会话也可能在 ~/.xsession-errors）
 journalctl -b -u fprintd                                 # 读取器
 ```
 
