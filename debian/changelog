@@ -1,3 +1,12 @@
+gxde-display-manager-se (1.3.8-gxde1) unstable; urgency=medium
+
+  * GXDE 上的默认登录会话改为 gxde-flakewm（原为 X11 deepin.desktop）
+  * 升级时一次性把旧默认会话（deepin.desktop / gxde-wlcom.desktop）
+    迁移到 gxde-flakewm，之后的用户选择不再被覆盖
+  * 推荐安装 gxde-flake-session
+
+ -- shenmo <shenmo@spark-app.store>  Thu, 26 Nov 2026 20:50:00 +0800
+
 gxde-display-manager-se (1.3.7-gxde3) unstable; urgency=medium
 
   * 更新翻译文本

@@ -28,6 +28,18 @@ if [ "$1" = "configure" ] && [ -z "$DPKG_ROOT" ]; then
         chown gxdm:gxdm /var/lib/gxdm
         chmod 0750      /var/lib/gxdm
     fi
+
+    # 旧默认会话（deepin.desktop / gxde-wlcom.desktop）迁移到 gxde-flakewm。
+    # 这里只放一个一次性标记，由 gxdm 守护进程下次启动时消费：升级时旧
+    # 守护进程仍在运行，直接改 state.conf 会被它内存里的旧状态写回去。
+    # Only drop a one-shot marker here; the daemon consumes it on its next
+    # start, because the running daemon would otherwise overwrite state.conf.
+    if [ -n "$2" ] && dpkg --compare-versions "$2" lt 1.3.8-gxde1; then
+        SESSION_MIGRATION_MARKER=/var/lib/gxdm/.migrate-to-flakewm
+        : > "$SESSION_MIGRATION_MARKER"
+        chown gxdm:gxdm "$SESSION_MIGRATION_MARKER" 2>/dev/null || true
+        chmod 0600 "$SESSION_MIGRATION_MARKER"
+    fi
 fi
 
 if [ ! -e "$DEFAULT_DISPLAY_MANAGER_FILE" ]; then

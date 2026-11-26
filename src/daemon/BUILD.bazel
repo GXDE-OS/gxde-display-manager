@@ -142,5 +142,6 @@ qt_cc_binary(
         "//src/common:common",
         "//src/common:constants",
         "//src/common:fingerprint_probe",
+        "//src/common:system_defaults",
     ],
 )

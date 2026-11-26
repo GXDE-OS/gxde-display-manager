@@ -63,7 +63,8 @@ Depends: ${shlibs:Depends},
          xkb-data,
          xserver-xorg | xserver,
 Recommends: libpam-systemd,
-            gxde-lock
+            gxde-lock,
+            gxde-flake-session
 Provides: x-display-manager
 Description: GXDE Display Manager
  GXDE Display Manager (GXDM) is a fork of SDDM that is specially designed for

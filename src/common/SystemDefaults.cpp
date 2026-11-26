@@ -1,6 +1,7 @@
 #include "SystemDefaults.h"
 
 #include <QFile>
+#include <QFileInfo>
 #include <QSettings>
 
 namespace GxdmSystemDefaults {
@@ -26,10 +27,17 @@ bool isGxdeOperatingSystem(const QString& osReleasePath) {
 QString defaultSessionDesktopFile(const QString &osReleasePath)
 {
     if (isGxdeOperatingSystem(osReleasePath)) {
-        return QStringLiteral("deepin.desktop");
+        return QStringLiteral("gxde-flakewm.desktop");
     }
 
     return QString();
+}
+
+bool isLegacyDefaultSession(const QString &sessionDesktopFile)
+{
+    const QString name = QFileInfo(sessionDesktopFile).completeBaseName();
+    return name.compare(QStringLiteral("deepin"), Qt::CaseInsensitive) == 0
+        || name.compare(QStringLiteral("gxde-wlcom"), Qt::CaseInsensitive) == 0;
 }
 
 QString initialSessionDesktopFile(const QString &rememberedSession,

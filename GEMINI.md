@@ -82,8 +82,8 @@ may use `sddm-*` binary names. Prefer the actual GXDM target names in
 ### Display servers and greeter selection
 
 - `SetGreeterDisplayServer` accepts `wayland`, `x11`, or `x11-user`.
-- The Wayland greeter prefers `gxde-wlcom`, then falls back to `LabWC`, `Sway`
-  or `Weston`.
+- The Wayland greeter prefers `flakewm`, then `gxde-wlcom`, then falls back to
+  `LabWC`, `Sway` or `Weston`.
 - `[General] EnableNeoGreeter` defaults to `true`. When the neo binary is
   missing, the daemon falls back to the classic greeter.
 - Qt Virtual Keyboard requires both its QML module and input-context plugin.

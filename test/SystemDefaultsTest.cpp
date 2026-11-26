@@ -9,10 +9,12 @@ class SystemDefaultsTest : public QObject
     Q_OBJECT
 
 private slots:
-    void selectsDeepinOnGxde();
+    void selectsFlakewmOnGxde();
     void matchesGxdeCaseInsensitively();
     void keepsRememberedSessionOnGxde();
     void leavesOtherSystemsUnspecified();
+    void identifiesLegacyDefaultSessions();
+    void recognisesFlakewmAsNonLegacy();
 
 private:
     QString writeOsRelease(const QByteArray &contents);
@@ -31,13 +33,13 @@ QString SystemDefaultsTest::writeOsRelease(const QByteArray &contents)
     return path;
 }
 
-void SystemDefaultsTest::selectsDeepinOnGxde()
+void SystemDefaultsTest::selectsFlakewmOnGxde()
 {
     const QString path = writeOsRelease("NAME=GXDE\nID=GXDE\n");
     QCOMPARE(GxdmSystemDefaults::operatingSystemId(path), QStringLiteral("GXDE"));
     QVERIFY(GxdmSystemDefaults::isGxdeOperatingSystem(path));
     QCOMPARE(GxdmSystemDefaults::defaultSessionDesktopFile(path),
-        QStringLiteral("deepin.desktop"));
+        QStringLiteral("gxde-flakewm.desktop"));
 }
 
 void SystemDefaultsTest::matchesGxdeCaseInsensitively()
@@ -45,7 +47,7 @@ void SystemDefaultsTest::matchesGxdeCaseInsensitively()
     const QString path = writeOsRelease("ID=gXdE\n");
     QVERIFY(GxdmSystemDefaults::isGxdeOperatingSystem(path));
     QCOMPARE(GxdmSystemDefaults::defaultSessionDesktopFile(path),
-        QStringLiteral("deepin.desktop"));
+        QStringLiteral("gxde-flakewm.desktop"));
 }
 
 void SystemDefaultsTest::keepsRememberedSessionOnGxde()
@@ -61,6 +63,27 @@ void SystemDefaultsTest::leavesOtherSystemsUnspecified()
     const QString path = writeOsRelease("NAME=Debian GNU/Linux\nID=debian\n");
     QVERIFY(!GxdmSystemDefaults::isGxdeOperatingSystem(path));
     QCOMPARE(GxdmSystemDefaults::defaultSessionDesktopFile(path), QString());
+}
+
+void SystemDefaultsTest::identifiesLegacyDefaultSessions()
+{
+    QVERIFY(GxdmSystemDefaults::isLegacyDefaultSession(
+        QStringLiteral("/usr/share/xsessions/deepin.desktop")));
+    QVERIFY(GxdmSystemDefaults::isLegacyDefaultSession(
+        QStringLiteral("gxde-wlcom.desktop")));
+    QVERIFY(GxdmSystemDefaults::isLegacyDefaultSession(
+        QStringLiteral("/usr/share/wayland-sessions/gxde-wlcom.desktop")));
+    QVERIFY(GxdmSystemDefaults::isLegacyDefaultSession(
+        QStringLiteral("DEEPIN.desktop")));
+}
+
+void SystemDefaultsTest::recognisesFlakewmAsNonLegacy()
+{
+    QVERIFY(!GxdmSystemDefaults::isLegacyDefaultSession(
+        QStringLiteral("/usr/share/wayland-sessions/gxde-flakewm.desktop")));
+    QVERIFY(!GxdmSystemDefaults::isLegacyDefaultSession(QString()));
+    QVERIFY(!GxdmSystemDefaults::isLegacyDefaultSession(
+        QStringLiteral("xfce.desktop")));
 }
 
 QTEST_MAIN(SystemDefaultsTest)

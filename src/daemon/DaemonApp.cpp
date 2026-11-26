@@ -25,12 +25,15 @@
 #include "PowerManager.h"
 #include "SeatManager.h"
 #include "SignalHandler.h"
+#include "SystemDefaults.h"
 
 #include "MessageHandler.h"
 
 #include <QDBusConnectionInterface>
 #include <QDebug>
+#include <QFile>
 #include <QHostInfo>
+#include <QStandardPaths>
 #include <QTimer>
 
 #include <iostream>
@@ -121,6 +124,40 @@ namespace SDDM {
     }
 }
 
+namespace {
+
+// 由 gxdm 包在升级时创建，守护进程启动时消费一次。
+// 不能在 postinst 里直接改 state.conf：升级时旧守护进程仍在运行，
+// 内存里的状态会在下次登录时把文件写回去。
+constexpr char kSessionMigrationMarker[] = "/var/lib/gxdm/.migrate-to-flakewm";
+
+void migrateLegacySessionToFlakewm()
+{
+    const QString marker = QString::fromLatin1(kSessionMigrationMarker);
+    if (!QFile::exists(marker))
+        return;
+
+    const QString remembered = SDDM::stateConfig.Last.Session.get().trimmed();
+    if (!GxdmSystemDefaults::isLegacyDefaultSession(remembered)) {
+        QFile::remove(marker);
+        return;
+    }
+
+    const QString flakewmSession = QStandardPaths::locate(
+        QStandardPaths::GenericDataLocation,
+        QStringLiteral("wayland-sessions/gxde-flakewm.desktop"));
+    if (flakewmSession.isEmpty())
+        return; // gxde-flake-session 还没装好，保留标记下次再迁移
+
+    SDDM::stateConfig.Last.Session.set(flakewmSession);
+    SDDM::stateConfig.save();
+    QFile::remove(marker);
+    qInfo() << "Migrated legacy default session" << remembered << "to"
+            << flakewmSession;
+}
+
+} // namespace
+
 int main(int argc, char **argv) {
     QStringList arguments;
 
@@ -142,6 +179,9 @@ int main(int argc, char **argv) {
         QTextStream(stdout) << SDDM::mainConfig.toConfigFull();
         return EXIT_SUCCESS;
     }
+
+    // migrate the legacy default session before the first greeter starts
+    migrateLegacySessionToFlakewm();
 
     // create application
     SDDM::DaemonApp app(argc, argv);
