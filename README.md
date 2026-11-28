@@ -38,6 +38,26 @@ GXDE Display Manager (`GXDM`) is a fork of `SDDM` and is build specifically for 
 
 Currently, `GXDM` uses a Wayland greeter by default. It prefers `flakewm`, then `gxde-wlcom`, and falls back to `LabWC`, `Sway` or `Weston` when none of them is available. On GXDE OS the default user session is `gxde-flakewm`. The greeter itself is from Deepin `session-ui` from the DDE 15 era, and it is fully adapted to Wayland and Qt6.
 
+### Kirin 9000c (Maleoon 910) hardware acceleration
+
+On Kirin 9000c machines the Wayland greeter helper detects the
+`gxde-hisi-9000c-gpu-compat` package and, when the chosen greeter compositor is
+`flakewm` or `gxde-wlcom`, starts both the compositor and the greeter with the
+hisi EGL/gbm libraries, the UOS libwayland 1.21 client library and the
+`libhisi_gbm_shim.so` preload. The compositor environment is scrubbed of stale
+`DISPLAY`/`WAYLAND_DISPLAY` values so flakewm selects its DRM backend.
+
+Two environment variables are used internally:
+
+* `GXDM_HISI_9000C=1` — the hisi environment is active; the neo greeter asks Qt
+  for an OpenGL ES surface (the hisi driver has no desktop GL).
+* `GXDM_GREETER_ANIMATIONS=0` — the greeter must skip animations and blur
+  effects. The helper sets this when it cannot enable hisi acceleration (compat
+  package missing, unsupported compositor, or the compositor reports that it
+  fell back to software rendering). The greeter also switches it off at runtime
+  if Qt ends up on the software scene graph or an llvmpipe/softpipe renderer.
+
+
 The in-session lock screen is not part of GXDM. It lives in the separate [`gxde-lock`](https://gitee.com/GXDE-OS/gxde-lock) package.
 
 

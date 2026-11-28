@@ -107,14 +107,14 @@ Popup {
         property: "opacity"
         from: 0.0
         to: 1.0
-        duration: 180
+        duration: gxdmAnimation.enabled ? (180) : 0
         easing.type: Easing.OutCubic
       }
       NumberAnimation {
         property: "scale"
         from: 0.92
         to: 1.0
-        duration: 180
+        duration: gxdmAnimation.enabled ? (180) : 0
         easing.type: Easing.OutCubic
       }
     }
@@ -125,13 +125,13 @@ Popup {
       NumberAnimation {
         property: "opacity"
         to: 0.0
-        duration: 120
+        duration: gxdmAnimation.enabled ? (120) : 0
         easing.type: Easing.OutCubic
       }
       NumberAnimation {
         property: "scale"
         to: 0.96
-        duration: 120
+        duration: gxdmAnimation.enabled ? (120) : 0
         easing.type: Easing.OutCubic
       }
     }
@@ -233,7 +233,7 @@ Popup {
 
           Behavior on color {
             ColorAnimation {
-              duration: 120
+              duration: gxdmAnimation.enabled ? (120) : 0
             }
           }
         }
@@ -266,7 +266,7 @@ Popup {
 
       Behavior on height {
         NumberAnimation {
-          duration: 180
+          duration: gxdmAnimation.enabled ? (180) : 0
           easing.type: Easing.OutCubic
         }
       }
@@ -286,7 +286,7 @@ Popup {
 
         Behavior on opacity {
           NumberAnimation {
-            duration: 180
+            duration: gxdmAnimation.enabled ? (180) : 0
             easing.type: Easing.OutCubic
           }
         }
@@ -322,7 +322,7 @@ Popup {
 
       Behavior on border.color {
         ColorAnimation {
-          duration: 160
+          duration: gxdmAnimation.enabled ? (160) : 0
           easing.type: Easing.OutCubic
         }
       }
@@ -336,35 +336,35 @@ Popup {
       target: card
       property: "shakeOffset"
       to: -8
-      duration: 50
+      duration: gxdmAnimation.enabled ? (50) : 0
       easing.type: Easing.OutQuad
     }
     NumberAnimation {
       target: card
       property: "shakeOffset"
       to: 7
-      duration: 80
+      duration: gxdmAnimation.enabled ? (80) : 0
       easing.type: Easing.InOutQuad
     }
     NumberAnimation {
       target: card
       property: "shakeOffset"
       to: -4
-      duration: 70
+      duration: gxdmAnimation.enabled ? (70) : 0
       easing.type: Easing.InOutQuad
     }
     NumberAnimation {
       target: card
       property: "shakeOffset"
       to: 2
-      duration: 60
+      duration: gxdmAnimation.enabled ? (60) : 0
       easing.type: Easing.InOutQuad
     }
     NumberAnimation {
       target: card
       property: "shakeOffset"
       to: 0
-      duration: 50
+      duration: gxdmAnimation.enabled ? (50) : 0
       easing.type: Easing.OutQuad
     }
   }

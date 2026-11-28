@@ -93,7 +93,7 @@ Item {
   }
 
   Loader {
-    active: frame.visible && frame.backdrop !== null
+    active: frame.visible && frame.backdrop !== null && gxdmAnimation.enabled
     sourceComponent: Item {
       ShaderEffectSource {
         id: backdropSource
@@ -129,7 +129,7 @@ Item {
         height: backdropMask.height
         source: backdropSource
         autoPaddingEnabled: false
-        blurEnabled: true
+        blurEnabled: gxdmAnimation.enabled
         blur: 1.0
         blurMax: 32
         maskEnabled: true

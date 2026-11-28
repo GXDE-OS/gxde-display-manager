@@ -1,3 +1,24 @@
+gxde-display-manager-se (1.3.9-gxde1) unstable; urgency=medium
+
+  * 登录界面在麒麟 9000c（Maleoon 910）上启用 hisi 硬件加速：
+    - Wayland greeter 助手自动检测 9000c 内核与
+      gxde-hisi-9000c-gpu-compat，为 greeter 合成器（flakewm/
+      gxde-wlcom）和 greeter 注入 hisi EGL/gbm、UOS libwayland 1.21
+      与 LD_PRELOAD shim；合成器环境会清掉 DISPLAY/WAYLAND_DISPLAY，
+      避免 flakewm 误选嵌套后端；
+    - neo greeter 在 hisi 环境下请求 OpenGL ES surface（hisi 只支持
+      ES，默认桌面 GL 会找不到 EGLConfig、窗口表面创建失败）；
+    - 无可用加速时自动降级：9000c 未装兼容包、合成器不是
+      flakewm/gxde-wlcom，或合成器日志显示回退到软件渲染时，
+      设置 QT_QUICK_BACKEND=software 并禁用 greeter 动画与模糊；
+    - greeter 运行时检测到 Qt 场景图/GL 渲染器为软件（Software、
+      llvmpipe、softpipe、swrast）时也会自动关闭动画；
+    - gxdm 用户加入 render 组，保证 greeter 客户端能打开渲染节点。
+  * greeter 动画统一走 gxdmAnimation.enabled，软件模式下 duration 归零
+    并跳过背景/卡片模糊，避免登录界面卡顿。
+
+ -- shenmo <shenmo@spark-app.store>  Sat, 28 Nov 2026 17:30:00 +0800
+
 gxde-display-manager-se (1.3.8-gxde1) unstable; urgency=medium
 
   * GXDE 上的默认登录会话改为 gxde-flakewm（原为 X11 deepin.desktop）

@@ -49,7 +49,7 @@ Item {
     property: "transitionProgress"
     from: 0
     to: 1
-    duration: 150
+    duration: gxdmAnimation.enabled ? (150) : 0
     easing.type: Easing.InOutQuad
     onFinished: {
       if (root.greeterBackend) {
@@ -260,14 +260,14 @@ Item {
 
   Behavior on dialogProgress {
     NumberAnimation {
-      duration: 180
+      duration: gxdmAnimation.enabled ? (180) : 0
       easing.type: Easing.OutCubic
     }
   }
 
   Behavior on loginProgress {
     NumberAnimation {
-      duration: 250
+      duration: gxdmAnimation.enabled ? (250) : 0
       easing.type: Easing.Linear
     }
   }
@@ -382,7 +382,7 @@ Item {
           running: false
           from: 0.0
           to: 1.0
-          duration: 150
+          duration: gxdmAnimation.enabled ? (150) : 0
           easing.type: Easing.OutCubic
         }
 
@@ -401,9 +401,9 @@ Item {
 
           anchors.fill: parent
           opacity: 1.0 - 0.7 * root.dialogProgress
-          layer.enabled: root.dialogProgress > 0
+          layer.enabled: gxdmAnimation.enabled && root.dialogProgress > 0
           layer.effect: MultiEffect {
-            blurEnabled: true
+            blurEnabled: gxdmAnimation.enabled
             blurMax: 32
             blur: 0.8 * root.dialogProgress
             autoPaddingEnabled: false
@@ -421,7 +421,7 @@ Item {
 
             Behavior on y {
               NumberAnimation {
-                duration: 250
+                duration: gxdmAnimation.enabled ? (250) : 0
                 easing.type: Easing.OutExpo
               }
             }
@@ -521,7 +521,7 @@ Item {
 
           Behavior on revealProgress {
             NumberAnimation {
-              duration: 140
+              duration: gxdmAnimation.enabled ? (140) : 0
               easing.type: Easing.OutCubic
             }
           }
@@ -575,7 +575,7 @@ Item {
 
           Behavior on revealProgress {
             NumberAnimation {
-              duration: 140
+              duration: gxdmAnimation.enabled ? (140) : 0
               easing.type: Easing.OutCubic
             }
           }
@@ -786,7 +786,7 @@ Item {
           property: "slide"
           from: 0.0
           to: 1.0
-          duration: 220
+          duration: gxdmAnimation.enabled ? (220) : 0
           easing.type: Easing.OutCubic
         }
       }
@@ -795,7 +795,7 @@ Item {
         NumberAnimation {
           property: "slide"
           to: 0.0
-          duration: 180
+          duration: gxdmAnimation.enabled ? (180) : 0
           easing.type: Easing.InCubic
         }
       }
@@ -836,17 +836,17 @@ Item {
           target: authFailureGlow
           property: "opacity"
           to: 1.0
-          duration: 160
+          duration: gxdmAnimation.enabled ? (160) : 0
           easing.type: Easing.OutCubic
         }
         PauseAnimation {
-          duration: 700
+          duration: gxdmAnimation.enabled ? (700) : 0
         }
         NumberAnimation {
           target: authFailureGlow
           property: "opacity"
           to: 0.0
-          duration: 900
+          duration: gxdmAnimation.enabled ? (900) : 0
           easing.type: Easing.InOutQuad
         }
       }
@@ -945,8 +945,8 @@ Item {
     MultiEffect {
       anchors.fill: backgroundSource
       source: backgroundSource
-      visible: greeterBackground.progress > 0
-      blurEnabled: true
+      visible: greeterBackground.progress > 0 && gxdmAnimation.enabled
+      blurEnabled: gxdmAnimation.enabled
       blurMax: 32
       blur: greeterBackground.activeBlur * greeterBackground.progress
       autoPaddingEnabled: false

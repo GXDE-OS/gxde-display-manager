@@ -46,7 +46,7 @@ FocusScope {
 
   Behavior on revealProgress {
     NumberAnimation {
-      duration: root.revealed ? 900 : 240
+      duration: gxdmAnimation.enabled ? (root.revealed ? 900 : 240) : 0
       easing.type: Easing.Linear
     }
   }
@@ -257,7 +257,7 @@ FocusScope {
       rebound: Transition {
         NumberAnimation {
           properties: "x,y"
-          duration: 240
+          duration: gxdmAnimation.enabled ? (240) : 0
           easing.type: Easing.OutCubic
         }
       }
@@ -350,7 +350,7 @@ FocusScope {
 
               Behavior on opacity {
                 NumberAnimation {
-                  duration: 160
+                  duration: gxdmAnimation.enabled ? (160) : 0
                   easing.type: Easing.OutCubic
                 }
               }
@@ -374,7 +374,7 @@ FocusScope {
 
                 Behavior on color {
                   ColorAnimation {
-                    duration: 120
+                    duration: gxdmAnimation.enabled ? (120) : 0
                   }
                 }
               }
@@ -398,7 +398,7 @@ FocusScope {
 
             Behavior on opacity {
               NumberAnimation {
-                duration: 160
+                duration: gxdmAnimation.enabled ? (160) : 0
                 easing.type: Easing.OutCubic
               }
             }
@@ -441,7 +441,7 @@ FocusScope {
 
       Behavior on opacity {
         NumberAnimation {
-          duration: 200
+          duration: gxdmAnimation.enabled ? (200) : 0
           easing.type: Easing.OutCubic
         }
       }
@@ -482,7 +482,7 @@ FocusScope {
 
       Behavior on opacity {
         NumberAnimation {
-          duration: 200
+          duration: gxdmAnimation.enabled ? (200) : 0
           easing.type: Easing.OutCubic
         }
       }
@@ -509,7 +509,7 @@ FocusScope {
 
       target: userList
       property: "contentX"
-      duration: 280
+      duration: gxdmAnimation.enabled ? (280) : 0
       easing.type: Easing.OutCubic
     }
   }
@@ -540,7 +540,7 @@ FocusScope {
 
       Behavior on width {
         NumberAnimation {
-          duration: 240
+          duration: gxdmAnimation.enabled ? (240) : 0
           easing.type: Easing.OutCubic
         }
       }

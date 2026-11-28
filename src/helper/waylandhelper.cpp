@@ -18,8 +18,11 @@
 ***************************************************************************/
 
 #include <QCoreApplication>
+#include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QStandardPaths>
+#include <QSysInfo>
 
 #include "Configuration.h"
 
@@ -85,7 +88,113 @@ WaylandHelper::~WaylandHelper()
 bool WaylandHelper::startCompositor(const QString &cmd)
 {
     m_watcher->start();
-    return startProcess(cmd, &m_serverProcess);
+
+    const QStringList command = QProcess::splitCommand(cmd);
+    const QString program =
+        command.isEmpty() ? QString() : QFileInfo(command.constFirst()).fileName();
+    const bool hisiCompositor = program == QLatin1String("flakewm") ||
+                                program == QLatin1String("gxde-wlcom");
+
+    // Kirin 9000c (Maleoon 910) only has the hisi EGL/gbm stack. flakewm and
+    // gxde-wlcom know how to drive it when the compat package's libraries and
+    // LD_PRELOAD shim are present. Other greeter compositors cannot use hisi
+    // EGL on the server side, so only enable this for those two.
+    if (QSysInfo::kernelVersion().contains(QLatin1String("9000c"))) {
+        if (hisiCompositor && PrepareHisi9000cEnvironment()) {
+            m_hisi9000c = true;
+            m_environment.insert(QStringLiteral("GXDM_HISI_9000C"), QStringLiteral("1"));
+            m_environment.insert(QStringLiteral("GXDM_GREETER_ANIMATIONS"), QStringLiteral("1"));
+        } else {
+            // No working hardware path: run the QML greeter with Qt's software
+            // backend and make it skip animations entirely.
+            m_environment.insert(QStringLiteral("GXDM_GREETER_ANIMATIONS"), QStringLiteral("0"));
+            m_environment.insert(QStringLiteral("QT_QUICK_BACKEND"), QStringLiteral("software"));
+            qWarning() << "Kirin 9000c: no hisi greeter acceleration available;"
+                          " running the greeter with software rendering";
+        }
+    }
+
+    // The compositor must not inherit a stale Wayland/X11 display, otherwise
+    // flakewm's backend autocreate selects the nested backend instead of DRM.
+    QProcessEnvironment compositorEnvironment = m_environment;
+    compositorEnvironment.remove(QStringLiteral("WAYLAND_DISPLAY"));
+    compositorEnvironment.remove(QStringLiteral("WAYLAND_SOCKET"));
+    compositorEnvironment.remove(QStringLiteral("DISPLAY"));
+
+    return startProcess(cmd, &m_serverProcess, compositorEnvironment);
+}
+
+bool WaylandHelper::PrepareHisi9000cEnvironment()
+{
+    const QDir compat(QStringLiteral("/usr/lib/gxde-hisi-9000c-gpu-compat"));
+    if (!QFileInfo::exists(compat.filePath(QStringLiteral("server-egl/libEGL.so.1"))) ||
+        !QFileInfo::exists(compat.filePath(QStringLiteral("libhisi_gbm_shim.so")))) {
+        qWarning() << "Kirin 9000c detected, but gxde-hisi-9000c-gpu-compat is not installed";
+        return false;
+    }
+
+    const QString libraryPath = compat.filePath(QStringLiteral("server-egl"));
+    const QString shim = compat.filePath(QStringLiteral("libhisi_gbm_shim.so"));
+    QStringList libraryPaths = m_environment.value(QStringLiteral("LD_LIBRARY_PATH"))
+                                   .split(QLatin1Char(':'), Qt::SkipEmptyParts);
+    if (!libraryPaths.contains(libraryPath)) {
+        libraryPaths.prepend(libraryPath);
+    }
+    m_environment.insert(QStringLiteral("LD_LIBRARY_PATH"),
+                         libraryPaths.join(QLatin1Char(':')));
+
+    QStringList preloads = m_environment.value(QStringLiteral("LD_PRELOAD"))
+                               .split(QLatin1Char(':'), Qt::SkipEmptyParts);
+    if (!preloads.contains(shim)) {
+        preloads.prepend(shim);
+    }
+    m_environment.insert(QStringLiteral("LD_PRELOAD"),
+                         preloads.join(QLatin1Char(':')));
+    m_environment.insert(QStringLiteral("WLR_BACKENDS"), QStringLiteral("drm,libinput"));
+    m_environment.insert(QStringLiteral("WLR_EGL_NO_MODIFIERS"), QStringLiteral("1"));
+    m_environment.insert(QStringLiteral("KYWC_EGL_NO_MODIFIERS"), QStringLiteral("1"));
+    m_environment.insert(QStringLiteral("WLR_XWAYLAND"),
+                         compat.filePath(QStringLiteral("xwayland-mesa")));
+
+    qInfo() << "Kirin 9000c: enabling hisi hardware acceleration for the greeter";
+    return true;
+}
+
+void WaylandHelper::InspectCompositorOutput(const QByteArray &output)
+{
+    if (m_hardwareRendererFailed || output.isEmpty()) {
+        return;
+    }
+    if (output.contains("Failed to create a hardware renderer") ||
+        output.contains("Could not initialize renderer") ||
+        output.contains("Failed to initialize EGL")) {
+        m_hardwareRendererFailed = true;
+    }
+}
+
+void WaylandHelper::DrainCompositorOutput()
+{
+    if (!m_serverProcess) {
+        return;
+    }
+    const QByteArray output = m_serverProcess->readAllStandardOutput();
+    if (!output.isEmpty()) {
+        InspectCompositorOutput(output);
+        qInfo() << output;
+    }
+}
+
+void WaylandHelper::PrepareGreeterEnvironment()
+{
+    if (!m_hisi9000c) {
+        return;
+    }
+    DrainCompositorOutput();
+    if (m_hardwareRendererFailed) {
+        m_environment.insert(QStringLiteral("GXDM_GREETER_ANIMATIONS"), QStringLiteral("0"));
+        qWarning() << "The greeter compositor has no hardware renderer;"
+                      " disabling greeter animations";
+    }
 }
 
 static void stopProcess(QProcess *&process, qint64 processGroup = -1)
@@ -121,18 +230,23 @@ void WaylandHelper::stop()
     m_serverProcessGroup = -1;
 }
 
-bool WaylandHelper::startProcess(const QString &cmd, QProcess **p)
+bool WaylandHelper::startProcess(const QString &cmd, QProcess **p,
+                                const QProcessEnvironment &environment)
 {
     auto *process = new CompositorProcess(this);
-    process->setProcessEnvironment(m_environment);
+    process->setProcessEnvironment(environment);
     process->setInputChannelMode(QProcess::ForwardedInputChannel);
-    connect(process, &QProcess::readyReadStandardError, this, [process] {
-        qWarning() << process->readAllStandardError();
+    connect(process, &QProcess::readyReadStandardError, this, [this, process] {
+        const QByteArray output = process->readAllStandardError();
+        InspectCompositorOutput(output);
+        qWarning() << output;
     });
-    connect(process, &QProcess::readyReadStandardOutput, this, [process] {
-        qInfo() << process->readAllStandardOutput();
+    connect(process, &QProcess::readyReadStandardOutput, this, [this, process] {
+        const QByteArray output = process->readAllStandardOutput();
+        InspectCompositorOutput(output);
+        qInfo() << output;
     });
-    qDebug() << "Starting Wayland process" << cmd << m_environment.value(QStringLiteral("USER"));
+    qDebug() << "Starting Wayland process" << cmd << environment.value(QStringLiteral("USER"));
     connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
             process, [this](int exitCode, QProcess::ExitStatus exitStatus) {
         qDebug() << "wayland compositor finished" << exitCode << exitStatus;
@@ -160,6 +274,12 @@ bool WaylandHelper::startProcess(const QString &cmd, QProcess **p)
 
 void WaylandHelper::startGreeter(const QString &cmd)
 {
+    // A stale DISPLAY/WAYLAND_DISPLAY must never leak into the greeter; the
+    // real WAYLAND_DISPLAY is inserted once the compositor socket is known.
+    m_environment.remove(QStringLiteral("WAYLAND_DISPLAY"));
+    m_environment.remove(QStringLiteral("WAYLAND_SOCKET"));
+    m_environment.remove(QStringLiteral("DISPLAY"));
+
     auto args = QProcess::splitCommand(cmd);
 
     m_greeterProcess = new QProcess(this);
@@ -183,6 +303,7 @@ void WaylandHelper::startGreeter(const QString &cmd)
             QCoreApplication::instance()->quit();
     });
     if (m_watcher->status() == WaylandSocketWatcher::Started) {
+        PrepareGreeterEnvironment();
         m_environment.insert(QStringLiteral("WAYLAND_DISPLAY"), m_watcher->socketName());
         m_greeterProcess->setProcessEnvironment(m_environment);
         m_greeterProcess->start();
@@ -192,6 +313,7 @@ void WaylandHelper::startGreeter(const QString &cmd)
         connect(m_watcher, &WaylandSocketWatcher::failed, this, &WaylandHelper::failed);
         connect(m_watcher, &WaylandSocketWatcher::started, this, [this] {
             m_watcher->stop();
+            PrepareGreeterEnvironment();
             m_environment.insert(QStringLiteral("WAYLAND_DISPLAY"), m_watcher->socketName());
             m_greeterProcess->setProcessEnvironment(m_environment);
             m_greeterProcess->start();

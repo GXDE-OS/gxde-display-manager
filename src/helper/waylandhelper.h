@@ -46,8 +46,16 @@ private:
     QProcess *m_greeterProcess = nullptr;
     WaylandSocketWatcher * const m_watcher;
     bool m_stopping = false;
+    // Kirin 9000c / Maleoon 910 hardware acceleration for the greeter.
+    bool m_hisi9000c = false;
+    bool m_hardwareRendererFailed = false;
 
-    bool startProcess(const QString &cmd, QProcess **p = nullptr);
+    bool PrepareHisi9000cEnvironment();
+    void InspectCompositorOutput(const QByteArray &output);
+    void DrainCompositorOutput();
+    void PrepareGreeterEnvironment();
+    bool startProcess(const QString &cmd, QProcess **p,
+                      const QProcessEnvironment &environment);
 };
 
 } // namespace SDDM

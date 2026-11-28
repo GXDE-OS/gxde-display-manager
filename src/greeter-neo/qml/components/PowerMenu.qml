@@ -93,14 +93,14 @@ Popup {
         property: "opacity"
         from: 0.0
         to: 1.0
-        duration: 90
+        duration: gxdmAnimation.enabled ? (90) : 0
         easing.type: Easing.OutCubic
       }
       NumberAnimation {
         property: "scale"
         from: 0.95
         to: 1.0
-        duration: 90
+        duration: gxdmAnimation.enabled ? (90) : 0
         easing.type: Easing.OutCubic
       }
     }
@@ -110,7 +110,7 @@ Popup {
     NumberAnimation {
       property: "opacity"
       to: 0.0
-      duration: 90
+      duration: gxdmAnimation.enabled ? (90) : 0
       easing.type: Easing.OutCubic
     }
   }
@@ -171,7 +171,7 @@ Popup {
 
         target: highlight
         property: "y"
-        duration: 100
+        duration: gxdmAnimation.enabled ? (100) : 0
         easing.type: Easing.OutCubic
       }
     }

@@ -22,9 +22,16 @@
 #include <QGuiApplication>
 #include <QHash>
 #include <QLocale>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 #include <QQmlComponent>
+#include <QQuickWindow>
+#include <QSet>
+#include <QSGRendererInterface>
 #include <QStringList>
+#include <QSurfaceFormat>
 #include <QTranslator>
 #include <QUrl>
 #include <QVariantList>
@@ -39,6 +46,37 @@
 #include "greeter-neo/src/screen_manager.h"
 #include "greeter-neo/src/session_list.h"
 #include "greeter-neo/src/utils/macros.h"
+
+// Exposed to QML as `gxdmAnimation`. Its `enabled` property zeroes every
+// animation duration and turns off the expensive blur effects, which keeps the
+// greeter responsive when it has to run without hardware acceleration.
+class GreeterAnimationSettings : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged)
+
+ public:
+  explicit GreeterAnimationSettings(bool enabled, QObject* parent = nullptr)
+      : QObject(parent), enabled_(enabled) {
+    qInfo() << "Greeter animations" << (enabled_ ? "enabled" : "disabled");
+  }
+
+  bool enabled() const { return enabled_; }
+
+  void setEnabled(bool enabled) {
+    if (enabled_ == enabled) {
+      return;
+    }
+    enabled_ = enabled;
+    qInfo() << "Greeter animations" << (enabled_ ? "enabled" : "disabled");
+    emit enabledChanged();
+  }
+
+ signals:
+  void enabledChanged();
+
+ private:
+  bool enabled_;
+};
 
 namespace {
 
@@ -368,7 +406,26 @@ int main(int argc, char* argv[]) {
     GxdmGreeterCursor::enforceWaylandCursorConfig();
     GxdmGreeterScale::applyThemeScale();
   }
+  // The hisi Maleoon 910 driver only exposes OpenGL ES. Qt Quick otherwise
+  // asks EGL for a desktop-OpenGL config, gets zero configs and fails to
+  // create the window surface (the greeter then falls back to software).
+  // Request ES when the GXDM helper enabled the hisi environment.
+  if (qEnvironmentVariableIsSet("GXDM_HISI_9000C")) {
+    QSurfaceFormat format = QSurfaceFormat::defaultFormat();
+    format.setRenderableType(QSurfaceFormat::OpenGLES);
+    format.setDepthBufferSize(24);
+    format.setStencilBufferSize(8);
+    QSurfaceFormat::setDefaultFormat(format);
+  }
+
   QGuiApplication app(argc, argv);
+
+  bool animations_enabled = true;
+  if (qEnvironmentVariableIsSet("GXDM_GREETER_ANIMATIONS")) {
+    animations_enabled =
+        qEnvironmentVariableIntValue("GXDM_GREETER_ANIMATIONS") != 0;
+  }
+  GreeterAnimationSettings animation_settings(animations_enabled);
   QTranslator translator;
   if (loadTranslation(translator, QLocale())) {
     app.installTranslator(&translator);
@@ -410,6 +467,8 @@ int main(int argc, char* argv[]) {
                      }
                    });
   QQmlApplicationEngine engine;
+  engine.rootContext()->setContextProperty("gxdmAnimation",
+                                           &animation_settings);
   gxde::greeter::ScreenManager screen_manager(socket_name.isEmpty());
   gxde::greeter::LoginTransition login_transition(greeter_backend, screen_manager);
 
@@ -442,5 +501,65 @@ int main(int argc, char* argv[]) {
                              ->property("screenWindow")
                              .value<QQmlComponent*>());
   }
+
+  // If Qt ends up on llvmpipe/softpipe (or its software scene graph) despite
+  // the helper's probe, drop the animations before the user sees the greeter.
+  QSet<QQuickWindow*> checked_windows;
+  const auto check_acceleration = [&](QQuickWindow* window) {
+    if (!window || checked_windows.contains(window)) {
+      return;
+    }
+    checked_windows.insert(window);
+    auto* renderer = window->rendererInterface();
+    if (!renderer) {
+      return;
+    }
+    if (renderer->graphicsApi() == QSGRendererInterface::Software) {
+      animation_settings.setEnabled(false);
+      return;
+    }
+    auto* connection = new QMetaObject::Connection;
+    *connection = QObject::connect(
+        window, &QQuickWindow::beforeRendering, window,
+        [&animation_settings, connection, window]() {
+          bool software = window->rendererInterface()->graphicsApi() ==
+                          QSGRendererInterface::Software;
+          if (!software) {
+            if (QOpenGLContext* context = QOpenGLContext::currentContext()) {
+              const auto* renderer_string = reinterpret_cast<const char*>(
+                  context->functions()->glGetString(GL_RENDERER));
+              const QString name = renderer_string
+                                       ? QString::fromLatin1(renderer_string)
+                                       : QString();
+              software = name.contains(QLatin1String("llvmpipe"),
+                                       Qt::CaseInsensitive) ||
+                         name.contains(QLatin1String("softpipe"),
+                                       Qt::CaseInsensitive) ||
+                         name.contains(QLatin1String("swrast"),
+                                       Qt::CaseInsensitive);
+            }
+          }
+          if (software) {
+            QMetaObject::invokeMethod(
+                &animation_settings,
+                [&animation_settings] {
+                  animation_settings.setEnabled(false);
+                },
+                Qt::QueuedConnection);
+          }
+          QObject::disconnect(*connection);
+          delete connection;
+        },
+        Qt::DirectConnection);
+  };
+  for (QQuickWindow* window : screen_manager.Windows()) {
+    check_acceleration(window);
+  }
+  QObject::connect(&screen_manager,
+                   &gxde::greeter::ScreenManager::CurrentWindowChanged, &app,
+                   [&] { check_acceleration(screen_manager.CurrentWindow()); });
+
   return app.exec();
 }
+
+#include "main.moc"
